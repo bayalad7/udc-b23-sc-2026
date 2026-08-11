@@ -1,0 +1,16 @@
+# Credenciales y configuración local — nunca se suben al repositorio
+app/config/db-credenciales.php
+app/config/*.local.php
+.env
+.env.*
+
+# Dependencias gestionadas por Composer
+app/**/vendor/
+
+# Archivos subidos por usuarios (fotos, credenciales generadas)
+app/registro/public/uploads/
+app/registro/public/credenciales/
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
