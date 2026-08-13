@@ -15,7 +15,7 @@ if ($idAlumno === null) {
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
 
-$consultaAlumno = $pdo->prepare('SELECT nombre_completo FROM alumnos WHERE id = :id');
+$consultaAlumno = $pdo->prepare('SELECT nombre_completo, numero_cuenta FROM alumnos WHERE id = :id');
 $consultaAlumno->execute(['id' => $idAlumno]);
 $alumno = $consultaAlumno->fetch();
 if ($alumno === false) {
@@ -68,6 +68,50 @@ $consultaEquipos = $pdo->prepare(
 );
 $consultaEquipos->execute(['alumno' => $idAlumno]);
 $idsCompeticionesInscrito = array_map('intval', array_column($consultaEquipos->fetchAll(), 'id_competicion'));
+
+// --- Concurso del Conocimiento — equipos ya formados (modal "Ver equipos") -
+// Los otros 4 talleres/ponencias del bloque ya tienen su propio "Ver
+// inscritos"; el concurso necesita el equivalente a nivel de equipo (no de
+// alumno individual), con el capitán y cuántos integrantes lleva cada uno.
+
+$competicionConocimiento = $pdo->query(
+    "SELECT id, nombre, hora_inicio, hora_fin FROM competiciones WHERE dia = 'academico' AND tipo = 'concurso' LIMIT 1"
+)->fetch();
+
+$equiposConocimiento = [];
+if ($competicionConocimiento !== false) {
+    $consultaEquiposConocimiento = $pdo->prepare(
+        "SELECT eq.id, eq.nombre, eq.fecha_registro, a.nombre_completo AS capitan, a.numero_cuenta AS capitan_cuenta,
+                (SELECT COUNT(*) FROM integrantes it WHERE it.id_equipo = eq.id) AS total_integrantes
+         FROM equipos eq
+         JOIN alumnos a ON a.id = eq.id_alumno_capitan
+         WHERE eq.id_competicion = :id
+         ORDER BY eq.fecha_registro"
+    );
+    $consultaEquiposConocimiento->execute(['id' => $competicionConocimiento['id']]);
+    $equiposConocimiento = $consultaEquiposConocimiento->fetchAll();
+}
+
+// Todos los integrantes de todos los equipos del concurso, agrupados por
+// equipo — para que el modal "Ver equipos" pueda listar a los 10 alumnos de
+// cada uno, no solo el capitán (punto 6 del rediseño del formulario).
+$integrantesPorEquipoConocimiento = [];
+if ($equiposConocimiento !== []) {
+    $consultaIntegrantesConocimiento = $pdo->prepare(
+        "SELECT it.id_equipo, a.numero_cuenta, a.nombre_completo, a.grado, a.grupo
+         FROM integrantes it
+         JOIN alumnos a ON a.id = it.id_alumno
+         WHERE it.id_equipo IN (" . implode(',', array_fill(0, count($equiposConocimiento), '?')) . ")
+         ORDER BY a.nombre_completo"
+    );
+    $consultaIntegrantesConocimiento->execute(array_column($equiposConocimiento, 'id'));
+    foreach ($consultaIntegrantesConocimiento->fetchAll() as $fila) {
+        $integrantesPorEquipoConocimiento[(int) $fila['id_equipo']][] = $fila;
+    }
+}
+
+const LIMITE_EQUIPOS_CONOCIMIENTO = 12;
+$limiteEquiposAlcanzado = count($equiposConocimiento) >= LIMITE_EQUIPOS_CONOCIMIENTO;
 
 function seTraslapan(string $inicioA, string $finA, string $inicioB, string $finB): bool
 {
@@ -284,9 +328,22 @@ $errores = [
     'ya_inscrito' => 'Ya estabas inscrito ahí.',
     'evento_invalido' => 'Ese evento ya no está disponible.',
     'error_servidor' => 'Ocurrió un error al guardar tu inscripción. Intenta de nuevo.',
+    'nombre_equipo_invalido' => 'Ingresa un nombre de equipo válido.',
+    'integrantes_incompletos' => 'Debes capturar el número de cuenta de los 9 integrantes restantes (10 en total, contigo).',
+    'numero_cuenta_invalido' => 'Alguno de los números de cuenta capturados no tiene el formato correcto (8 caracteres).',
+    'integrante_duplicado' => 'Capturaste dos veces el mismo número de cuenta entre los integrantes.',
+    'integrante_no_encontrado' => 'Alguno de los números de cuenta capturados no corresponde a ningún alumno pre-registrado.',
+    'integrante_ya_en_equipo' => 'Alguno de los integrantes ya forma parte de otro equipo del Concurso del Conocimiento.',
+    'integrante_cruce_horario' => 'Alguno de los integrantes ya tiene otro evento inscrito en el horario del concurso (10:30–12:30).',
+    'ya_tienes_equipo' => 'Ya formas parte de un equipo del Concurso del Conocimiento.',
+    'equipo_limite_alcanzado' => 'El Concurso del Conocimiento ya alcanzó su límite de 12 equipos.',
 ];
 $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
-$mensajeExito = ($_GET['msg'] ?? '') === 'inscrito' ? '¡Inscripción guardada!' : null;
+$mensajesExito = [
+    'inscrito' => '¡Inscripción guardada!',
+    'equipo_creado' => '¡Equipo del Concurso del Conocimiento registrado!',
+];
+$mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -347,25 +404,165 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'inscrito' ? '¡Inscripción guardada!'
         <?php if (!empty($bloque['competiciones']) || $eventosDestacados !== []): ?>
         <div class="mb-3 grid grid-cols-1 gap-3">
             <?php foreach ($bloque['competiciones'] ?? [] as $competicion):
-                $yaInscrito = in_array((int) $competicion['id'], $idsCompeticionesInscrito, true);
+                $idCompeticion = (int) $competicion['id'];
+                $yaInscrito = in_array($idCompeticion, $idsCompeticionesInscrito, true);
+                $bloqueado = !$yaInscrito && bloqueadoPorOtraInscripcion($rangosOcupados, $competicion['hora_inicio'], $competicion['hora_fin']);
             ?>
-            <div class="flex items-center justify-between gap-3 rounded-xl border-2 <?= $yaInscrito ? 'border-slate-900 bg-slate-900 text-white' : 'border-dashed border-slate-300 bg-white/60 text-slate-500' ?> p-4">
+            <div class="flex flex-col gap-3 rounded-xl border-2 <?= $yaInscrito ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white/60 text-slate-500' ?> p-4 sm:flex-row sm:items-center sm:justify-between">
                 <span class="flex items-center gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg <?= $yaInscrito ? 'bg-white/20' : 'bg-slate-200' ?>"><?= icono('trofeo', 'h-5 w-5 shrink-0') ?></span>
                     <span>
                         <span class="block font-semibold">Competición · <?= htmlspecialchars($competicion['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
                         <span class="block text-xs <?= $yaInscrito ? 'text-slate-300' : 'text-slate-400' ?>">
-                            <?= $yaInscrito ? 'Ya eres parte de un equipo' : 'Inscripción de equipos — próximamente' ?>
+                            <?php if ($yaInscrito): ?>
+                                Ya eres parte de un equipo
+                            <?php elseif ($bloqueado): ?>
+                                Ya elegiste un taller en este horario
+                            <?php elseif ($limiteEquiposAlcanzado): ?>
+                                Cupo de equipos completo (<?= LIMITE_EQUIPOS_CONOCIMIENTO ?>/<?= LIMITE_EQUIPOS_CONOCIMIENTO ?>)
+                            <?php else: ?>
+                                Equipos de 10 alumnos — tú serías el capitán (<?= count($equiposConocimiento) ?>/<?= LIMITE_EQUIPOS_CONOCIMIENTO ?> equipos)
+                            <?php endif; ?>
                         </span>
                     </span>
                 </span>
-                <?php if ($yaInscrito): ?>
-                <?= icono('verificado', 'h-5 w-5 shrink-0') ?>
-                <?php else: ?>
-                <?= icono('candado', 'h-5 w-5 shrink-0 text-slate-300') ?>
-                <?php endif; ?>
+                <span class="flex shrink-0 flex-wrap items-center gap-2">
+                    <?php if ($equiposConocimiento !== []): ?>
+                    <button type="button" data-abrir-modal="equipos-conocimiento"
+                            class="flex items-center gap-1 rounded-lg border <?= $yaInscrito ? 'border-white/20' : 'border-slate-200' ?> px-3 py-2 text-xs font-medium cursor-pointer">
+                        <?= icono('cupo', 'h-3.5 w-3.5 shrink-0') ?>
+                        Ver equipos (<?= count($equiposConocimiento) ?>)
+                    </button>
+                    <?php endif; ?>
+                    <?php if ($yaInscrito): ?>
+                    <?= icono('verificado', 'h-5 w-5 shrink-0') ?>
+                    <?php elseif ($bloqueado || $limiteEquiposAlcanzado): ?>
+                    <?= icono('candado', 'h-5 w-5 shrink-0 text-slate-300') ?>
+                    <?php else: ?>
+                    <button type="button" data-abrir-modal="formar-equipo-conocimiento"
+                            class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                        <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
+                        Formar equipo
+                    </button>
+                    <?php endif; ?>
+                </span>
             </div>
             <?php endforeach; ?>
+
+            <?php if ($equiposConocimiento !== []): ?>
+            <dialog id="equipos-conocimiento" class="m-auto w-[90%] max-w-2xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+                <div class="max-h-[85vh] overflow-y-auto p-5">
+                    <h3 class="text-base font-semibold">Equipos del Concurso del Conocimiento</h3>
+                    <p class="mb-3 text-xs text-slate-500">
+                        <?= count($equiposConocimiento) ?>/<?= LIMITE_EQUIPOS_CONOCIMIENTO ?> equipos registrados
+                    </p>
+                    <div class="flex flex-col gap-3">
+                        <?php foreach ($equiposConocimiento as $indice => $equipo): ?>
+                        <div class="rounded-lg border border-slate-200">
+                            <div class="flex flex-wrap items-center justify-between gap-2 rounded-t-lg bg-slate-50 px-3 py-2">
+                                <span class="text-xs font-semibold">
+                                    #<?= $indice + 1 ?> · <?= htmlspecialchars($equipo['nombre'], ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                                <span class="text-[11px] text-slate-500">
+                                    Capitán: <?= htmlspecialchars($equipo['capitan'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($equipo['capitan_cuenta'], ENT_QUOTES, 'UTF-8') ?>)
+                                    · <?= (int) $equipo['total_integrantes'] ?>/10
+                                    · <?= date('d/m/Y H:i', strtotime((string) $equipo['fecha_registro'])) ?>
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-x-3 gap-y-1 p-3 text-xs sm:grid-cols-3">
+                                <?php foreach ($integrantesPorEquipoConocimiento[(int) $equipo['id']] ?? [] as $integrante): ?>
+                                <span class="truncate text-slate-600">
+                                    <?= htmlspecialchars($integrante['nombre_completo'], ENT_QUOTES, 'UTF-8') ?>
+                                    <span class="text-slate-400"><?= htmlspecialchars($integrante['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?></span>
+                                </span>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <form method="dialog" class="mt-4">
+                        <button type="submit" class="w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Cerrar</button>
+                    </form>
+                </div>
+            </dialog>
+            <?php endif; ?>
+
+            <?php if ($competicionConocimiento !== false && !$limiteEquiposAlcanzado
+                       && !in_array((int) $competicionConocimiento['id'], $idsCompeticionesInscrito, true)
+                       && !bloqueadoPorOtraInscripcion($rangosOcupados, $competicionConocimiento['hora_inicio'], $competicionConocimiento['hora_fin'])): ?>
+            <dialog id="formar-equipo-conocimiento" class="m-auto w-[92%] max-w-xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+                <div class="max-h-[85vh] overflow-y-auto p-5">
+                    <h3 class="mb-1 text-base font-semibold">Formar equipo — Concurso del Conocimiento</h3>
+                    <p class="mb-4 text-xs text-slate-500">
+                        Un equipo son <strong>exactamente 10 alumnos</strong>. Tú quedas registrado como capitán;
+                        busca a los otros 9 por número de cuenta. Ninguno puede tener ya un taller de este
+                        horario (10:30–12:30) ni pertenecer a otro equipo del concurso.
+                    </p>
+                    <form action="/inscripciones/includes/crear-equipo-conocimiento.php" method="post" data-equipo-form novalidate>
+                        <div class="mb-3">
+                            <label for="nombre_equipo" class="mb-1 block text-xs font-medium">Nombre del equipo</label>
+                            <input type="text" id="nombre_equipo" name="nombre_equipo" required maxlength="150"
+                                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none">
+                        </div>
+
+                        <div class="mb-3 flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
+                            <?= icono('verificado', 'h-3.5 w-3.5 shrink-0') ?>
+                            Capitán: <strong><?= htmlspecialchars($alumno['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></strong> (tú)
+                        </div>
+
+                        <div data-equipo-builder
+                             data-contexto="conocimiento"
+                             data-max-integrantes="9"
+                             data-requiere-exactos="true"
+                             data-capitan-cuenta="<?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?>">
+
+                            <div class="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <label class="mb-1.5 block text-xs font-medium text-slate-700">Buscar integrante por número de cuenta</label>
+                                <div class="flex gap-2">
+                                    <div class="relative flex-1">
+                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('credencial', 'h-4 w-4') ?></span>
+                                        <input type="text" data-buscar-cuenta maxlength="8" minlength="8" pattern="[A-Za-z0-9]{8}"
+                                               placeholder="XXXXXXXX" autocapitalize="characters"
+                                               class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-center text-sm uppercase focus:border-slate-500 focus:outline-none">
+                                    </div>
+                                    <button type="button" data-buscar-boton
+                                            class="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                                        Buscar
+                                    </button>
+                                </div>
+                                <div data-resultado-busqueda hidden class="mt-3"></div>
+                            </div>
+
+                            <div class="rounded-lg border border-slate-200 p-3">
+                                <div class="mb-2 flex items-center justify-between">
+                                    <label class="block text-xs font-medium text-slate-700">Integrantes agregados</label>
+                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600" data-contador-integrantes>0/9</span>
+                                </div>
+                                <div data-grid-integrantes class="grid grid-cols-3 gap-2"></div>
+                                <p class="mt-2 text-xs text-red-600" data-error-integrantes hidden></p>
+                            </div>
+                            <div data-campos-ocultos></div>
+                        </div>
+
+                        <p class="mb-4 text-xs text-slate-500">
+                            Una vez guardado, este equipo <strong>ya no se podrá deshacer ni modificar</strong> desde aquí.
+                        </p>
+
+                        <div class="flex gap-2">
+                            <button type="button" data-cerrar-modal="formar-equipo-conocimiento"
+                                    class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+                                Cancelar
+                            </button>
+                            <button type="submit" data-equipo-submit
+                                    class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40">
+                                <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
+                                Registrar equipo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+            <?php endif; ?>
 
             <?php foreach ($eventosDestacados as $evento):
                 $idEvento = (int) $evento['id'];

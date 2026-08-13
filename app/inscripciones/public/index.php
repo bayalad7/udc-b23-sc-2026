@@ -21,7 +21,7 @@ if (alumnoIdentificadoId() === null && isset($_GET['numero_cuenta'])) {
 $errores = [
     'numero_cuenta_invalido' => 'Número de cuenta inválido — deben ser 8 caracteres.',
     'correo_invalido' => 'Ingresa un correo válido.',
-    'no_encontrado' => 'No encontramos a nadie con ese número de cuenta y correo juntos. Verifica que ya hayas completado tu pre-registro.',
+    'no_encontrado' => 'No encontramos a nadie con ese número de cuenta y correo juntos. Verifica que ya hayas completado tu registro.',
 ];
 $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 
@@ -48,17 +48,17 @@ $dias = [
         'valor' => 'cultural',
         'icono' => 'cultural',
         'label' => 'Día Cultural',
-        'descripcion' => 'Talleres y Escenario de Talentos.',
-        'href' => '#',
-        'disponible' => false,
+        'descripcion' => 'Escenario de Talentos "Expresa tu esencia".',
+        'href' => '/inscripciones/public/cultural.php',
+        'disponible' => true,
     ],
     [
         'valor' => 'deportivo',
         'icono' => 'trofeo',
         'label' => 'Día Deportivo',
         'descripcion' => 'Torneos deportivos.',
-        'href' => '#',
-        'disponible' => false,
+        'href' => '/inscripciones/public/deportivo.php',
+        'disponible' => true,
     ],
 ];
 ?>
@@ -67,7 +67,7 @@ $dias = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inscripciones — Semana Cultural B23</title>
+<title>Inscripciones — Semana Acádemica, Cultural y Deportiva B23</title>
 <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
@@ -96,7 +96,14 @@ $dias = [
             <span>Puedes consultar todo el catálogo libremente. Para inscribirte, identifícate primero con tu número de cuenta y correo institucional.</span>
         </div>
 
-        <?php $volverDestino = ($_GET['volver'] ?? '') === 'academico' ? '/inscripciones/public/academico.php' : '/inscripciones/public/index.php'; ?>
+        <?php
+        $destinosPorVolver = [
+            'academico' => '/inscripciones/public/academico.php',
+            'cultural' => '/inscripciones/public/cultural.php',
+            'deportivo' => '/inscripciones/public/deportivo.php',
+        ];
+        $volverDestino = $destinosPorVolver[$_GET['volver'] ?? ''] ?? '/inscripciones/public/index.php';
+        ?>
         <form action="/inscripciones/includes/identificar.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
             <input type="hidden" name="volver" value="<?= htmlspecialchars($volverDestino, ENT_QUOTES, 'UTF-8') ?>">
             <div>
@@ -125,6 +132,11 @@ $dias = [
                 Identificarme
             </button>
         </form>
+
+        <a href="/registro/public/index.php" class="mt-4 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+            <?= icono('credencial', 'h-3.5 w-3.5 shrink-0') ?>
+            ¿Aún no te registras? Regístrate aquí
+        </a>
 
     <?php else: ?>
 

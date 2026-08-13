@@ -40,6 +40,12 @@ const ICONOS_SVG = [
     'expandir' => '<path d="m6 9 6 6 6-6"/>',
     // lucide "mail"
     'correo' => '<path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/>',
+    // lucide "plus"
+    'agregar' => '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    // lucide "x"
+    'quitar' => '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    // lucide "shirt" (color de camisa, torneos deportivos)
+    'camisa' => '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23"/>',
 ];
 
 /** Devuelve el markup de un ícono SVG inline (Lucide). $clase son clases Tailwind (tamaño/color). */

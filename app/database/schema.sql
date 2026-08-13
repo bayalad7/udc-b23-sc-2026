@@ -1,4 +1,4 @@
--- Esquema de base de datos — Semana Cultural B23
+-- Esquema de base de datos — Semana Acádemica, Cultural y Deportiva B23
 -- Ver app/PROMPTS-DESARROLLO.md para el detalle de cada tabla y su prompt de origen.
 
 -- Configuración general de la app. Por ahora solo guarda la contraseña
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS sistema (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Configuración general de la app (hoy: solo la contraseña de acceso a app/asistencias). Una sola fila.';
 
--- Alumnos pre-registrados (app/registro) antes de la Semana Cultural. Es el
+-- Alumnos pre-registrados (app/registro) antes de la Semana Acádemica, Cultural y Deportiva. Es el
 -- padrón base del que cuelga todo lo demás: la credencial digital con QR que
 -- cada alumno presenta el día del evento codifica ÚNICAMENTE numero_cuenta,
 -- que es la llave con la que se busca aquí al escanear.
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS alumnos (
     foto_path               VARCHAR(255) NOT NULL
         COMMENT 'Ruta relativa dentro de app/registro/public/uploads/ — la foto no se guarda en la base de datos',
     tema_interes            TEXT NULL
-        COMMENT 'Texto libre del pre-registro: insumo para armar el catálogo final de ponencias/talleres en eventos, no una selección de catálogo',
+        COMMENT 'Texto libre del registro: insumo para armar el catálogo final de ponencias/talleres en eventos, no una selección de catálogo',
     token_descarga          CHAR(32) NOT NULL
         COMMENT 'Identificador aleatorio (no el numero_cuenta) usado en la URL de exito.php/recuperar.php para volver a descargar la credencial',
     credencial_path         VARCHAR(255) NULL
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS alumnos (
     fecha_envio_credencial  DATETIME NULL
         COMMENT 'Cuándo se envió la credencial por correo (Prompt 6) — NULL mientras no se ha enviado',
     fecha_registro          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        COMMENT 'Cuándo se completó el pre-registro',
+        COMMENT 'Cuándo se completó el registro',
     UNIQUE KEY uq_alumnos_numero_cuenta (numero_cuenta)
         COMMENT 'Un numero_cuenta no puede pre-registrarse dos veces',
     UNIQUE KEY uq_alumnos_token_descarga (token_descarga)
@@ -183,6 +183,35 @@ CREATE TABLE IF NOT EXISTS equipos (
     CONSTRAINT fk_equipos_alumno_capitan FOREIGN KEY (id_alumno_capitan) REFERENCES alumnos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Equipos de concursos y torneos (Concurso del Conocimiento, Concurso de Talentos, torneos deportivos).';
+
+-- Tope de 12 equipos para el Concurso del Conocimiento (regla de negocio
+-- nueva) — se controla a nivel de base de datos, no solo en la app, para que
+-- ninguna vía de inserción (la app, una carga manual, otro script) pueda
+-- rebasarlo por accidente. No se modela como columna/UNIQUE porque es un
+-- límite de CONTEO, no de unicidad — un trigger es la única forma de
+-- expresarlo en MariaDB. Se identifica la competición por dia/tipo en vez de
+-- un id fijo, porque el id real depende del orden de inserción de las
+-- semillas (ver seeds.sql) y puede variar entre entornos.
+DELIMITER $$
+CREATE TRIGGER trg_equipos_limite_conocimiento
+BEFORE INSERT ON equipos
+FOR EACH ROW
+BEGIN
+    DECLARE es_conocimiento TINYINT DEFAULT 0;
+    DECLARE total_equipos INT DEFAULT 0;
+
+    SELECT (dia = 'academico' AND tipo = 'concurso') INTO es_conocimiento
+    FROM competiciones WHERE id = NEW.id_competicion;
+
+    IF es_conocimiento = 1 THEN
+        SELECT COUNT(*) INTO total_equipos FROM equipos WHERE id_competicion = NEW.id_competicion;
+        IF total_equipos >= 12 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El Concurso del Conocimiento ya alcanzó su límite de 12 equipos.';
+        END IF;
+    END IF;
+END$$
+DELIMITER ;
 
 -- Integrantes de cada equipo: alumnos y padres/madres de familia, con su
 -- propio control de entrada/salida (el evento de cada equipo es un solo

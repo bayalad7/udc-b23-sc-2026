@@ -11,3 +11,19 @@ Require all denied
 <Files "inscribir.php">
     Require all granted
 </Files>
+
+<Files "crear-equipo-conocimiento.php">
+    Require all granted
+</Files>
+
+<Files "crear-acto-cultural.php">
+    Require all granted
+</Files>
+
+<Files "crear-equipo-deportivo.php">
+    Require all granted
+</Files>
+
+<Files "buscar-alumno.php">
+    Require all granted
+</Files>
