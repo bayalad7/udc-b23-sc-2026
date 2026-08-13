@@ -35,8 +35,8 @@ $puntoControl = (string) $_SESSION['punto_control'];
     <div class="mb-6 flex flex-col items-center text-center">
         <img src="/assets/img/logo/UdeC_2L%20izq%20Blanco.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
-        <h1 class="text-xl font-bold">Aniversario #45 · Semana Cultural</h1>
-        <h1 class="text-xl font-bold">Control de asistencia</h1>
+        <h1 class="text-xl font-bold">Aniversario #45</h1>
+        <h1 class="text-xl font-bold">Control de asistencias generales</h1>
     </div>
 
     <header class="mb-4 flex items-start justify-between gap-3">

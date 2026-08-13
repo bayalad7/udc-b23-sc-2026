@@ -1,0 +1,13 @@
+Require all denied
+
+<Files "identificar.php">
+    Require all granted
+</Files>
+
+<Files "salir.php">
+    Require all granted
+</Files>
+
+<Files "inscribir.php">
+    Require all granted
+</Files>

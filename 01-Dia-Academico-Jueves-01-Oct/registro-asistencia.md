@@ -7,11 +7,22 @@ Proceso de control de acceso y registro a talleres/ponencias mediante credencial
 1. **Pre-registro (antes del evento)**: el alumno llena un formulario de registro en la nube con sus datos y foto.
 2. **Credencial digital**: a partir del pre-registro se genera una credencial (imagen) que el alumno guarda/muestra desde su celular, con su foto, datos generales y un código QR.
 3. **Día del evento — escaneo de entrada (08:00–08:30)**: el escaneo lo opera el **maestro/staff** en el punto de control (no es autoservicio del alumno). El alumno presenta la credencial, el maestro escanea el QR con la app y el sistema marca su hora de entrada.
-4. **Asignación de ponencia/taller — dos vías posibles** (se dispara únicamente en el escaneo de entrada, el primero del día — ver [Control de entrada y salida](#control-de-entrada-y-salida)):
+4. **Asignación de ponencia/taller — dos vías posibles** (se dispara únicamente en el escaneo de entrada, el primero del día — ver [Control de entrada y salida](#control-de-entrada-y-salida)), respetando la exclusividad por franja horaria de la sección [Reglas de inscripción por franja horaria](#reglas-de-inscripción-por-franja-horaria):
    - **Registro previo**: si el alumno ya eligió su ponencia/taller de antemano con el encargado de organizar el evento académico (durante el periodo de clases, antes del 1 de octubre), el sistema ya tiene su lugar reservado — no vuelve a elegir el día del evento.
    - **Por orden de llegada (el día del evento)**: si no tiene un lugar reservado previamente, justo después del escaneo elige de inmediato, con cupo limitado y **por orden de llegada** (el que se registra primero tiene más opciones disponibles): la ponencia de las 9:00–10:00 y los talleres de las Sesión 1 y 2 (10:30–12:30).
-   - El **Concurso del Conocimiento** (Auditorio Principal, 10:30–12:30) queda **fuera de este mecanismo**: sus 12 equipos se organizan aparte, no por elección libre con cupo el día del evento.
+   - El **Concurso del Conocimiento** (Auditorio Principal, 10:30–12:30) queda **fuera de este mecanismo**: sus 12 equipos se organizan aparte, no por elección libre con cupo el día del evento. Pero sí cuenta para la exclusividad de la franja 10:30–12:30: un alumno que ya es integrante de un equipo del concurso no puede además tomar un taller en ese mismo horario, y viceversa.
 5. **Escaneo(s) de salida**: cualquier escaneo posterior al primero del día se registra como salida (ver detalle abajo). No vuelve a disparar la asignación de ponencia/taller del punto 4.
+
+## Reglas de inscripción por franja horaria
+
+El catálogo del Día Académico (ver semillas en [app/database/seeds.sql](../app/database/seeds.sql)) tiene dos franjas con actividades simultáneas, y en ambas el alumno elige **una sola opción**, nunca más de una:
+
+- **09:00–10:00** (4 ponencias: Auditorio Principal, Aula 1, Aula 2, Aula 3): un alumno solo puede inscribirse a **una** de las 4.
+- **10:30–12:30** (4 talleres — Aula 1, Aula 2, Aula 3, Explanada — **o** el Concurso del Conocimiento en el Auditorio Principal): un alumno solo puede inscribirse a **un** taller **o** participar en el concurso, nunca ambos ni más de un taller.
+
+Esto aplica igual a las dos vías de asignación del punto 4 de arriba (registro previo y orden de llegada): el encargado no debe reservar a un alumno en dos ponencias de las 9:00, ni en un taller y el concurso a la vez; y la app de orden de llegada debe descartar del catálogo las opciones ya no disponibles para ese alumno en esa franja (incluido ocultar los talleres 10:30–12:30 si el alumno ya es integrante de un equipo del Concurso del Conocimiento).
+
+> **Nota de esquema**: `eventos` y `competiciones` tienen columnas `hora_inicio`/`hora_fin` (ver `schema.sql`) precisamente para esto: antes de guardar una inscripción o una membresía de equipo, la app valida que no exista ya, para ese alumno y ese día, otra fila (en `inscripciones` o en `equipos`/`integrantes`) cuyo horario se traslape. Físicamente el alumno no puede estar en dos lugares a la vez, así que dos filas con horario traslapado el mismo día es siempre un error, sin importar si son dos ponencias, un taller y el concurso, o cualquier otra combinación de `eventos`/`competiciones`. **Excepción**: el Día Deportivo NO aplica esta validación entre sus 3 torneos — ahí se permite deliberadamente que un alumno se inscriba a más de uno aunque compartan la misma ventana horaria (ver [Reglas de inscripción a más de un torneo](../03-Dia-Deportivo-Sabado-03-Oct/torneos-deportivos.md#reglas-de-inscripción-a-más-de-un-torneo)).
 
 ## Control de entrada y salida
 

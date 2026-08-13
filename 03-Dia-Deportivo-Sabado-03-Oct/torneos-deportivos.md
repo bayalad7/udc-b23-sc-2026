@@ -10,6 +10,14 @@ Eje del evento: **convivencia familiar**, no solo competencia — se invita expl
 - Un integrante funge como **capitán** (puede ser alumno o padre) — es el responsable de la inscripción y el punto de contacto del equipo.
 - Pendiente definir una proporción mínima de padres por equipo (por ejemplo "al menos 3 de los 10"), para que la mezcla sea real y no un equipo de alumnos con un padre simbólico. Sin una regla mínima, el requisito de "mezclar" es difícil de exigir en el formulario.
 
+## Reglas de inscripción a más de un torneo
+
+No hay restricción en el sistema para que un alumno (o un padre/madre) forme parte de equipos de **más de uno de los 3 torneos** a la vez — a diferencia del Día Académico (ver [Reglas de inscripción por franja horaria](../01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md#reglas-de-inscripción-por-franja-horaria)), aquí la inscripción no valida cruces de horario entre torneos.
+
+Como los 3 torneos corren en paralelo desde las 07:30 (ver [matriz de itinerario](itinerario-matriz.md)) y cada uno arma sus llaves de forma independiente el 2 de octubre, es posible que a una misma persona le toquen partidos de dos deportes distintos al mismo tiempo. En ese caso, **la persona decide en cuál participar** — el sistema no arbitra el conflicto ni reprograma partidos.
+
+> Pendiente por definir: qué pasa con el equipo/partido que la persona no puede atender por el cruce (¿juega el resto del equipo sin ella, cuenta como falta individual, o el equipo pierde el partido por default si es una posición clave como el capitán?). No confundir con el pendiente ya existente de "bye" por número de equipos no potencia de 2 (ver [Pendientes por definir](#pendientes-por-definir) abajo).
+
 ## Inscripción de equipos (antes del evento)
 
 - Se realiza **previamente por la aplicación**, con **fecha límite: martes 30 de septiembre de 2026** (mismo criterio de "día previo al cierre" que usa el pre-registro del Día Académico).
@@ -19,7 +27,7 @@ Eje del evento: **convivencia familiar**, no solo competencia — se invita expl
 
 | Campo | Detalle |
 |---|---|
-| Torneo/deporte | Selección única: Fútbol Rápido, Voleibol o Quemados. Un mismo grupo de personas puede inscribir equipos distintos en más de un deporte si así lo desea — no hay restricción entre torneos. |
+| Torneo/deporte | Selección única: Fútbol Rápido, Voleibol o Quemados. Un mismo grupo de personas puede inscribir equipos distintos en más de un deporte si así lo desea — no hay restricción entre torneos (ver [Reglas de inscripción a más de un torneo](#reglas-de-inscripción-a-más-de-un-torneo)). |
 | Nombre del equipo | Texto libre. |
 | Color de camisa | Selección de un catálogo cerrado de colores (para que el staff y los árbitros distingan equipos a simple vista). El sistema oculta/deshabilita los colores que ya haya tomado otro equipo **del mismo deporte** — no hace falta que sea único entre deportes distintos, porque no comparten cancha ni llave. |
 | Capitán | Nombre completo, teléfono y correo de contacto. Si el capitán es alumno, se captura también su número de cuenta (para cruzarlo contra el padrón, igual que en el registro del Día Académico); si es padre de familia, no aplica número de cuenta. |
@@ -71,6 +79,7 @@ La entrega de premios de 1° y 2° lugar de los 3 torneos es a cargo del **Direc
 
 ## Pendientes por definir
 
+- [ ] Qué pasa cuando a una misma persona le tocan partidos de 2 torneos al mismo tiempo y elige atender solo uno (ver [Reglas de inscripción a más de un torneo](#reglas-de-inscripción-a-más-de-un-torneo)).
 - [ ] Ubicación del/de los punto(s) de control de salida y si es obligatorio escanear al retirarse.
 - [ ] Proporción mínima de padres por equipo (regla de "mezcla" concreta) — afecta la validación del formulario de inscripción ([app/PROMPTS-DESARROLLO.md](../app/PROMPTS-DESARROLLO.md), Prompt 13).
 - [ ] Puntos por set y desempate en Voleibol.

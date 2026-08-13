@@ -57,16 +57,22 @@ CREATE TABLE IF NOT EXISTS alumnos (
 -- Catálogo de eventos individuales (a los que un alumno se inscribe uno por
 -- uno, sin equipo): ponencias y talleres del Día Académico o del Día
 -- Cultural. Lo que se organiza POR EQUIPO (concursos, torneos) NO va aquí:
--- ver equipos/integrantes más abajo. Sin columna de sesión/franja horaria:
--- el sistema no valida cruces de horario entre eventos — es responsabilidad
--- de quien arma el catálogo.
+-- ver equipos/integrantes más abajo. hora_inicio/hora_fin permiten validar
+-- cruces de horario en la app (un alumno no puede estar físicamente en dos
+-- eventos, o en un evento y una competición, que se traslapen el mismo
+-- día — ver "Reglas de inscripción por franja horaria" en
+-- 01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md).
 CREATE TABLE IF NOT EXISTS eventos (
     id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
         COMMENT 'Identificador interno — referenciado por inscripciones.id_evento',
     dia               ENUM('academico','cultural') NOT NULL
         COMMENT 'En qué día ocurre este evento — el Día Deportivo no tiene eventos individuales, solo equipos',
     tipo              ENUM('ponencia','taller') NOT NULL
-        COMMENT '"ponencia" (bloque único 9:00-10:00) o "taller" (Sesión 1 o Sesión 2, 10:30-12:30)',
+        COMMENT '"ponencia" o "taller" — el horario real de cada uno vive en hora_inicio/hora_fin, no está fijo por tipo',
+    hora_inicio       TIME NOT NULL
+        COMMENT 'Hora de inicio, mismo día que dia — usada para detectar cruces de horario contra otros eventos/competiciones del alumno',
+    hora_fin          TIME NOT NULL
+        COMMENT 'Hora de fin — ver CHECK chk_eventos_horario',
     facilitador       VARCHAR(150) NOT NULL
         COMMENT 'Quién imparte la ponencia/taller',
     nombre            VARCHAR(150) NOT NULL
@@ -80,7 +86,8 @@ CREATE TABLE IF NOT EXISTS eventos (
     cupo_disponible   SMALLINT UNSIGNED NOT NULL
         COMMENT 'Se descuenta al inscribir (ver inscripciones) — controla el cupo en tiempo real',
     responsable       VARCHAR(150) NOT NULL
-        COMMENT 'Staff/maestro responsable del evento (distinto del facilitador si aplica)'
+        COMMENT 'Staff/maestro responsable del evento (distinto del facilitador si aplica)',
+    CONSTRAINT chk_eventos_horario CHECK ( hora_fin > hora_inicio )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Catálogo de ponencias y talleres individuales (Día Académico/Cultural) — no incluye lo organizado por equipo.';
 
@@ -121,21 +128,47 @@ CREATE TABLE IF NOT EXISTS inscripciones (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='A qué evento está inscrito cada alumno, con su propio control de entrada/salida A ESE evento.';
 
+-- Semillas de qué competiciones existen (Concurso del Conocimiento, Concurso
+-- de Talentos, y los 3 torneos deportivos) — equipos.id_competicion apunta
+-- aquí en vez de repetir dia/tipo en cada equipo. hora_inicio/hora_fin
+-- permiten validar cruces de horario contra eventos (ver misma nota en la
+-- tabla eventos) — EXCEPTO para el Día Deportivo, donde por regla de
+-- negocio SÍ se permite inscribirse a más de un torneo aunque se traslapen
+-- (ver "Reglas de inscripción a más de un torneo" en
+-- 03-Dia-Deportivo-Sabado-03-Oct/torneos-deportivos.md): esa exclusión se
+-- aplica en la app, no aquí, para no bloquear una inscripción que sí es
+-- válida.
+CREATE TABLE IF NOT EXISTS competiciones (
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+        COMMENT 'Identificador interno — referenciado por equipos.id_competicion',
+    dia               ENUM('academico','cultural','deportivo') NOT NULL
+        COMMENT 'Académico = Concurso del Conocimiento, Cultural = Concurso de Talentos, Deportivo = torneos',
+    tipo              ENUM('concurso','torneo') NOT NULL
+        COMMENT '"concurso" cubre tanto el Concurso del Conocimiento como el de Talentos — se distinguen entre sí por nombre',
+    hora_inicio       TIME NOT NULL
+        COMMENT 'Hora de inicio, mismo día que dia — para Deportivo es la ventana completa del torneo (07:30-11:30), no el horario de un partido específico',
+    hora_fin          TIME NOT NULL
+        COMMENT 'Hora de fin — ver CHECK chk_competiciones_horario',
+    nombre            VARCHAR(150) NOT NULL
+        COMMENT 'Nombre de la competición (ej. "Concurso del Conocimiento", "Torneo de Voleibol")',
+    fecha_limite      DATETIME NOT NULL
+        COMMENT 'Fecha límite de inscripción a esta competición',
+    fecha_registro    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        COMMENT 'Cuándo se registró la competición',
+    CONSTRAINT chk_competiciones_horario CHECK ( hora_fin > hora_inicio )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Concursos y torneos (Concurso del Conocimiento, Concurso de Talentos, torneos deportivos) — semillas de las que cuelgan los equipos.';
+
 -- Equipos de todo lo que se organiza POR EQUIPO en vez de individualmente
--- por alumno: Concurso del Conocimiento (Día Académico), Concurso de
--- Talentos (Día Cultural) y los 3 torneos deportivos — Fútbol Rápido,
--- Voleibol, Quemados — (Día Deportivo). Por eso tiene columna `dia`: a
--- diferencia de eventos, aquí si aplica a los 3 días. Viven aparte de
--- eventos/inscripciones porque estos equipos mezclan alumnos con padres y
--- madres de familia (ver integrantes), cosa que una ponencia/taller
--- individual no necesita.
+-- por alumno: cada equipo pertenece a una competición (ver competiciones,
+-- que ya trae dia/tipo). Viven aparte de eventos/inscripciones porque estos
+-- equipos mezclan alumnos con padres y madres de familia (ver integrantes),
+-- cosa que una ponencia/taller individual no necesita.
 CREATE TABLE IF NOT EXISTS equipos (
     id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
         COMMENT 'Identificador interno — referenciado por integrantes.id_equipo',
-    dia               ENUM('academico','cultural','deportivo') NOT NULL
-        COMMENT 'Académico = Concurso del Conocimiento, Cultural = Concurso de Talentos, Deportivo = torneos',
-    tipo              ENUM('concurso','futbol_rapido','voleibol','quemados') NOT NULL
-        COMMENT '"concurso" cubre tanto el Concurso del Conocimiento como el de Talentos — se distinguen por la columna dia',
+    id_competicion    INT UNSIGNED NOT NULL
+        COMMENT 'Competición en la que participa el equipo (ver competiciones — de ahí sale el dia/tipo)',
     nombre            VARCHAR(150) NOT NULL
         COMMENT 'Nombre del equipo, elegido al inscribirse',
     id_alumno_capitan INT UNSIGNED NOT NULL
@@ -144,8 +177,9 @@ CREATE TABLE IF NOT EXISTS equipos (
         COMMENT 'Solo aplica a los torneos deportivos, para que staff/árbitros distingan equipos a simple vista — NULL en concursos',
     fecha_registro    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'Cuándo se inscribió el equipo',
-    UNIQUE KEY uq_equipos_color (dia, tipo, color_camisa)
-        COMMENT 'Un color de camisa no se repite dentro del mismo tipo de equipo del mismo día',
+    UNIQUE KEY uq_equipos_color (id_competicion, color_camisa)
+        COMMENT 'Un color de camisa no se repite dentro de la misma competición',
+    CONSTRAINT fk_equipos_competicion FOREIGN KEY (id_competicion) REFERENCES competiciones(id),
     CONSTRAINT fk_equipos_alumno_capitan FOREIGN KEY (id_alumno_capitan) REFERENCES alumnos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Equipos de concursos y torneos (Concurso del Conocimiento, Concurso de Talentos, torneos deportivos).';

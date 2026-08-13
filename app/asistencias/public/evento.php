@@ -33,11 +33,10 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
     <div class="mb-6 flex flex-col items-center text-center">
         <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
-        <h1 class="text-xl font-bold">Aniversario #45 · Semana Cultural</h1>
-        <h1 class="text-xl font-bold">Control de asistencia</h1>
-        <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
-            Solo para maestros/staff en el punto de control — no compartas esta página.
-        </p>
+        <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
+        <p>&nbsp;</p>
+        <p class="text-sm text-slate-600"><strong>Control de asistencias generales: </strong>Solo para maestros/staff en el punto de control, para escanear el QR de los estudiantes en su hora de llegada y salida para cada día en general.</p>
+        <p class="mt-1 text-sm text-slate-600">Aniversario #45</p>
     </div>
 
     <?php if ($mensajeError): ?>

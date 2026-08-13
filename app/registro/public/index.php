@@ -27,8 +27,10 @@ $mensajeError = $errores[$codigoError] ?? null;
     <div class="mb-6 flex flex-col items-center text-center">
         <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
-        <h1 class="text-xl font-bold">Aniversario #45 · Semana Cultural</h1>
-        <p class="text-sm text-slate-600">Registro de estudiantes para la generación de tu credencial digital.</p>
+        <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
+        <p>&nbsp;</p>
+        <p class="text-sm text-slate-600"><strong>Registro de estudiantes:</strong> Generación de la credencial digital.</p>
+        <p class="mt-1 text-sm text-slate-600">Aniversario #45</p>
     </div>
 
     <?php if ($mensajeError): ?>

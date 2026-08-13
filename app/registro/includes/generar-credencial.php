@@ -56,8 +56,8 @@ function generarCredencial(PDO $pdo, string $numeroCuenta, string $token): void
 
     // --- Título ----------------------------------------------------------
     $y = dibujarTextoCentrado($lienzo, 'Bachillerato 23', CREDENCIAL_FUENTE_NEGRITA, 34, $negro, $y);
-    $y = dibujarTextoCentrado($lienzo, 'Aniversario #45 · Semana Cultural', CREDENCIAL_FUENTE_NEGRITA, 34, $negro, $y + 12);
-    $y = dibujarTextoCentrado($lienzo, 'Credencial Digital', CREDENCIAL_FUENTE_REGULAR, 26, $gris, $y + 12);
+    $y = dibujarTextoCentrado($lienzo, 'Aniversario #45', CREDENCIAL_FUENTE_NEGRITA, 34, $negro, $y + 12);
+    $y = dibujarTextoCentrado($lienzo, 'Semana Académica, Cultural y Deportiva', CREDENCIAL_FUENTE_REGULAR, 26, $gris, $y + 12);
 
     $y += 40;
     imagefilledrectangle($lienzo, $margen, $y, CREDENCIAL_ANCHO - $margen, $y + 2, $bordeClaro);
@@ -78,7 +78,7 @@ function generarCredencial(PDO $pdo, string $numeroCuenta, string $token): void
     $y = dibujarTextoCentrado($lienzo, $alumno['grado'] . '° ' . $alumno['grupo'], CREDENCIAL_FUENTE_REGULAR, 28, $gris, $y + 16);
     $y = dibujarTextoCentrado($lienzo, $numeroCuenta, CREDENCIAL_FUENTE_REGULAR, 26, $gris, $y + 10);
 
-    $y += 40;
+    $y += 20;
 
     // --- Código QR (codifica únicamente el número de cuenta) --------------
     $archivoQrTemporal = sys_get_temp_dir() . '/qr_' . $numeroCuenta . '.png';
@@ -90,8 +90,10 @@ function generarCredencial(PDO $pdo, string $numeroCuenta, string $token): void
     imagedestroy($qr);
     unlink($archivoQrTemporal);
 
-    $y += $ladoQr + 30;
-    dibujarTextoCentrado($lienzo, 'Presenta este código QR el día de los eventos', CREDENCIAL_FUENTE_REGULAR, 22, $gris, $y);
+    $y += $ladoQr + 20;
+
+    dibujarTextoCentrado($lienzo, 'Credencial Digital', CREDENCIAL_FUENTE_REGULAR, 26, $gris, $y);
+    dibujarTextoCentrado($lienzo, 'Presenta este código QR el día de los eventos', CREDENCIAL_FUENTE_REGULAR, 22, $gris, $y + 50);
 
     // --- Pie de página -------------------------------------------------
     dibujarTextoCentrado($lienzo, 'Universidad de Colima · Bachillerato 23', CREDENCIAL_FUENTE_REGULAR, 20, $gris, CREDENCIAL_ALTO - 70);

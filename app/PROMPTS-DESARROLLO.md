@@ -70,7 +70,7 @@ pregúntame en vez de asumir.
 - [x] **Módulo de escaneo de asistencia — unificado para los 3 días**: en vez de duplicar la app de escaneo dentro de `app/registro/` (Día Académico) y `app/torneos/` (Día Deportivo), vive en una carpeta propia `app/asistencias/` (ver Prompt 7 revisado más abajo), con un único `escaneo.php` parametrizado por `evento` (`academico` | `cultural` | `deportivo`). Motivo: el control de entrada/salida es la misma lógica los 3 días (ver [Control de entrada y salida](../01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md#control-de-entrada-y-salida)). `app/registro/` y `app/torneos/` mantienen el pre-registro/inscripción de equipo, pero ya no incluyen su propio `escaneo.php`.
 - [x] **`asistencias_generales` (entrada/salida del día) es una tabla aparte de "a qué asiste"** — son dos conceptos distintos y no deben mezclarse: (a) **asistencia general**: ¿ya entró/salió del plantel/evento ese día?, solo alumnos (`id_alumno` FK a `alumnos`, `dia` ENUM `'academico'|'cultural'|'deportivo'`); y (b) **participación/asistencia específica a cada evento o equipo**, que ya trae su propio control de entrada/salida en la MISMA fila: `inscripciones` (ponencias y talleres, individuales por alumno) y `equipos`/`integrantes` (concursos y torneos por equipo — ver siguiente punto). Así un alumno puede tener, el mismo día, una fila en `asistencias_generales` (¿llegó al plantel?) MÁS una fila en `inscripciones` por cada evento al que está inscrito (¿llegó a ESE taller/ponencia?) — "todas las combinaciones posibles".
 - [x] **`equipos`/`integrantes` cubre TODO lo que es por equipo, no solo el Día Deportivo**: Concurso del Conocimiento (Día Académico), Concurso de Talentos (Día Cultural) y los 3 torneos deportivos (Día Deportivo) — de ahí que `equipos` tenga columna `dia`. `eventos`/`inscripciones`, en cambio, es solo para lo individual por alumno (ponencias y talleres). Un integrante (alumno, padre o madre) tiene su propio `hora_entrada`/`hora_salida` directo en `integrantes` (nace en NULL desde que se inscribió el equipo, antes del evento) — el escaneo el día del evento actualiza esa misma fila, nunca inserta una nueva. `id_alumno` en `integrantes` es siempre el alumno de la familia (el "ancla" del equipo), nunca un id propio de padre/madre: si el alumno X participa junto con su papá y su mamá, son 3 filas — `(equipo, X, 'alumno')`, `(equipo, X, 'padre')`, `(equipo, X, 'madre')` — y en las de tipo padre/madre, la columna `nombre` es el nombre de esa persona, no el del alumno.
-- [x] **`eventos`/`inscripciones` no validan cruces de horario**: no hay columna de sesión/franja horaria — un alumno puede inscribirse a cuantos eventos quiera sin que el sistema valide que no se crucen en el mismo horario. Es responsabilidad de quien arma el catálogo de eventos evitar que se crucen.
+- [x] **`eventos` y `competiciones` tienen `hora_inicio`/`hora_fin` para validar cruces de horario de forma genérica** (ver [Reglas de inscripción por franja horaria](../01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md#reglas-de-inscripción-por-franja-horaria)): antes de guardar una inscripción o una membresía de equipo, `app/inscripciones` (y el flujo de inscripción de equipos) valida que, para ese alumno y ese día, no exista ya otra fila en `inscripciones` o en `equipos`/`integrantes` con horario traslapado — sin importar si son dos ponencias, un taller y el Concurso del Conocimiento, o cualquier otra combinación. **Excepción explícita: el Día Deportivo NO aplica esta validación entre sus 3 torneos** (los tres comparten la ventana 07:30–11:30 a propósito en las semillas — ver `app/database/seeds.sql` — y por regla de negocio sí se permite inscribirse a más de uno, ver [Reglas de inscripción a más de un torneo](../03-Dia-Deportivo-Sabado-03-Oct/torneos-deportivos.md#reglas-de-inscripción-a-más-de-un-torneo)). Es responsabilidad de quien arma el catálogo de eventos que `hora_inicio`/`hora_fin` reflejen el horario real de cada uno.
 - [x] **Día Cultural reutiliza alumnos y credencial del Día Académico**: no hay un registro/credencial aparte para el Día Cultural — es el mismo alumno con el mismo QR (mismo `numero_cuenta`). Lo único que cambia es que se genera una fila nueva en `asistencias_generales` por día (columna `dia`, ver esquema), porque la entrada/salida sí es independiente por día.
 - [x] **Protección de acceso a `app/asistencias` (para que el alumnado no la descubra ni la use)**: no es una URL secreta ni HTTP Basic Auth — es una contraseña compartida guardada (hasheada con `password_hash`) en la tabla `sistema` (una sola fila, columna `clave_acceso`). `evento.php` la pide antes de mostrar cualquier otra cosa; al acertarla marca la sesión del turno como autorizada (ver `app/asistencias/includes/sesion.php` y `verificar-clave.php`). Se cambia actualizando esa fila (por ejemplo desde Adminer en desarrollo) — no requiere tocar `.htaccess` ni redesplegar.
 
@@ -78,8 +78,7 @@ pregúntame en vez de asumir.
 
 ## Pendientes menores (no bloquean empezar a programar)
 
-- [ ] **`equipos` tiene un error de sintaxis SQL**: la columna se llama `id_alumno_capitan`, pero `CONSTRAINT fk_equipos_alumno_capitan FOREIGN KEY (id_alumno) REFERENCES alumnos(id)` referencia `id_alumno`, que no existe en esa tabla — el `CREATE TABLE` fallaría tal cual está. Hace falta cambiar esa línea a `FOREIGN KEY (id_alumno_capitan)` antes de poder levantar el esquema completo.
-- [ ] Dominio/subdominio donde vivirá la app en el VPS (ej. `registro.b23.mx` o similar) — solo afecta configuración final de despliegue, no el código.
+ [ ] Dominio/subdominio donde vivirá la app en el VPS (ej. `registro.b23.mx` o similar) — solo afecta configuración final de despliegue, no el código.
 - [ ] Credenciales SMTP a usar en PHPMailer para el envío de credenciales: ¿se envía desde una cuenta de correo institucional (ucol.mx) o desde el dominio/correo del VPS/empresa? Definir antes del Prompt 6.
 - [ ] Confirmar que el VPS tenga acceso HTTPS (certificado SSL) antes del evento — necesario porque los navegadores solo permiten acceso a la cámara (para leer el QR) en páginas servidas por HTTPS.
 - [ ] El binario del Tailwind CLI standalone solo hace falta en el entorno donde se compile el CSS (máquina de quien programa, o un paso de CI) — no se instala en el VPS de producción, ahí solo se sube el `.css` ya compilado.
@@ -107,9 +106,11 @@ Tablas necesarias:
   autoservicio.
 - eventos: catálogo de ponencias y talleres, individuales por alumno (sin
   equipo) — Día Académico o Día Cultural. dia (ENUM 'academico'|'cultural'),
-  tipo (ENUM 'ponencia'|'taller'), facilitador, nombre, descripcion, espacio,
-  cupo_maximo, cupo_disponible, responsable. Sin columna de sesión/franja
-  horaria: el sistema no valida cruces de horario entre eventos.
+  tipo (ENUM 'ponencia'|'taller'), hora_inicio/hora_fin (TIME — para validar
+  cruces de horario contra otros eventos/competiciones del mismo alumno el
+  mismo día, ver "Reglas de inscripción por franja horaria" en
+  registro-asistencia.md), facilitador, nombre, descripcion, espacio,
+  cupo_maximo, cupo_disponible, responsable.
 - inscripciones: QUÉ evento tiene cada alumno, con su propio control de
   entrada/salida A ESE evento en la misma fila (no solo "está inscrito", sino
   "ya llegó a esa ponencia/taller"). id_evento (FK a eventos), id_alumno (FK
@@ -274,29 +275,41 @@ visible, para cuál de los 3 eventos está operando ese punto de control.
 Crea app/inscripciones/public/index.php: recibe el numero_cuenta desde
 app/asistencias/public/escaneo.php (solo cuando el alumno todavía no tiene
 ninguna fila en inscripciones — ver Prompt 7 revisado, paso d). Muestra la
-lista de eventos disponibles (tipo='ponencia'|'taller', dia='academico') con
-su cupo disponible actualizado (consulta a la tabla eventos vía un endpoint
-PHP, refrescado con JavaScript puro — sin frameworks JS), con clases de
-Tailwind CSS para el diseño, y permite elegir uno o varios (ya no hay un
-número fijo de sesiones que cubrir — ver "Decisiones técnicas resueltas":
-eventos/inscripciones no valida cruces de horario). Deshabilita en la
+lista de eventos disponibles (dia='academico') con su cupo disponible
+actualizado (consulta a la tabla eventos vía un endpoint PHP, refrescado con
+JavaScript puro — sin frameworks JS), con clases de Tailwind CSS para el
+diseño. El alumno elige **como máximo un evento cuyo horario (hora_inicio/
+hora_fin) no se traslape con ningún otro evento o competición en el que ya
+esté inscrito ese día** — ver "Reglas de inscripción por franja horaria" en
+registro-asistencia.md; no "uno o varios" libremente. Antes de mostrar el
+catálogo, consulta también equipos/integrantes filtrando por competiciones
+de dia='academico' para saber si el alumno ya es integrante de un equipo del
+Concurso del Conocimiento (10:30–12:30) y oculta de la lista cualquier
+evento cuyo horario se traslape con esa competición. Deshabilita en la
 interfaz los eventos sin cupo disponible. El Concurso del Conocimiento no
-aparece aquí: se modela como equipo (equipos/integrantes), no como evento
-individual — ver Prompt 12.
+aparece aquí como opción para inscribirse: se modela como equipo
+(equipos/integrantes), no como evento individual — ver Prompt 12.
 ```
 
 ### Prompt 9 — Backend de inscripción (control de concurrencia)
 ```
 Crea app/inscripciones/includes/inscribir.php: recibe la elección de
-evento(s), y dentro de una transacción SQL, descuenta el cupo de forma
-atómica (por ejemplo UPDATE eventos SET cupo_disponible = cupo_disponible - 1
-WHERE id = ? AND cupo_disponible > 0, comprobando filas afectadas antes de
-insertar en inscripciones) para evitar sobrecupo cuando dos alumnos se
-inscriben al mismo evento al mismo tiempo. Guarda origen='orden_llegada' y
+evento(s), y dentro de una transacción SQL: (1) valida el cruce de horario —
+consulta el hora_inicio/hora_fin del evento elegido y rechaza la inscripción
+si el alumno ya tiene, ese mismo día, otra fila en inscripciones (JOIN a
+eventos) o en equipos/integrantes (JOIN a competiciones) cuyo horario se
+traslape (ver "Reglas de inscripción por franja horaria" en
+registro-asistencia.md); (2) descuenta el cupo de forma atómica (por ejemplo
+UPDATE eventos SET cupo_disponible = cupo_disponible - 1 WHERE id = ? AND
+cupo_disponible > 0, comprobando filas afectadas antes de insertar en
+inscripciones) para evitar sobrecupo cuando dos alumnos se inscriben al
+mismo evento al mismo tiempo. Guarda origen='orden_llegada' y
 registrado_por (hora_entrada/punto_control_entrada/escaneado_por_entrada se
 quedan NULL hasta que la persona realmente llegue a ESE evento — no
 confundir con la inscripción). Este mismo backend lo reutiliza el Prompt 10
-para las asignaciones previas (con origen='previo').
+para las asignaciones previas (con origen='previo'), incluida la misma
+validación de cruce de horario para que el encargado no pueda reservar dos
+eventos traslapados al mismo alumno.
 ```
 
 ### Prompt 10 — Herramienta del encargado para asignación previa
@@ -389,13 +402,19 @@ pregúntame en vez de asumir.
 ```
 Agrega a app/database/schema.sql las tablas para todo lo que se organiza por
 equipo (Concurso del Conocimiento, Concurso de Talentos y torneos deportivos):
-- equipos: id, dia (ENUM 'academico','cultural','deportivo'), tipo (ENUM
-  'concurso','futbol_rapido','voleibol','quemados' — 'concurso' cubre tanto
-  el Concurso del Conocimiento como el de Talentos, distinguibles por dia),
-  nombre, id_alumno_capitan (FK a alumnos — el capitán es un alumno),
-  color_camisa (nullable — solo aplica a los torneos deportivos), fecha_registro.
-  UNIQUE sobre (dia, tipo, color_camisa) para que no se repita el color
-  dentro del mismo tipo de equipo del mismo día.
+- competiciones: id, dia (ENUM 'academico','cultural','deportivo'), tipo
+  (ENUM 'concurso','torneo' — 'concurso' cubre tanto el Concurso del
+  Conocimiento como el de Talentos, distinguibles por nombre, no por tipo),
+  hora_inicio/hora_fin (TIME — para validar cruces de horario contra eventos;
+  ver CHECK chk_competiciones_horario), nombre, fecha_limite, fecha_registro.
+  Semillas de las 5 competiciones (Concurso del Conocimiento, Concurso de
+  Talentos, y los 3 torneos deportivos) en app/database/seeds.sql.
+- equipos: id, id_competicion (FK a competiciones — de ahí sale el dia/tipo,
+  ya no son columnas propias de equipos), nombre, id_alumno_capitan (FK a
+  alumnos — el capitán es un alumno), color_camisa (nullable — solo aplica a
+  los torneos deportivos), fecha_registro. UNIQUE sobre (id_competicion,
+  color_camisa) para que no se repita el color dentro de la misma
+  competición.
 - integrantes: id_equipo (FK a equipos), id_alumno (FK a alumnos — SIEMPRE
   el alumno de la familia, el "ancla": si un padre o madre participa, su fila
   reutiliza el id_alumno de su hijo/a, no un id propio), tipo (ENUM
@@ -498,7 +517,7 @@ simple que el Prompt 11 del Día Académico.
 
 ## Estado
 
-- [x] Prompt 1 — Esquema de base de datos (incluye ya la generalización de `asistencias_generales`/`eventos`/`inscripciones` y las tablas de equipos del Prompt 12 — ver `app/database/schema.sql`; **pendiente corregir un error de sintaxis en `equipos`, ver "Pendientes menores" arriba**)
+- [x] Prompt 1 — Esquema de base de datos (incluye ya la generalización de `asistencias_generales`/`eventos`/`inscripciones`, la tabla `competiciones` y las tablas de equipos del Prompt 12 — ver `app/database/schema.sql`; semillas de `eventos`/`competiciones` en `app/database/seeds.sql`)
 - [X] Prompt 2 — Conexión a base de datos
 - [X] Prompt 3 — Formulario de pre-registro
 - [X] Prompt 4 — Guardado del pre-registro
