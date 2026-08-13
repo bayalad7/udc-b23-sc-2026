@@ -37,11 +37,13 @@ Planificación y sistema de apoyo para la Semana Cultural del Aniversario del **
 Aplicación propia para el control de asistencia por QR y la asignación de ponencias/talleres del Día Académico.
 
 - **Stack**: PHP puro, JavaScript puro (sin frameworks), base de datos MariaDB.
-- **Librerías de un solo propósito**: [`phpqrcode`](https://github.com/t0k4rt/phpqrcode) (generar QR), [`jsQR`](https://github.com/cozmo/jsQR) (leer QR desde cámara), [`PHPMailer`](https://github.com/PHPMailer/PHPMailer) (envío de credenciales por SMTP).
+- **Librerías de un solo propósito**: [`phpqrcode`](https://github.com/t0k4rt/phpqrcode) (generar QR), [`jsQR`](https://github.com/cozmo/jsQR) (leer QR desde cámara).
 - **Módulos**:
-  - `app/registro/` — pre-registro de alumnos, generación de credencial digital (foto + datos + QR) y escaneo de asistencia el día del evento (operado por el maestro/staff).
+  - `app/registro/` — pre-registro de alumnos y generación de credencial digital (foto + datos + QR).
+  - `app/asistencias/` — escaneo de QR y control de entrada/salida, unificado para los 3 días del evento, operado por el maestro/staff en cada punto de control.
   - `app/inscripciones/` — asignación de ponencia/taller con cupo limitado, ya sea por registro previo del encargado del evento académico o por orden de llegada el día del evento. El Concurso del Conocimiento queda fuera de este sistema.
-- **Plan de construcción**: [app/PROMPTS-DESARROLLO.md](app/PROMPTS-DESARROLLO.md) — 11 prompts secuenciales, con checklist de avance.
+  - `app/torneos/` — inscripción de equipos del Día Deportivo (alumnos y padres de familia).
+- **Plan de construcción**: [app/PROMPTS-DESARROLLO.md](app/PROMPTS-DESARROLLO.md) — 18 prompts secuenciales, con checklist de avance.
 
 ## 🤝 Cómo continuar el trabajo
 

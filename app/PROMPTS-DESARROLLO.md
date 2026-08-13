@@ -22,10 +22,12 @@ agrega JavaScript ni dependencias en tiempo de ejecución: solo compila un
 archivo .css estático que se sube junto con el resto del código.
 
 Estructura del proyecto:
-- app/registro/      -> pre-registro de alumnos, generación de credencial digital
-                         (foto + datos + QR) y escaneo de asistencia el día del evento.
+- app/registro/      -> pre-registro de alumnos y generación de credencial digital
+                         (foto + datos + QR).
 - app/inscripciones/  -> asignación de taller/ponencia con cupo limitado, inmediatamente
-                         después de un escaneo exitoso en app/registro.
+                         después de un escaneo exitoso en app/asistencias.
+- app/asistencias/    -> app de escaneo QR y control de entrada/salida, unificada para
+                         los 3 días del evento (Día Académico, Día Cultural, Día Deportivo).
 - app/config/         -> conexión compartida a la base de datos.
 - app/database/       -> esquema SQL.
 
@@ -65,11 +67,18 @@ pregúntame en vez de asumir.
 - [x] **Hosting/servidor**: VPS personal (de la empresa del organizador) para producción; en desarrollo local se usa **Docker** (ver más abajo). El VPS implica acceso root/SSH, por lo que hay control total: se puede instalar PHP, MariaDB y Composer sin restricciones de un hosting compartido.
 - [x] **Diseño/CSS**: [Tailwind CSS](https://tailwindcss.com/), compilado con el [Tailwind CLI standalone](https://tailwindcss.com/blog/standalone-cli) (binario ejecutable, sin instalar Node.js ni npm). Se compila una sola vez un archivo `.css` a partir de las clases usadas en el HTML/PHP de toda la app (Día Académico y Día Deportivo comparten el mismo archivo compilado) y ese `.css` estático es lo único que se sube al VPS — no corre ningún proceso de build en el servidor. Encaja con "sin frameworks de frontend" porque no agrega JavaScript ni dependencias en tiempo de ejecución.
 - [x] **Entorno de desarrollo local**: Docker Compose (`app/docker-compose.yml`), con 4 servicios: `web` (PHP 8.2 + Apache + GD + PDO MySQL), `db` (MariaDB 11, importa `database/schema.sql` automáticamente la primera vez que se crea el volumen), `tailwind` (compila `assets/css/tailwind.css` en modo watch) y `adminer` (visor de base de datos, no forma parte de la app). Dos gotchas ya resueltos, documentados como comentarios en los propios Dockerfiles: (1) el binario standalone de Tailwind está enlazado contra glibc y no corre sobre Alpine/musl — se usa `debian:bookworm-slim`; (2) `tailwindcss --watch` (sin `=always`) se detiene en cuanto detecta el stdin cerrado, que es siempre el caso en un contenedor en segundo plano — hace falta `--watch=always`.
+- [x] **Módulo de escaneo de asistencia — unificado para los 3 días**: en vez de duplicar la app de escaneo dentro de `app/registro/` (Día Académico) y `app/torneos/` (Día Deportivo), vive en una carpeta propia `app/asistencias/` (ver Prompt 7 revisado más abajo), con un único `escaneo.php` parametrizado por `evento` (`academico` | `cultural` | `deportivo`). Motivo: el control de entrada/salida es la misma lógica los 3 días (ver [Control de entrada y salida](../01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md#control-de-entrada-y-salida)). `app/registro/` y `app/torneos/` mantienen el pre-registro/inscripción de equipo, pero ya no incluyen su propio `escaneo.php`.
+- [x] **`asistencias_generales` (entrada/salida del día) es una tabla aparte de "a qué asiste"** — son dos conceptos distintos y no deben mezclarse: (a) **asistencia general**: ¿ya entró/salió del plantel/evento ese día?, solo alumnos (`id_alumno` FK a `alumnos`, `dia` ENUM `'academico'|'cultural'|'deportivo'`); y (b) **participación/asistencia específica a cada evento o equipo**, que ya trae su propio control de entrada/salida en la MISMA fila: `inscripciones` (ponencias y talleres, individuales por alumno) y `equipos`/`integrantes` (concursos y torneos por equipo — ver siguiente punto). Así un alumno puede tener, el mismo día, una fila en `asistencias_generales` (¿llegó al plantel?) MÁS una fila en `inscripciones` por cada evento al que está inscrito (¿llegó a ESE taller/ponencia?) — "todas las combinaciones posibles".
+- [x] **`equipos`/`integrantes` cubre TODO lo que es por equipo, no solo el Día Deportivo**: Concurso del Conocimiento (Día Académico), Concurso de Talentos (Día Cultural) y los 3 torneos deportivos (Día Deportivo) — de ahí que `equipos` tenga columna `dia`. `eventos`/`inscripciones`, en cambio, es solo para lo individual por alumno (ponencias y talleres). Un integrante (alumno, padre o madre) tiene su propio `hora_entrada`/`hora_salida` directo en `integrantes` (nace en NULL desde que se inscribió el equipo, antes del evento) — el escaneo el día del evento actualiza esa misma fila, nunca inserta una nueva. `id_alumno` en `integrantes` es siempre el alumno de la familia (el "ancla" del equipo), nunca un id propio de padre/madre: si el alumno X participa junto con su papá y su mamá, son 3 filas — `(equipo, X, 'alumno')`, `(equipo, X, 'padre')`, `(equipo, X, 'madre')` — y en las de tipo padre/madre, la columna `nombre` es el nombre de esa persona, no el del alumno.
+- [x] **`eventos`/`inscripciones` no validan cruces de horario**: no hay columna de sesión/franja horaria — un alumno puede inscribirse a cuantos eventos quiera sin que el sistema valide que no se crucen en el mismo horario. Es responsabilidad de quien arma el catálogo de eventos evitar que se crucen.
+- [x] **Día Cultural reutiliza alumnos y credencial del Día Académico**: no hay un registro/credencial aparte para el Día Cultural — es el mismo alumno con el mismo QR (mismo `numero_cuenta`). Lo único que cambia es que se genera una fila nueva en `asistencias_generales` por día (columna `dia`, ver esquema), porque la entrada/salida sí es independiente por día.
+- [x] **Protección de acceso a `app/asistencias` (para que el alumnado no la descubra ni la use)**: no es una URL secreta ni HTTP Basic Auth — es una contraseña compartida guardada (hasheada con `password_hash`) en la tabla `sistema` (una sola fila, columna `clave_acceso`). `evento.php` la pide antes de mostrar cualquier otra cosa; al acertarla marca la sesión del turno como autorizada (ver `app/asistencias/includes/sesion.php` y `verificar-clave.php`). Se cambia actualizando esa fila (por ejemplo desde Adminer en desarrollo) — no requiere tocar `.htaccess` ni redesplegar.
 
 > Nota de instalación: con acceso root/SSH confirmado, se usará **Composer** para gestionar `pendalff/phpqrcode` y `PHPMailer` (más fácil de mantener/actualizar que vendorizar archivos a mano). Esto se define en el Prompt 2, junto con la configuración inicial de Tailwind CLI.
 
 ## Pendientes menores (no bloquean empezar a programar)
 
+- [ ] **`equipos` tiene un error de sintaxis SQL**: la columna se llama `id_alumno_capitan`, pero `CONSTRAINT fk_equipos_alumno_capitan FOREIGN KEY (id_alumno) REFERENCES alumnos(id)` referencia `id_alumno`, que no existe en esa tabla — el `CREATE TABLE` fallaría tal cual está. Hace falta cambiar esa línea a `FOREIGN KEY (id_alumno_capitan)` antes de poder levantar el esquema completo.
 - [ ] Dominio/subdominio donde vivirá la app en el VPS (ej. `registro.b23.mx` o similar) — solo afecta configuración final de despliegue, no el código.
 - [ ] Credenciales SMTP a usar en PHPMailer para el envío de credenciales: ¿se envía desde una cuenta de correo institucional (ucol.mx) o desde el dominio/correo del VPS/empresa? Definir antes del Prompt 6.
 - [ ] Confirmar que el VPS tenga acceso HTTPS (certificado SSL) antes del evento — necesario porque los navegadores solo permiten acceso a la cámara (para leer el QR) en páginas servidas por HTTPS.
@@ -84,24 +93,34 @@ Tablas necesarias:
 - alumnos: numero_cuenta (char(8), único), nombre_completo, grupo, correo_institucional,
   foto_path, tema_interes (texto libre del pre-registro), fecha_registro,
   credencial_generada (booleano), fecha_envio_credencial (nullable).
-- asistencia: alumno (FK a alumnos, UNIQUE — una sola fila por alumno, ya que
-  el evento es de un solo día), hora_entrada (datetime, se llena en el primer
-  escaneo del día), punto_control_entrada, escaneado_por_entrada, hora_salida
-  (datetime, nullable — se sobreescribe en cada escaneo posterior al primero,
-  así que siempre refleja el último escaneo del día), punto_control_salida
-  (nullable), escaneado_por_salida (nullable). "escaneado_por" identifica al
-  maestro/staff que operó el escaneo, no es autoservicio.
-- talleres: nombre, espacio, sesion ('ponencia' para 9:00-10:00, '1' o '2' para
-  Sesión 1/Sesión 2 de 10:30-12:30), cupo_maximo, cupo_disponible, responsable.
-  El Concurso del Conocimiento NO va en esta tabla: está fuera del sistema de
-  cupo/inscripciones (se organiza aparte, ver registro-asistencia.md).
-- inscripciones: alumno (FK), taller (FK), sesion, fecha_hora, origen (ENUM
-  'previo' | 'orden_llegada' — distingue si fue asignado de antemano por el
-  encargado del evento académico, o elegido el día del evento por orden de
-  llegada), registrado_por (quién hizo la asignación: el propio alumno/maestro
-  en el flujo de orden de llegada, o el encargado en el registro previo).
-  Un alumno solo puede tener una inscripción por sesión (restricción única
-  sobre alumno+sesion), sin importar el origen.
+- asistencias_generales: asistencia GENERAL (entrada/salida) del día, SOLO
+  alumnos — no confundir con "a qué asiste", que vive en inscripciones y en
+  equipos/integrantes (ver más abajo, y Prompt 12). id_alumno (FK a alumnos),
+  dia (ENUM 'academico'|'cultural'|'deportivo' — el mismo alumno asiste
+  académico y cultural con la misma credencial/QR, así que la clave primaria
+  es id_alumno+dia, no solo id_alumno), hora_entrada (datetime, se llena en
+  el primer escaneo de ESE día), punto_control_entrada, escaneado_por_entrada,
+  hora_salida (datetime, nullable — se sobreescribe en cada escaneo posterior
+  al primero DEL MISMO día, así que siempre refleja el último escaneo de ese
+  día), punto_control_salida (nullable), escaneado_por_salida (nullable).
+  "escaneado_por" identifica al maestro/staff que operó el escaneo, no es
+  autoservicio.
+- eventos: catálogo de ponencias y talleres, individuales por alumno (sin
+  equipo) — Día Académico o Día Cultural. dia (ENUM 'academico'|'cultural'),
+  tipo (ENUM 'ponencia'|'taller'), facilitador, nombre, descripcion, espacio,
+  cupo_maximo, cupo_disponible, responsable. Sin columna de sesión/franja
+  horaria: el sistema no valida cruces de horario entre eventos.
+- inscripciones: QUÉ evento tiene cada alumno, con su propio control de
+  entrada/salida A ESE evento en la misma fila (no solo "está inscrito", sino
+  "ya llegó a esa ponencia/taller"). id_evento (FK a eventos), id_alumno (FK
+  a alumnos), origen (ENUM 'previo' | 'orden_llegada' — distingue si fue
+  asignado de antemano por el encargado, o elegido el día del evento por
+  orden de llegada), registrado_por (quién hizo la asignación),
+  hora_entrada/punto_control_entrada/escaneado_por_entrada (nullable: la fila
+  puede existir desde antes del evento si origen='previo', sin que la persona
+  haya llegado todavía), hora_salida/punto_control_salida/escaneado_por_salida
+  (nullable). Clave primaria (id_evento, id_alumno) — un alumno puede estar
+  inscrito a varios eventos sin restricción de horario.
 Usa InnoDB, claves foráneas, e índices en numero_cuenta y en las claves foráneas.
 ```
 
@@ -167,63 +186,117 @@ después de un registro exitoso (no esperar al cierre del formulario).
 Usa PHPMailer vía SMTP (ver "Decisiones técnicas resueltas" en este documento).
 ```
 
-### Prompt 7 — App de escaneo (día del evento, operada por el maestro/staff)
+### Prompt 7 (revisado) — Módulo unificado de asistencias (escaneo QR, los 3 días)
 ```
-Crea app/registro/public/escaneo.php: interfaz en JavaScript puro con Tailwind CSS
-para el diseño, pensada para que la opere el MAESTRO/STAFF en el punto de control
-(no es autoservicio del alumno), que activa la cámara del dispositivo y lee el
-código QR de la credencial con jsQR
-(ver "Decisiones técnicas resueltas" en este documento). Al leer un número de
-cuenta válido:
-1. Verifica que exista en la tabla alumnos.
-2. Muestra en pantalla su foto y nombre para verificación visual del maestro.
-3. Control de entrada/salida — busca si el alumno ya tiene una fila en la
-   tabla asistencia:
-   - Si NO existe: es su primer escaneo del día. Inserta una fila nueva con
-     hora_entrada = ahora, punto_control_entrada y escaneado_por_entrada.
-     Continúa al paso 4 (este es el único caso que dispara la asignación de
-     ponencia/taller).
-   - Si YA existe: es un escaneo posterior (segundo, tercero...). Actualiza
-     ÚNICAMENTE hora_salida = ahora, punto_control_salida y
-     escaneado_por_salida (sobreescribe lo que hubiera antes, para que
-     siempre quede la hora del último escaneo del día). Muestra en pantalla
-     "Salida registrada" con la hora, y NO continúa al paso 4 — no se
-     repite la asignación de ponencia/taller.
-4. (Solo en el primer escaneo) Consulta si el alumno ya tiene inscripciones
-   con origen='previo' (asignadas de antemano por el encargado del evento
-   académico, ver Prompt 10). Si ya tiene lugar para todas las sesiones
-   (ponencia, Sesión 1, Sesión 2), muestra la confirmación de a dónde le
-   toca ir y NO lo manda a elegir de nuevo. Si le falta alguna sesión por
-   asignar, redirige a app/inscripciones/public/index.php pasando el
-   numero_cuenta y qué sesiones le faltan.
+Este prompt reemplaza al Prompt 7 original (que creaba app/registro/public/escaneo.php
+solo para el Día Académico) y absorbe también lo que iba a ser el Prompt 17
+(app/torneos/public/escaneo.php para el Día Deportivo): ahora hay UNA sola app de
+escaneo para los 3 días, en app/asistencias/, en vez de duplicarla por módulo.
+Ver "Decisiones técnicas resueltas" en este documento (Módulo de escaneo unificado,
+Día Cultural, Protección de la URL).
+
+1. Protección de acceso (antes que nada, porque esta es la app más sensible del
+   sistema — nunca debe quedar al alcance del alumnado): tabla `sistema` (una
+   fila, columna `clave_acceso` con el hash de `password_hash()`) y
+   app/asistencias/public/evento.php, que pide esa contraseña antes de mostrar
+   cualquier otra cosa (POST a app/asistencias/includes/verificar-clave.php,
+   verificado con `password_verify()`) y marca la sesión del turno como
+   autorizada al acertarla (ver app/asistencias/includes/sesion.php).
+
+2. Una vez autorizado, evento.php muestra un formulario para elegir el día a
+   escanear ('academico' | 'cultural' | 'deportivo'), el nombre de quien va a
+   operar el escaneo y el punto de control — los tres se guardan en la sesión
+   del turno (POST a includes/iniciar-turno.php) y de ahí en adelante viajan
+   con la sesión, no por la URL. Un enlace "Cambiar turno" (limpia día/operador/
+   punto de control, sigue autorizado) y "Cerrar sesión" (limpia todo, vuelve a
+   pedir la contraseña) permiten pasar de un turno a otro en el mismo
+   dispositivo.
+
+3. Crea app/asistencias/public/escaneo.php: interfaz en JavaScript puro con
+   Tailwind CSS para el diseño, pensada para que la opere el MAESTRO/STAFF en el
+   punto de control (no es autoservicio del alumno/participante), que activa la
+   cámara del dispositivo y lee el código QR con jsQR (ver "Decisiones técnicas
+   resueltas"). El evento a escanear NO se manda desde el cliente: el backend
+   lo toma de la sesión del turno (paso 2), así no se puede falsear.
+
+   Para evento='academico' o evento='cultural' (QR = numero_cuenta de alumno):
+   a. Verifica que numero_cuenta exista en la tabla alumnos.
+   b. Muestra en pantalla su foto y nombre para verificación visual del maestro.
+   c. Control de entrada/salida — busca si ya existe una fila en
+      asistencias_generales para ese id_alumno Y ese valor de dia
+      (evento='academico' -> dia='academico', evento='cultural' ->
+      dia='cultural'; son independientes, el mismo alumno puede ya tener fila
+      de 'academico' y aun así ser su primer escaneo de 'cultural'):
+      - Si NO existe (para ese alumno+dia): primer escaneo de ese día. Inserta
+        una fila nueva con id_alumno, dia, hora_entrada = ahora,
+        punto_control_entrada y escaneado_por_entrada. Si evento='academico',
+        continúa al paso d (este es el único caso que dispara la asignación
+        de ponencia/taller; evento='cultural' nunca la dispara).
+      - Si YA existe: escaneo posterior del mismo día. Actualiza ÚNICAMENTE
+        hora_salida = ahora, punto_control_salida y escaneado_por_salida
+        (sobreescribe lo que hubiera antes). Muestra "Salida registrada" con
+        la hora, y no continúa al paso d.
+   d. (Solo evento='academico', solo en el primer escaneo del día) Consulta si
+      el alumno ya tiene alguna fila en inscripciones (sea cual sea el
+      origen). Si ya tiene al menos una, muestra la confirmación de a dónde
+      le toca ir (nombre y espacio de cada evento). Si no tiene ninguna,
+      redirige a app/inscripciones/public/index.php pasando el numero_cuenta
+      — ya no hay un número fijo de sesiones que cubrir (ver "Decisiones
+      técnicas resueltas": eventos/inscripciones no valida cruces de
+      horario), así que aquí solo se distingue "ya tiene algo" de "nada
+      todavía", no cuántas.
+
+   Para evento='deportivo' (QR = codigo_participante de integrantes):
+   a. Verifica que codigo_participante exista en integrantes (junto con su
+      equipo) y muestra en pantalla su nombre, equipo y tipo de equipo para
+      verificación visual — alumnos, padres y madres por igual: aquí sí se
+      lleva su entrada/salida (a diferencia de asistencias_generales, que es
+      solo alumnos).
+   b. Control de entrada/salida sobre la fila de integrantes de esa persona
+      (id_equipo + id_alumno + tipo): como la fila ya existe desde que se
+      inscribió el equipo (hora_entrada nace en NULL), aquí SIEMPRE es
+      UPDATE, nunca INSERT. Si hora_entrada es NULL: actualiza hora_entrada,
+      punto_control_entrada y escaneado_por_entrada (esto fue la entrada). Si
+      hora_entrada ya tiene valor: actualiza solo hora_salida,
+      punto_control_salida y escaneado_por_salida (esto fue la salida). No
+      hay paso siguiente de elegir taller ni equipo: ya están definidos desde
+      la inscripción (Concurso del Conocimiento, Concurso de Talentos o
+      torneo deportivo, según equipos.tipo) o, en el caso de los torneos, por
+      las llaves publicadas el 2 de octubre.
+
 La pantalla debe distinguir siempre con claridad si el escaneo se registró
-como "Entrada" o como "Salida (actualizada)".
+como "Entrada" o como "Salida (actualizada)". Debe mostrar también, de forma
+visible, para cuál de los 3 eventos está operando ese punto de control.
 ```
 
 ### Prompt 8 — Selección de ponencia/taller por orden de llegada
 ```
-Crea app/inscripciones/public/index.php: recibe el numero_cuenta y las sesiones
-pendientes desde app/registro/public/escaneo.php (puede ser una o varias de:
-ponencia 9:00-10:00, Sesión 1, Sesión 2). Para cada sesión pendiente, muestra la
-lista de talleres/ponencias con su cupo disponible actualizado (consulta a la
-tabla talleres vía un endpoint PHP, refrescado con JavaScript puro — sin
-frameworks JS), con clases de Tailwind CSS para el diseño, y permite elegir
-uno. Deshabilita en la interfaz los talleres sin cupo disponible. El Concurso
-del Conocimiento no aparece aquí: está fuera de este sistema (ver contexto de
-este documento).
+Crea app/inscripciones/public/index.php: recibe el numero_cuenta desde
+app/asistencias/public/escaneo.php (solo cuando el alumno todavía no tiene
+ninguna fila en inscripciones — ver Prompt 7 revisado, paso d). Muestra la
+lista de eventos disponibles (tipo='ponencia'|'taller', dia='academico') con
+su cupo disponible actualizado (consulta a la tabla eventos vía un endpoint
+PHP, refrescado con JavaScript puro — sin frameworks JS), con clases de
+Tailwind CSS para el diseño, y permite elegir uno o varios (ya no hay un
+número fijo de sesiones que cubrir — ver "Decisiones técnicas resueltas":
+eventos/inscripciones no valida cruces de horario). Deshabilita en la
+interfaz los eventos sin cupo disponible. El Concurso del Conocimiento no
+aparece aquí: se modela como equipo (equipos/integrantes), no como evento
+individual — ver Prompt 12.
 ```
 
 ### Prompt 9 — Backend de inscripción (control de concurrencia)
 ```
-Crea app/inscripciones/includes/inscribir.php: recibe la elección de taller,
-y dentro de una transacción SQL, descuenta el cupo de forma atómica
-(por ejemplo UPDATE talleres SET cupo_disponible = cupo_disponible - 1
+Crea app/inscripciones/includes/inscribir.php: recibe la elección de
+evento(s), y dentro de una transacción SQL, descuenta el cupo de forma
+atómica (por ejemplo UPDATE eventos SET cupo_disponible = cupo_disponible - 1
 WHERE id = ? AND cupo_disponible > 0, comprobando filas afectadas antes de
 insertar en inscripciones) para evitar sobrecupo cuando dos alumnos se
-inscriben al mismo taller al mismo tiempo. Guarda origen='orden_llegada' y
-registrado_por. Respeta la restricción de una sola inscripción por alumno y
-sesión. Este mismo backend lo reutiliza el Prompt 10 para las asignaciones
-previas (con origen='previo').
+inscriben al mismo evento al mismo tiempo. Guarda origen='orden_llegada' y
+registrado_por (hora_entrada/punto_control_entrada/escaneado_por_entrada se
+quedan NULL hasta que la persona realmente llegue a ESE evento — no
+confundir con la inscripción). Este mismo backend lo reutiliza el Prompt 10
+para las asignaciones previas (con origen='previo').
 ```
 
 ### Prompt 10 — Herramienta del encargado para asignación previa
@@ -252,49 +325,60 @@ acceso restringido solo si se define un mecanismo simple de acceso para el
 staff organizador.
 ```
 
-## Contexto para pegar antes del Prompt 12 (Día Deportivo)
+## Contexto para pegar antes del Prompt 12 (equipos — los 3 días)
 
 ```
-Ahora voy a extender el mismo sistema para el Día Deportivo (Sábado 3 de
-Octubre) de la Semana Cultural del Bachillerato 23, sede Polideportivo de
-San Pedrito. Sigue viviendo dentro de la carpeta app/ y reutiliza la misma
-base de datos, la conexión app/config/db.php y las mismas decisiones de
-stack y librerías ya fijadas en este documento (PHP puro, JS puro, MariaDB,
-phpqrcode, jsQR, PHPMailer vía SMTP, Tailwind CSS para el diseño — nada de
-frameworks de aplicación). Usa el mismo archivo compilado
-app/assets/css/tailwind.css del Prompt 2, no generes uno nuevo.
+Ahora voy a extender el mismo sistema con todo lo que se organiza por EQUIPO
+en vez de individualmente por alumno: el Concurso del Conocimiento (Día
+Académico), el Concurso de Talentos (Día Cultural) y los 3 torneos
+deportivos — Fútbol Rápido, Voleibol, Quemados — (Día Deportivo, sede
+Polideportivo de San Pedrito). Sigue viviendo dentro de la carpeta app/ y
+reutiliza la misma base de datos, la conexión app/config/db.php y las
+mismas decisiones de stack y librerías ya fijadas en este documento (PHP
+puro, JS puro, MariaDB, phpqrcode, jsQR, PHPMailer vía SMTP, Tailwind CSS
+para el diseño — nada de frameworks de aplicación). Usa el mismo archivo
+compilado app/assets/css/tailwind.css del Prompt 2, no generes uno nuevo.
 
-Esto es un sistema de datos distinto al del Día Académico: la unidad no es
-un alumno individual sino un EQUIPO de 10 integrantes, mezclando alumnos y
-padres de familia (los padres no tienen número de cuenta). No reutilices ni
-modifiques las tablas alumnos/asistencia/talleres/inscripciones del Día
-Académico — son independientes, aunque compartan base de datos.
+Esto es un sistema de datos distinto al de eventos/inscripciones (Prompt 1):
+la unidad no es un alumno individual sino un EQUIPO de integrantes,
+mezclando alumnos y padres/madres de familia (los padres no tienen número
+de cuenta). No reutilices ni modifiques las tablas alumnos/eventos/
+inscripciones — son independientes, aunque compartan base de datos.
 
 Estructura nueva dentro del proyecto:
-- app/torneos/public/     -> formulario de inscripción de equipo y app de
-                              escaneo de asistencia el día del evento.
+- app/torneos/public/     -> formulario de inscripción de equipo (torneos
+                              deportivos; el Concurso del Conocimiento y el
+                              Concurso de Talentos pueden vivir en su propia
+                              carpeta o reutilizar ésta, a definir). El
+                              escaneo de asistencia del día del evento NO
+                              vive aquí: ver app/asistencias/ (módulo
+                              unificado para los 3 días, Prompt 7 revisado).
 - app/torneos/includes/    -> guardado del equipo, generación de credenciales
                               QR por integrante y envío por correo.
 - app/torneos/admin/       -> reportes internos (sin autenticación compleja).
 
-Reglas de negocio (ver torneos-deportivos.md para el detalle completo):
-- Fecha límite de inscripción de equipos: 30 de septiembre de 2026.
-- Cada equipo tiene exactamente 10 integrantes: alumnos y padres de familia
-  mezclados (proporción mínima aún sin definir), uno de ellos marcado como
-  capitán.
+Reglas de negocio (ver torneos-deportivos.md para el detalle de los torneos
+deportivos; el Concurso del Conocimiento y el Concurso de Talentos siguen
+sin documento de planificación propio — pendiente):
+- Fecha límite de inscripción de equipos de torneos deportivos: 30 de
+  septiembre de 2026 (confirmar si aplica igual al Concurso del Conocimiento
+  y al Concurso de Talentos).
+- Cada equipo de torneo deportivo tiene exactamente 10 integrantes: alumnos
+  y padres/madres de familia mezclados (proporción mínima aún sin definir),
+  uno de ellos marcado como capitán. Tamaño de equipo del Concurso del
+  Conocimiento y del Concurso de Talentos: pendiente definir.
 - Cada integrante recibe su propia credencial/ticket con QR (sin foto, a
   diferencia de la credencial del Día Académico) que codifica ÚNICAMENTE un
   código de participante generado por la app — nunca datos personales
   dentro del QR.
-- El escaneo de asistencia el 3 de octubre (entrada concentrada en
-  07:00–07:30, Polideportivo de San Pedrito; salida en cualquier momento
-  posterior) lo opera el maestro/staff en el punto de control, igual que en
-  el Día Académico — no es autoservicio del participante. Mismo criterio de
-  entrada/salida: el primer escaneo del día registra la entrada, cualquier
-  escaneo posterior solo sobreescribe la salida con la hora más reciente.
-- A diferencia del Día Académico, aquí el escaneo NO desencadena una
-  elección de taller: el equipo y su primer partido ya quedaron definidos
-  por las llaves publicadas el 2 de octubre (fuera del alcance de estos
+- El escaneo de asistencia lo opera el maestro/staff en el punto de control,
+  igual que en eventos/inscripciones — no es autoservicio del participante.
+  Mismo criterio de entrada/salida: el primer escaneo del día registra la
+  entrada, cualquier escaneo posterior solo sobreescribe la salida con la
+  hora más reciente. A diferencia de ponencias/talleres, aquí el escaneo NO
+  desencadena una elección: el equipo y, en el caso de los torneos
+  deportivos, su primer partido, ya quedaron definidos de antemano (llaves
+  publicadas el 2 de octubre para los torneos — fuera del alcance de estos
   prompts).
 
 Si te falta información para tomar una decisión de negocio (no técnica),
@@ -303,45 +387,52 @@ pregúntame en vez de asumir.
 
 ### Prompt 12 — Esquema de base de datos para equipos
 ```
-Agrega a app/database/schema.sql las tablas para la inscripción de equipos
-del Día Deportivo:
-- equipos: id, deporte (ENUM 'futbol_rapido','voleibol','quemados'),
-  nombre_equipo, color_camisa, fecha_registro. UNIQUE sobre
-  (deporte, color_camisa) para que no se repita el color dentro del mismo
-  deporte (sí puede repetirse entre deportes distintos).
-- integrantes_equipo: id, equipo (FK a equipos), nombre_completo,
-  tipo (ENUM 'alumno','padre'), numero_cuenta (char(8), nullable — solo
-  aplica si tipo='alumno'), grupo (nullable), parentesco (nullable, solo si
-  tipo='padre'), telefono, correo, es_capitan (booleano),
-  codigo_participante (varchar, único, generado por la app — NO reutiliza
-  numero_cuenta porque los padres no tienen uno), credencial_generada
-  (booleano), fecha_envio_credencial (nullable).
-- asistencia_equipos: id, integrante (FK a integrantes_equipo, UNIQUE — una
-  sola fila por integrante), hora_entrada (datetime, se llena en el primer
-  escaneo del día), punto_control_entrada, escaneado_por_entrada, hora_salida
-  (datetime, nullable — se sobreescribe en cada escaneo posterior al primero,
-  igual que en la tabla asistencia del Día Académico), punto_control_salida
-  (nullable), escaneado_por_salida (nullable).
+Agrega a app/database/schema.sql las tablas para todo lo que se organiza por
+equipo (Concurso del Conocimiento, Concurso de Talentos y torneos deportivos):
+- equipos: id, dia (ENUM 'academico','cultural','deportivo'), tipo (ENUM
+  'concurso','futbol_rapido','voleibol','quemados' — 'concurso' cubre tanto
+  el Concurso del Conocimiento como el de Talentos, distinguibles por dia),
+  nombre, id_alumno_capitan (FK a alumnos — el capitán es un alumno),
+  color_camisa (nullable — solo aplica a los torneos deportivos), fecha_registro.
+  UNIQUE sobre (dia, tipo, color_camisa) para que no se repita el color
+  dentro del mismo tipo de equipo del mismo día.
+- integrantes: id_equipo (FK a equipos), id_alumno (FK a alumnos — SIEMPRE
+  el alumno de la familia, el "ancla": si un padre o madre participa, su fila
+  reutiliza el id_alumno de su hijo/a, no un id propio), tipo (ENUM
+  'alumno','padre','madre'), nombre (el de la persona de ESA fila: el del
+  alumno si tipo='alumno', el del padre/madre si no), codigo_participante
+  (varchar, único, generado por la app — NO reutiliza numero_cuenta porque
+  los padres no tienen uno), hora_entrada/punto_control_entrada/
+  escaneado_por_entrada (nullable — la fila existe desde que se inscribió el
+  equipo, antes del evento, sin que la persona haya llegado todavía),
+  hora_salida/punto_control_salida/escaneado_por_salida (nullable). Clave
+  primaria (id_equipo, id_alumno, tipo).
+No hace falta una tabla de asistencia aparte para equipos: el control de
+entrada/salida vive directo en integrantes (ver arriba) — a diferencia de
+asistencias_generales (solo alumnos, Prompt 1), aquí SÍ se lleva la de
+padres y madres.
 Usa InnoDB, claves foráneas, e índices en codigo_participante y en las
-claves foráneas. No toques las tablas del Día Académico (alumnos,
-asistencia, talleres, inscripciones): son independientes.
+claves foráneas. No toques las tablas alumnos/eventos/inscripciones/
+asistencias_generales: son independientes.
 ```
 
-### Prompt 13 — Formulario de inscripción de equipo
+### Prompt 13 — Formulario de inscripción de equipo (torneos deportivos)
 ```
 Crea app/torneos/public/inscripcion.php: formulario de inscripción de
-equipo con los campos de torneos-deportivos.md — deporte, nombre del
-equipo, color de camisa (el select solo debe ofrecer los colores del
-catálogo que sigan disponibles para el deporte elegido, consultando los
-equipos ya registrados en ese deporte) y los 10 integrantes, uno marcado
-como capitán, cada uno con nombre completo, tipo (alumno/padre), número de
-cuenta y grupo si es alumno, parentesco si es padre, y teléfono/correo del
-capitán. Validación en JavaScript puro: exactamente 10 integrantes, al
-menos un alumno y un padre, color de camisa no repetido dentro del mismo
-deporte. Usa las clases de Tailwind CSS (app/assets/css/tailwind.css,
-mismo archivo compilado que el resto de la app, ver Prompt 2) para el
-diseño; sin frameworks JS. El formulario deja de aceptar envíos a partir
-del 30 de septiembre 23:59 (fecha límite de inscripción).
+equipo con los campos de torneos-deportivos.md — tipo de torneo
+(futbol_rapido/voleibol/quemados), nombre del equipo, color de camisa (el
+select solo debe ofrecer los colores del catálogo que sigan disponibles
+para ese tipo dentro de dia='deportivo', consultando los equipos ya
+registrados con ese tipo) y los 10 integrantes, uno marcado como capitán
+(el capitán es siempre un alumno — equipos.id_alumno_capitan es FK a
+alumnos), cada uno con nombre completo, tipo (alumno/padre/madre), número
+de cuenta y grupo si es alumno, y teléfono/correo del capitán. Validación
+en JavaScript puro: exactamente 10 integrantes, al menos un alumno y un
+padre/madre, color de camisa no repetido dentro del mismo tipo de torneo.
+Usa las clases de Tailwind CSS (app/assets/css/tailwind.css, mismo archivo
+compilado que el resto de la app, ver Prompt 2) para el diseño; sin
+frameworks JS. El formulario deja de aceptar envíos a partir del 30 de
+septiembre 23:59 (fecha límite de inscripción).
 ```
 
 ### Prompt 14 — Guardado de la inscripción del equipo
@@ -376,63 +467,52 @@ Académico. Registra fecha_envio_credencial por integrante.
 
 ### Prompt 17 — App de escaneo de asistencia en el Polideportivo
 ```
-Crea app/torneos/public/escaneo.php: interfaz en JavaScript puro con
-Tailwind CSS para el diseño, para que la opere el maestro/staff en el punto
-de control del Polideportivo de San Pedrito (bloque 07:00–07:30 de la
-matriz de itinerario del Día Deportivo), reutilizando jsQR para leer el QR
-del ticket. Al leer un
-codigo_participante válido:
-1. Verifica que exista en integrantes_equipo y muestra en pantalla su
-   nombre, equipo y deporte para verificación visual del maestro.
-2. Control de entrada/salida — mismo criterio que el Prompt 7 del Día
-   Académico: busca si el integrante ya tiene una fila en
-   asistencia_equipos.
-   - Si NO existe: inserta una fila nueva con hora_entrada = ahora,
-     punto_control_entrada y escaneado_por_entrada.
-   - Si YA existe: actualiza ÚNICAMENTE hora_salida = ahora,
-     punto_control_salida y escaneado_por_salida (sobreescribe lo que
-     hubiera antes, para que siempre quede la hora del último escaneo).
-La pantalla debe distinguir siempre con claridad si el escaneo se registró
-como "Entrada" o como "Salida (actualizada)". A diferencia del escaneo del
-Día Académico, aquí NO hay paso siguiente de elegir taller: el equipo y su
-partido ya están definidos por las llaves publicadas el 2 de octubre.
+[FUSIONADO con el Prompt 7 revisado — ver "Módulo unificado de asistencias" más
+arriba.] La app de escaneo del Día Deportivo ya no es un archivo aparte en
+app/torneos/: es app/asistencias/public/escaneo.php con ?evento=deportivo,
+compartiendo interfaz, protección de acceso y punto de entrada con los otros
+dos días. Este prompt se deja como referencia histórica de la lógica que ya
+quedó incorporada al Prompt 7 revisado; no se ejecuta por separado.
 ```
 
 ### Prompt 18 — Reporte de asistencia por equipo (opcional)
 ```
 Crea una vista simple (definir ruta, ej. app/torneos/admin/asistencia.php),
-con clases de Tailwind CSS para el diseño, que muestre, por deporte y
-equipo, cuántos de los 10 integrantes ya tienen hora_entrada (para que el
-staff sepa qué equipos están completos antes de arrancar cada ronda) y
-cuántos ya tienen también hora_salida (para saber quién sigue en el
-Polideportivo al final de la jornada). Sin autenticación compleja; mismo
-criterio de acceso simple que el Prompt 11 del Día Académico.
+con clases de Tailwind CSS para el diseño, que muestre, por tipo de torneo y
+equipo, cuántos de los 10 integrantes (alumnos, padres y madres por igual —
+aquí sí se lleva asistencia de todos, a diferencia de asistencias_generales)
+ya tienen hora_entrada y cuántos ya tienen también hora_salida (para saber
+quién sigue en el Polideportivo al final de la jornada). Consulta la tabla
+integrantes (su propio hora_entrada/hora_salida, ver Prompt 12) haciendo
+JOIN con equipos. Sin autenticación compleja; mismo criterio de acceso
+simple que el Prompt 11 del Día Académico.
 ```
 
-## Pendientes menores — Día Deportivo (no bloquean empezar a programar)
+## Pendientes menores — equipos (no bloquean empezar a programar)
 
-- [ ] Proporción mínima de padres por equipo (regla de "mezcla" concreta) — afecta la validación del Prompt 13.
+- [ ] Proporción mínima de padres/madres por equipo (regla de "mezcla" concreta) — afecta la validación del Prompt 13.
 - [ ] Si el número de cuenta es obligatorio para todos los integrantes tipo "alumno" o si se permite inscribir sin haberse pre-registrado antes en el Día Académico.
-- [ ] Si el correo es obligatorio para los padres de familia (afecta si todos reciben ticket por correo o si algunos necesitan otra vía).
+- [ ] Si el correo es obligatorio para los padres/madres de familia (afecta si todos reciben ticket por correo o si algunos necesitan otra vía).
 - [ ] Catálogo cerrado de colores de camisa disponibles para el select del Prompt 13.
+- [ ] Reglas de negocio del Concurso del Conocimiento y del Concurso de Talentos como equipo (tamaño de equipo, fecha límite de inscripción, si aplican los Prompts 13-16 tal cual o necesitan su propia interfaz) — torneos-deportivos.md solo documenta los torneos deportivos hoy.
 
 ## Estado
 
-- [ ] Prompt 1 — Esquema de base de datos
-- [ ] Prompt 2 — Conexión a base de datos
-- [ ] Prompt 3 — Formulario de pre-registro
-- [ ] Prompt 4 — Guardado del pre-registro
-- [ ] Prompt 5 — Generación de credencial digital y QR
+- [x] Prompt 1 — Esquema de base de datos (incluye ya la generalización de `asistencias_generales`/`eventos`/`inscripciones` y las tablas de equipos del Prompt 12 — ver `app/database/schema.sql`; **pendiente corregir un error de sintaxis en `equipos`, ver "Pendientes menores" arriba**)
+- [X] Prompt 2 — Conexión a base de datos
+- [X] Prompt 3 — Formulario de pre-registro
+- [X] Prompt 4 — Guardado del pre-registro
+- [X] Prompt 5 — Generación de credencial digital y QR
 - [ ] Prompt 6 — Envío de la credencial por correo
-- [ ] Prompt 7 — App de escaneo (día del evento, operada por el maestro/staff)
+- [x] Prompt 7 (revisado) — Módulo unificado de asistencias (escaneo QR + protección de acceso, los 3 días)
 - [ ] Prompt 8 — Selección de ponencia/taller por orden de llegada
 - [ ] Prompt 9 — Backend de inscripción (control de concurrencia)
 - [ ] Prompt 10 — Herramienta del encargado para asignación previa
 - [ ] Prompt 11 — Reporte de asistencia y ocupación (opcional)
-- [ ] Prompt 12 — Esquema de base de datos para equipos (Día Deportivo)
+- [x] Prompt 12 — Esquema de base de datos para equipos — fusionado en el Prompt 1, ver `app/database/schema.sql`
 - [ ] Prompt 13 — Formulario de inscripción de equipo
 - [ ] Prompt 14 — Guardado de la inscripción del equipo
 - [ ] Prompt 15 — Generación de credencial/QR por integrante
 - [ ] Prompt 16 — Envío de credenciales del equipo por correo
-- [ ] Prompt 17 — App de escaneo de asistencia en el Polideportivo
+- [x] Prompt 17 — Fusionado con el Prompt 7 revisado (ya no es un prompt aparte)
 - [ ] Prompt 18 — Reporte de asistencia por equipo (opcional)

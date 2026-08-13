@@ -60,10 +60,14 @@ Estructura del proyecto (carpeta `app/` en la raíz):
 
 ```
 app/
-├── registro/        Pre-registro de alumnos, generación de credencial digital
-│                     (foto + datos + QR) y escaneo de asistencia el día del evento.
+├── registro/        Pre-registro de alumnos y generación de credencial digital
+│                     (foto + datos + QR).
+├── asistencias/      App de escaneo QR y control de entrada/salida, unificada
+│                     para los 3 días del evento (ver "Control de entrada y
+│                     salida" arriba). URL protegida con HTTP Basic Auth + token
+│                     secreto — no es autoservicio ni de acceso público.
 ├── inscripciones/    Selección de taller/ponencia con cupo limitado, inmediatamente
-│                     después de un escaneo exitoso en app/registro.
+│                     después de un escaneo exitoso en app/asistencias.
 ├── config/           Conexión compartida a la base de datos (PDO).
 └── database/         Esquema SQL (MariaDB).
 ```
@@ -80,6 +84,7 @@ Puntos aún sin confirmar (detallados en ese documento): librería de generació
 - [ ] Quién programa/mantiene la aplicación (ver `app/PROMPTS-DESARROLLO.md`) y con qué tiempo de anticipación (debe estar probada antes del 1 de octubre).
 - [ ] Cupo por taller/ponencia — depende de la capacidad de cada espacio (ver [espacios-y-capacidades.md](../00-Informacion-General/espacios-y-capacidades.md)) y del catálogo final de ponencias/talleres, que a su vez depende de los temas de interés recogidos en el pre-registro.
 - [ ] Fecha en que se cierra el vaciado de respuestas del pre-registro a un catálogo definitivo de ponencias/talleres (debe ser antes del 1 de octubre para poder armar la matriz completa).
+- [ ] Cómo distribuir de forma segura al staff, antes de cada día, la URL de escaneo (con su token) y la contraseña compartida de acceso (ver "Decisiones técnicas resueltas" en `app/PROMPTS-DESARROLLO.md`) — por ejemplo un mensaje directo por WhatsApp al grupo de maestros/staff justo antes del punto de control, no un canal público.
 
 ## Relación con otros documentos
 

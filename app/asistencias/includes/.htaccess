@@ -1,0 +1,21 @@
+Require all denied
+
+<Files "registrar-clave.php">
+    Require all granted
+</Files>
+
+<Files "verificar-clave.php">
+    Require all granted
+</Files>
+
+<Files "iniciar-turno.php">
+    Require all granted
+</Files>
+
+<Files "cerrar-turno.php">
+    Require all granted
+</Files>
+
+<Files "registrar-escaneo.php">
+    Require all granted
+</Files>
