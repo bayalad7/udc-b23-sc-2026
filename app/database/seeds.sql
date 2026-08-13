@@ -1,17 +1,17 @@
--- Datos semilla — Semana Cultural B23
+-- Datos semilla — Semana Acádemica, Cultural y Deportiva B23
 -- Ver app/database/schema.sql para la definición de las tablas.
 --
 -- Placeholders explícitos:
 --   - facilitador/responsable/descripcion de los eventos académicos y del
 --     taller cultural de fotografía: 'Por definir' — el catálogo real de
 --     ponencias/talleres depende de los temas de interés recogidos en el
---     pre-registro (ver 01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md).
+--     registro (ver 01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md).
 --   - Espacio de los 3 talleres culturales (Aula 1/2/3): asumido por analogía
 --     con el Día Académico — la Explanada queda libre para el show de las
 --     16:00. Confirmar antes de dar por definitivo el itinerario del Día
 --     Cultural.
 --   - fecha_limite de las 5 competiciones: 2026-09-30 23:59:59 (mismo
---     criterio "día previo al cierre" ya usado en el pre-registro del Día
+--     criterio "día previo al cierre" ya usado en el registro del Día
 --     Académico y en la inscripción de equipos del Día Deportivo).
 --
 -- hora_inicio/hora_fin: base para que la app detecte cruces de horario (ver
@@ -45,9 +45,9 @@ INSERT INTO eventos (dia, tipo, hora_inicio, hora_fin, facilitador, nombre, desc
 -- exclusividad indicada todavía — ver pendiente en 02-Dia-Cultural). No se
 -- traslapan con el Escenario de Talentos (16:00-17:20, ver competiciones).
 INSERT INTO eventos (dia, tipo, hora_inicio, hora_fin, facilitador, nombre, descripcion, espacio, cupo_maximo, cupo_disponible, responsable) VALUES
-('cultural', 'taller', '14:00:00', '16:00:00', 'Por definir', 'Taller de pintura — "El arte de Van Gogh"', 'Por definir', 'Aula 1', 40, 40, 'Por definir'),
-('cultural', 'taller', '14:00:00', '16:00:00', 'Por definir', 'Taller de cuento corto',                    'Por definir', 'Aula 2', 40, 40, 'Por definir'),
-('cultural', 'taller', '14:00:00', '16:00:00', 'Por definir', 'Taller de fotografía básica',               'Por definir', 'Aula 3', 40, 40, 'Por definir');
+('cultural', 'taller', '14:00:00', '16:00:00', 'Por definir', 'Taller de pintura — "El arte de Van Gogh"', 'Por definir', 'Explanada', 80, 80, 'Por definir'),
+('cultural', 'taller', '14:00:00', '16:00:00', 'Por definir', 'Taller de cuento corto',                    'Por definir', 'Aula 8', 50, 50, 'Por definir'),
+('cultural', 'taller', '14:00:00', '16:00:00', 'Por definir', 'Taller de fotografía básica',               'Por definir', 'Aula 9', 50, 50, 'Por definir');
 
 -- ── competiciones ────────────────────────────────────────────────────────
 -- Concurso del Conocimiento (Académico), Escenario de Talentos (Cultural) y

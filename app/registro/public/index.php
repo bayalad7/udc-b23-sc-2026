@@ -18,7 +18,7 @@ $mensajeError = $errores[$codigoError] ?? null;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Semana Cultural B23 — Registro de estudiantes</title>
+<title>Semana Acádemica, Cultural y Deportiva B23 — Registro de estudiantes</title>
 <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
@@ -150,6 +150,11 @@ $mensajeError = $errores[$codigoError] ?? null;
     <a href="/registro/public/recuperar.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
         <?= icono('buscar', 'h-3.5 w-3.5 shrink-0') ?>
         ¿Ya te registraste? Recupera tu credencial
+    </a>
+
+    <a href="/inscripciones/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+        <?= icono('lista', 'h-3.5 w-3.5 shrink-0') ?>
+        ¿Ya tienes tu credencial? Ve a Inscripciones
     </a>
 </div>
 

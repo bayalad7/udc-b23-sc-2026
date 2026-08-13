@@ -4,7 +4,7 @@ declare(strict_types=1);
 // Íconos SVG inline tomados de Lucide (lucide.dev, licencia ISC) — vendorizados
 // como markup estático (sin CDN ni paquete JS en tiempo de ejecución), igual
 // que en app/registro/includes/iconos.php. Set propio de este módulo porque
-// son íconos distintos a los que usa el pre-registro.
+// son íconos distintos a los que usa el registro.
 
 const ICONOS_SVG = [
     // lucide "lock"

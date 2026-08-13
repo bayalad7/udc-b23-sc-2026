@@ -27,6 +27,8 @@ const ICONOS_SVG = [
     'descargar' => '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
     // lucide "search"
     'buscar' => '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
+    // lucide "list-checks"
+    'lista' => '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
 ];
 
 /** Devuelve el markup de un ícono SVG inline (Lucide). $clase son clases Tailwind (tamaño/color). */

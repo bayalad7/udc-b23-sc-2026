@@ -24,7 +24,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Escaneo de asistencia — Semana Cultural B23</title>
+<title>Escaneo de asistencia — Semana Acádemica, Cultural y Deportiva B23</title>
 <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">

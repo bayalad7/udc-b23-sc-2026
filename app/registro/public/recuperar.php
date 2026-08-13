@@ -4,7 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/../includes/iconos.php';
 
 $errores = [
-    'no_encontrado' => 'No encontramos un pre-registro con ese número de cuenta y correo. Verifica los datos o completa el pre-registro si aún no lo has hecho.',
+    'no_encontrado' => 'No encontramos un registro con ese número de cuenta y correo. Verifica los datos o completa el registro si aún no lo has hecho.',
 ];
 $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 ?>
@@ -13,7 +13,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Recuperar credencial — Semana Cultural B23</title>
+<title>Recuperar credencial — Semana Acádemica, Cultural y Deportiva B23</title>
 <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
@@ -21,8 +21,11 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 
     <div class="mb-6 flex flex-col items-center text-center">
         <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
-        <h1 class="text-xl font-bold">Recuperar mi credencial</h1>
-        <p class="text-sm text-slate-600">Si ya completaste tu pre-registro, aquí puedes volver a descargar tu credencial digital.</p>
+        <h1 class="text-xl font-bold">Bachillerato 23</h1>
+        <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
+        <p>&nbsp;</p>
+        <p class="text-sm text-slate-600"><strong>Recuperar mi credencial digital:</strong> Si ya completaste tu registro, aquí puedes volver a descargar tu credencial digital.</p>
+        <p class="mt-1 text-sm text-slate-600">Aniversario #45</p>
     </div>
 
     <?php if ($mensajeError): ?>
@@ -60,7 +63,10 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
         </button>
     </form>
 
-    <a href="/registro/public/index.php" class="mt-4 text-center text-sm font-medium text-slate-700 underline">Volver al pre-registro</a>
+    <a href="/registro/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+        <?= icono('correo', 'h-3.5 w-3.5 shrink-0') ?>
+        Volver al registro
+    </a>
 </div>
 </body>
 </html>

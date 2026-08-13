@@ -21,7 +21,7 @@ if (preg_match('/^[a-f0-9]{32}$/', $token)) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pre-registro completado — Semana Cultural B23</title>
+<title>Registro completado — Semana Acádemica, Cultural y Deportiva B23</title>
 <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
@@ -32,7 +32,7 @@ if (preg_match('/^[a-f0-9]{32}$/', $token)) {
         <div class="mt-16 rounded-xl bg-white p-6 shadow-sm">
             <p class="text-lg font-semibold">No encontramos ese registro.</p>
             <p class="mt-2 text-sm text-slate-600">Verifica el enlace o vuelve a registrarte.</p>
-            <a href="/registro/public/index.php" class="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Ir al pre-registro</a>
+            <a href="/registro/public/index.php" class="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Ir al registro</a>
         </div>
 
     <?php else: ?>

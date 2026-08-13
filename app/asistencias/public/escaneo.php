@@ -26,7 +26,7 @@ $puntoControl = (string) $_SESSION['punto_control'];
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Escaneando — <?= htmlspecialchars($eventos[$evento], ENT_QUOTES, 'UTF-8') ?> — Semana Cultural B23</title>
+<title>Escaneando — <?= htmlspecialchars($eventos[$evento], ENT_QUOTES, 'UTF-8') ?> — Semana Acádemica, Cultural y Deportiva B23</title>
 <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-950 text-white">
