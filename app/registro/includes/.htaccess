@@ -1,0 +1,9 @@
+Require all denied
+
+<Files "guardar-registro.php">
+    Require all granted
+</Files>
+
+<Files "recuperar-credencial.php">
+    Require all granted
+</Files>

@@ -59,13 +59,14 @@ pregúntame en vez de asumir.
 
 ## Decisiones técnicas resueltas
 
-- [x] **Librería de QR — generación (servidor)**: [`phpqrcode`](https://github.com/t0k4rt/phpqrcode). Es un solo conjunto de archivos PHP sin dependencias, no requiere Composer ni acceso a línea de comandos en el servidor (solo se sube por FTP/panel de hosting junto con el resto del código), y usa la extensión GD que ya se necesita para componer la credencial. Encaja con "PHP puro": es una utilidad de un solo propósito, no un framework.
+- [x] **Librería de QR — generación (servidor)**: [`phpqrcode`](https://github.com/t0k4rt/phpqrcode) original no está publicada en Packagist bajo ese nombre, así que se usa [`pendalff/phpqrcode`](https://packagist.org/packages/pendalff/phpqrcode) — un fork del mismo código con soporte Composer. Ojo al usarla: sus clases están bajo el namespace `PHPQRCode` (`\PHPQRCode\QRcode::png(...)`, no `QRcode::png(...)` a secas) y emite varios `E_DEPRECATED` en PHP 8.2 (parámetros opcionales antes que obligatorios) — inofensivos, silenciados vía `error_reporting` en `docker/php.ini`. Sigue usando la extensión GD que ya se necesita para componer la credencial. Encaja con "PHP puro": es una utilidad de un solo propósito, no un framework.
 - [x] **Librería de QR — lectura (cámara, cliente)**: [`jsQR`](https://github.com/cozmo/jsQR). Un solo archivo JavaScript sin dependencias, decodifica QR a partir de los frames de video de la cámara vía `<canvas>`. Encaja con "JS puro" por la misma razón: es una utilidad, no un framework.
 - [x] **Envío de correo**: [`PHPMailer`](https://github.com/PHPMailer/PHPMailer) vía SMTP, en vez de `mail()` nativo. Motivo: `mail()` depende de que el servidor tenga un MTA bien configurado y con muchos hostings compartidos los correos terminan en spam o no salen; PHPMailer usando SMTP (por ejemplo el relay de Google Workspace de ucol.mx, o el servidor SMTP que tenga la universidad) es mucho más confiable para algo tan importante como que cada alumno reciba su credencial. Sigue siendo una librería de un solo propósito, no un framework de aplicación.
-- [x] **Hosting/servidor**: VPS personal (de la empresa del organizador), no un servidor institucional. Esto implica acceso root/SSH, por lo que hay control total: se puede instalar PHP, MariaDB y Composer sin restricciones de un hosting compartido.
+- [x] **Hosting/servidor**: VPS personal (de la empresa del organizador) para producción; en desarrollo local se usa **Docker** (ver más abajo). El VPS implica acceso root/SSH, por lo que hay control total: se puede instalar PHP, MariaDB y Composer sin restricciones de un hosting compartido.
 - [x] **Diseño/CSS**: [Tailwind CSS](https://tailwindcss.com/), compilado con el [Tailwind CLI standalone](https://tailwindcss.com/blog/standalone-cli) (binario ejecutable, sin instalar Node.js ni npm). Se compila una sola vez un archivo `.css` a partir de las clases usadas en el HTML/PHP de toda la app (Día Académico y Día Deportivo comparten el mismo archivo compilado) y ese `.css` estático es lo único que se sube al VPS — no corre ningún proceso de build en el servidor. Encaja con "sin frameworks de frontend" porque no agrega JavaScript ni dependencias en tiempo de ejecución.
+- [x] **Entorno de desarrollo local**: Docker Compose (`app/docker-compose.yml`), con 4 servicios: `web` (PHP 8.2 + Apache + GD + PDO MySQL), `db` (MariaDB 11, importa `database/schema.sql` automáticamente la primera vez que se crea el volumen), `tailwind` (compila `assets/css/tailwind.css` en modo watch) y `adminer` (visor de base de datos, no forma parte de la app). Dos gotchas ya resueltos, documentados como comentarios en los propios Dockerfiles: (1) el binario standalone de Tailwind está enlazado contra glibc y no corre sobre Alpine/musl — se usa `debian:bookworm-slim`; (2) `tailwindcss --watch` (sin `=always`) se detiene en cuanto detecta el stdin cerrado, que es siempre el caso en un contenedor en segundo plano — hace falta `--watch=always`.
 
-> Nota de instalación: con acceso root/SSH confirmado, se usará **Composer** para gestionar `phpqrcode` y `PHPMailer` (más fácil de mantener/actualizar que vendorizar archivos a mano). Esto se define en el Prompt 2, junto con la configuración inicial de Tailwind CLI.
+> Nota de instalación: con acceso root/SSH confirmado, se usará **Composer** para gestionar `pendalff/phpqrcode` y `PHPMailer` (más fácil de mantener/actualizar que vendorizar archivos a mano). Esto se define en el Prompt 2, junto con la configuración inicial de Tailwind CLI.
 
 ## Pendientes menores (no bloquean empezar a programar)
 
@@ -115,8 +116,9 @@ Dos cosas independientes para dejar listo el resto de los prompts:
 
 2. Configura Tailwind CSS con el Tailwind CLI standalone (sin Node/npm):
    descarga el binario correspondiente al sistema operativo de desarrollo,
-   crea un archivo fuente app/assets/css/input.css con las directivas
-   @tailwind base/components/utilities, y compila a
+   crea un archivo fuente app/assets/css/input.css (el CLI descargado es
+   v4.x — usa `@import "tailwindcss";`, ya NO las directivas @tailwind
+   base/components/utilities de Tailwind v3), y compila a
    app/assets/css/tailwind.css (este archivo compilado sí se sube al VPS
    junto con el resto del código; el binario del CLI no). Este único
    archivo CSS se comparte entre app/registro, app/inscripciones y
@@ -149,7 +151,9 @@ preparadas (PDO, sin SQL concatenado).
 ```
 Crea app/registro/includes/generar-credencial.php: genera un código QR que
 codifica ÚNICAMENTE el numero_cuenta del alumno, y compone una imagen de
-credencial (usando la extensión GD nativa de PHP) con foto + nombre + grupo + QR.
+credencial VERTICAL (formato retrato, pensada para verse completa en la
+pantalla de un celular — implementado a 1080×1920) con el logo institucional
+(app/assets/img/logo/UdeC_2L izq Negro.png) + foto + nombre + grupo + QR.
 Guarda la imagen resultante y marca credencial_generada = true en la base de datos.
 Usa la librería phpqrcode (ver "Decisiones técnicas resueltas" en este documento).
 ```

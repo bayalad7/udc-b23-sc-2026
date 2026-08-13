@@ -1,0 +1,12 @@
+{
+    "name": "b23/semana-cultural-app",
+    "description": "Registro de asistencia e inscripciones — Semana Cultural del Aniversario, Bachillerato 23, Universidad de Colima",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1",
+        "ext-gd": "*",
+        "ext-pdo": "*",
+        "pendalff/phpqrcode": "1.0.1"
+    }
+}

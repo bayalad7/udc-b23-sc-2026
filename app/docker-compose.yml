@@ -1,0 +1,57 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./:/var/www/html
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-b23_semana_cultural}
+      DB_USER: ${DB_USER:-b23_app}
+      DB_PASSWORD: ${DB_PASSWORD:-cambia_esta_clave}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-b23_semana_cultural}
+      MYSQL_USER: ${DB_USER:-b23_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-cambia_esta_clave}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-cambia_esta_clave_root}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  tailwind:
+    build:
+      context: .
+      dockerfile: docker/tailwind.Dockerfile
+    volumes:
+      # Monta toda la app (no solo assets/css): Tailwind necesita ver los
+      # .php/.js donde se usan las clases para poder generarlas.
+      - ./:/var/www/html
+
+  # Visor de base de datos para desarrollo local (no forma parte de la app).
+  # Quitar este servicio si no se quiere exponer un panel de administración.
+  adminer:
+    image: adminer:latest
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      - db
+
+volumes:
+  db_data:

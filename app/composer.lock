@@ -1,0 +1,61 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "89e471c868855a397b88eaa6d1ca2db6",
+    "packages": [
+        {
+            "name": "pendalff/phpqrcode",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pendalff/phpqrcode.git",
+                "reference": "09832825f4419fae034cc287e47009e518d4b9df"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pendalff/phpqrcode/zipball/09832825f4419fae034cc287e47009e518d4b9df",
+                "reference": "09832825f4419fae034cc287e47009e518d4b9df",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "qrlib.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL"
+            ],
+            "description": "A PHP class to generate QR Code. Fork of t0k4rt/phpqrcode with composer support ",
+            "homepage": "http://github.com/pendalff/phpqrcode",
+            "keywords": [
+                "php",
+                "qrcode"
+            ],
+            "support": {
+                "source": "https://github.com/pendalff/phpqrcode/tree/1.0.1"
+            },
+            "time": "2016-08-23T03:55:41+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=8.1",
+        "ext-gd": "*",
+        "ext-pdo": "*"
+    },
+    "platform-dev": [],
+    "plugin-api-version": "2.3.0"
+}
