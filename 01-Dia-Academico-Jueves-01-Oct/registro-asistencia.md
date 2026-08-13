@@ -1,16 +1,27 @@
 # Registro de Asistencia — Día Académico
 
-Proceso de control de acceso y registro a talleres/ponencias mediante credencial digital (QR). Ocupa el bloque **08:00–08:30** de la [matriz de itinerario](itinerario-matriz.md).
+Proceso de control de acceso y registro a talleres/ponencias mediante credencial digital (QR). El escaneo de **entrada** ocupa el bloque **08:00–08:30** de la [matriz de itinerario](itinerario-matriz.md); el escaneo de **salida** puede ocurrir en cualquier momento posterior del evento (ver [Control de entrada y salida](#control-de-entrada-y-salida)).
 
 ## Flujo del proceso
 
 1. **Pre-registro (antes del evento)**: el alumno llena un formulario de registro en la nube con sus datos y foto.
 2. **Credencial digital**: a partir del pre-registro se genera una credencial (imagen) que el alumno guarda/muestra desde su celular, con su foto, datos generales y un código QR.
-3. **Día del evento — escaneo (08:00–08:30)**: el escaneo lo opera el **maestro/staff** en el punto de control (no es autoservicio del alumno). El alumno presenta la credencial, el maestro escanea el QR con la app y el sistema marca su asistencia con hora.
-4. **Asignación de ponencia/taller — dos vías posibles**:
+3. **Día del evento — escaneo de entrada (08:00–08:30)**: el escaneo lo opera el **maestro/staff** en el punto de control (no es autoservicio del alumno). El alumno presenta la credencial, el maestro escanea el QR con la app y el sistema marca su hora de entrada.
+4. **Asignación de ponencia/taller — dos vías posibles** (se dispara únicamente en el escaneo de entrada, el primero del día — ver [Control de entrada y salida](#control-de-entrada-y-salida)):
    - **Registro previo**: si el alumno ya eligió su ponencia/taller de antemano con el encargado de organizar el evento académico (durante el periodo de clases, antes del 1 de octubre), el sistema ya tiene su lugar reservado — no vuelve a elegir el día del evento.
    - **Por orden de llegada (el día del evento)**: si no tiene un lugar reservado previamente, justo después del escaneo elige de inmediato, con cupo limitado y **por orden de llegada** (el que se registra primero tiene más opciones disponibles): la ponencia de las 9:00–10:00 y los talleres de las Sesión 1 y 2 (10:30–12:30).
    - El **Concurso del Conocimiento** (Auditorio Principal, 10:30–12:30) queda **fuera de este mecanismo**: sus 12 equipos se organizan aparte, no por elección libre con cupo el día del evento.
+5. **Escaneo(s) de salida**: cualquier escaneo posterior al primero del día se registra como salida (ver detalle abajo). No vuelve a disparar la asignación de ponencia/taller del punto 4.
+
+## Control de entrada y salida
+
+La aplicación debe llevar, para los **3 días del evento** (Día Académico, Día Cultural y Día Deportivo — ver también [torneos-deportivos.md](../03-Dia-Deportivo-Sabado-03-Oct/torneos-deportivos.md#registro-de-asistencia-el-día-del-evento) para el Día Deportivo), el control de hora de llegada y hora de salida de cada persona, con esta regla:
+
+- **Primer escaneo del día**: registra la **hora de entrada**.
+- **Segundo escaneo en adelante** (sin importar cuántas veces se repita — segundo, tercero, cuarto...): **no crea un registro nuevo**, solo **sobreescribe la hora de salida** con la hora de ese escaneo. Así, la hora de salida guardada siempre es la del **último** escaneo del día, sin necesidad de que el alumno o el staff distingan "este es mi escaneo de salida definitivo" — cualquier entrada y salida intermedia (por ejemplo, si el alumno sale y vuelve a entrar varias veces) simplemente se sobreescribe hasta la última vez que pasa por el punto de control.
+- La pantalla del maestro/staff debe indicar claramente si el escaneo que acaba de hacer se registró como **Entrada** o como **Salida (actualizada)**, para evitar confusión sobre qué pasó.
+
+Detalle técnico (esquema de base de datos y lógica de la app de escaneo) en los Prompts 1 y 7 de [app/PROMPTS-DESARROLLO.md](../app/PROMPTS-DESARROLLO.md).
 
 ## Contenido de la credencial digital vs. contenido del QR
 
@@ -63,7 +74,8 @@ Puntos aún sin confirmar (detallados en ese documento): librería de generació
 
 ## Pendientes por definir
 
-- [ ] Ubicación física del punto de control de escaneo (entrada principal, Explanada, otro).
+- [ ] Ubicación física del punto de control de escaneo, tanto para entrada como para salida (entrada principal, Explanada, otro — puede ser el mismo punto para ambas).
+- [ ] Si el escaneo de salida es obligatorio (¿se exige a todos los alumnos escanear antes de retirarse?) o solo se registra cuando ocurre de manera natural (alumno vuelve a pasar por el punto de control).
 - [ ] Número de estaciones de escaneo (celulares/dispositivos) y personal responsable de operarlas.
 - [ ] Quién programa/mantiene la aplicación (ver `app/PROMPTS-DESARROLLO.md`) y con qué tiempo de anticipación (debe estar probada antes del 1 de octubre).
 - [ ] Cupo por taller/ponencia — depende de la capacidad de cada espacio (ver [espacios-y-capacidades.md](../00-Informacion-General/espacios-y-capacidades.md)) y del catálogo final de ponencias/talleres, que a su vez depende de los temas de interés recogidos en el pre-registro.
