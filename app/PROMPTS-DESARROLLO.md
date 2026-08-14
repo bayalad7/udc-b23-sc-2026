@@ -181,9 +181,9 @@ Usa la librería phpqrcode (ver "Decisiones técnicas resueltas" en este documen
 ### Prompt 6 — Envío de la credencial por correo
 ```
 Crea app/registro/includes/enviar-credencial.php: envía la imagen de credencial
-generada en el Prompt 5 al correo institucional del alumno, adjunta la imagen,
-y registra fecha_envio_credencial. Dispara este envío automáticamente justo
-después de un registro exitoso (no esperar al cierre del formulario).
+generada en el Prompt 5 al correo institucional del alumno, adjunta la imagen.
+Dispara este envío automáticamente justo después de un registro exitoso
+(no esperar al cierre del formulario).
 Usa PHPMailer vía SMTP (ver "Decisiones técnicas resueltas" en este documento).
 ```
 
@@ -524,13 +524,13 @@ simple que el Prompt 11 del Día Académico.
 - [X] Prompt 5 — Generación de credencial digital y QR
 - [ ] Prompt 6 — Envío de la credencial por correo
 - [x] Prompt 7 (revisado) — Módulo unificado de asistencias (escaneo QR + protección de acceso, los 3 días)
-- [ ] Prompt 8 — Selección de ponencia/taller por orden de llegada
-- [ ] Prompt 9 — Backend de inscripción (control de concurrencia)
-- [ ] Prompt 10 — Herramienta del encargado para asignación previa
+- [x] Prompt 8 — Selección de ponencia/taller por orden de llegada
+- [x] Prompt 9 — Backend de inscripción (control de concurrencia)
+- [x] Prompt 10 — Herramienta del encargado para asignación previa
 - [ ] Prompt 11 — Reporte de asistencia y ocupación (opcional)
 - [x] Prompt 12 — Esquema de base de datos para equipos — fusionado en el Prompt 1, ver `app/database/schema.sql`
-- [ ] Prompt 13 — Formulario de inscripción de equipo
-- [ ] Prompt 14 — Guardado de la inscripción del equipo
+- [x] Prompt 13 — Formulario de inscripción de equipo
+- [x] Prompt 14 — Guardado de la inscripción del equipo
 - [ ] Prompt 15 — Generación de credencial/QR por integrante
 - [ ] Prompt 16 — Envío de credenciales del equipo por correo
 - [x] Prompt 17 — Fusionado con el Prompt 7 revisado (ya no es un prompt aparte)

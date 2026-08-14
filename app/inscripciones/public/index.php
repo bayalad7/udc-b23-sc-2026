@@ -174,7 +174,7 @@ $dias = [
             <?php endforeach; ?>
         </nav>
 
-        <a href="/inscripciones/includes/salir.php" class="mt-6 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline">
+        <a href="/inscripciones/includes/salir.php" class="mt-6 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline cursor-pointer">
             <?= icono('salir', 'h-3.5 w-3.5 shrink-0') ?>
             Cerrar sesión en este dispositivo
         </a>

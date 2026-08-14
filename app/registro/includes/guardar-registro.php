@@ -12,13 +12,13 @@ function volverConError(string $codigo): never
     exit;
 }
 
-require __DIR__ . '/temas-interes.php';
-
 $nombreCompleto = trim((string) ($_POST['nombre_completo'] ?? ''));
 $numeroCuenta = strtoupper(trim((string) ($_POST['numero_cuenta'] ?? '')));
 $grado = trim((string) ($_POST['grado'] ?? ''));
 $grupo = trim((string) ($_POST['grupo'] ?? ''));
 $correoInstitucional = trim((string) ($_POST['correo_institucional'] ?? ''));
+$camisaCorte = trim((string) ($_POST['camisa_corte'] ?? ''));
+$camisaTalla = trim((string) ($_POST['camisa_talla'] ?? ''));
 
 if ($nombreCompleto === '' || $correoInstitucional === '') {
     volverConError('campos_incompletos');
@@ -32,6 +32,10 @@ if (!in_array($grado, ['1', '3', '5'], true) || !in_array($grupo, ['A', 'B', 'C'
     volverConError('campos_incompletos');
 }
 
+if (!in_array($camisaCorte, ['Hombre', 'Mujer'], true) || !in_array($camisaTalla, ['S', 'M', 'L', 'XL', '2XL'], true)) {
+    volverConError('campos_incompletos');
+}
+
 if (!filter_var($correoInstitucional, FILTER_VALIDATE_EMAIL)) {
     volverConError('campos_incompletos');
 }
@@ -39,14 +43,6 @@ if (!filter_var($correoInstitucional, FILTER_VALIDATE_EMAIL)) {
 if (mb_strlen($nombreCompleto) > 150 || mb_strlen($correoInstitucional) > 150) {
     volverConError('campos_incompletos');
 }
-
-// --- Temas de interés (selección múltiple contra el catálogo fijo) -------
-
-$temasSeleccionados = array_filter(
-    (array) ($_POST['temas_interes'] ?? []),
-    static fn (mixed $tema): bool => is_string($tema) && in_array($tema, TEMAS_INTERES_DISPONIBLES, true)
-);
-$temaInteres = implode(', ', $temasSeleccionados);
 
 // --- Validación de la fotografía --------------------------------------
 
@@ -108,9 +104,9 @@ if (!move_uploaded_file($fotoTmp, $rutaFotoAbsoluta)) {
 try {
     $insertar = $pdo->prepare(
         'INSERT INTO alumnos
-            (numero_cuenta, nombre_completo, grado, grupo, correo_institucional, foto_path, tema_interes, token_descarga)
+            (numero_cuenta, nombre_completo, grado, grupo, correo_institucional, foto_path, camisa_corte, camisa_talla, token_descarga)
          VALUES
-            (:numero_cuenta, :nombre_completo, :grado, :grupo, :correo_institucional, :foto_path, :tema_interes, :token_descarga)'
+            (:numero_cuenta, :nombre_completo, :grado, :grupo, :correo_institucional, :foto_path, :camisa_corte, :camisa_talla, :token_descarga)'
     );
     $insertar->execute([
         'numero_cuenta' => $numeroCuenta,
@@ -119,7 +115,8 @@ try {
         'grupo' => $grupo,
         'correo_institucional' => $correoInstitucional,
         'foto_path' => $rutaFotoRelativa,
-        'tema_interes' => $temaInteres !== '' ? $temaInteres : null,
+        'camisa_corte' => $camisaCorte,
+        'camisa_talla' => $camisaTalla,
         'token_descarga' => $token,
     ]);
 } catch (PDOException $e) {

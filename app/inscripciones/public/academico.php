@@ -223,7 +223,7 @@ function renderTarjetaEvento(array $evento, bool $yaInscrito, bool $bloqueado, a
         </span>
         <?php else: ?>
         <button type="button" data-abrir-modal="confirmar-<?= $idEvento ?>"
-                class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
             <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
             Inscribirme
         </button>
@@ -264,7 +264,10 @@ function renderTarjetaEvento(array $evento, bool $yaInscrito, bool $bloqueado, a
                 </table>
             </div>
             <form method="dialog" class="mt-4">
-                <button type="submit" class="w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Cerrar</button>
+                <button type="submit" class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white cursor-pointer">
+                    <?= icono('quitar', 'h-3.5 w-3.5 shrink-0') ?>
+                    Cerrar
+                </button>
             </form>
         </div>
     </dialog>
@@ -284,14 +287,15 @@ function renderTarjetaEvento(array $evento, bool $yaInscrito, bool $bloqueado, a
             </p>
             <div class="flex gap-2">
                 <form method="dialog" class="flex-1">
-                    <button type="submit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+                    <button type="submit" class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                        <?= icono('quitar', 'h-3.5 w-3.5 shrink-0') ?>
                         Cancelar
                     </button>
                 </form>
                 <form action="/inscripciones/includes/inscribir.php" method="post" class="flex-1">
                     <input type="hidden" name="id_evento" value="<?= $idEvento ?>">
                     <button type="submit"
-                            class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                            class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
                         <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
                         Confirmar
                     </button>
@@ -440,7 +444,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                     <?= icono('candado', 'h-5 w-5 shrink-0 text-slate-300') ?>
                     <?php else: ?>
                     <button type="button" data-abrir-modal="formar-equipo-conocimiento"
-                            class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                            class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
                         <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
                         Formar equipo
                     </button>
@@ -481,7 +485,10 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                         <?php endforeach; ?>
                     </div>
                     <form method="dialog" class="mt-4">
-                        <button type="submit" class="w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Cerrar</button>
+                        <button type="submit" class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white cursor-pointer">
+                    <?= icono('quitar', 'h-3.5 w-3.5 shrink-0') ?>
+                    Cerrar
+                </button>
                     </form>
                 </div>
             </dialog>
@@ -501,8 +508,11 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                     <form action="/inscripciones/includes/crear-equipo-conocimiento.php" method="post" data-equipo-form novalidate>
                         <div class="mb-3">
                             <label for="nombre_equipo" class="mb-1 block text-xs font-medium">Nombre del equipo</label>
-                            <input type="text" id="nombre_equipo" name="nombre_equipo" required maxlength="150"
-                                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none">
+                            <div class="relative">
+                                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('nombre', 'h-4 w-4') ?></span>
+                                <input type="text" id="nombre_equipo" name="nombre_equipo" required maxlength="150"
+                                       class="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
+                            </div>
                         </div>
 
                         <div class="mb-3 flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
@@ -526,7 +536,8 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                                                class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-center text-sm uppercase focus:border-slate-500 focus:outline-none">
                                     </div>
                                     <button type="button" data-buscar-boton
-                                            class="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                                            class="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
+                                        <?= icono('buscar', 'h-3.5 w-3.5 shrink-0') ?>
                                         Buscar
                                     </button>
                                 </div>
@@ -550,11 +561,12 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
 
                         <div class="flex gap-2">
                             <button type="button" data-cerrar-modal="formar-equipo-conocimiento"
-                                    class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+                                    class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                <?= icono('quitar', 'h-3.5 w-3.5 shrink-0') ?>
                                 Cancelar
                             </button>
                             <button type="submit" data-equipo-submit
-                                    class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40">
+                                    class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer">
                                 <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
                                 Registrar equipo
                             </button>

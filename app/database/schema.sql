@@ -1,6 +1,17 @@
 -- Esquema de base de datos — Semana Acádemica, Cultural y Deportiva B23
 -- Ver app/PROMPTS-DESARROLLO.md para el detalle de cada tabla y su prompt de origen.
 
+-- El contenedor de MariaDB crea la base (variable MYSQL_DATABASE, ver
+-- docker-compose.yml) con el collation por defecto del servidor —
+-- utf8mb4_uca1400_ai_ci en MariaDB 11 — pero todas las tablas de este
+-- archivo se crean explícitamente en utf8mb4_unicode_ci. Sin este ALTER, esa
+-- discrepancia entre el collation "de la base" y el de las tablas rompe
+-- cualquier procedimiento/función almacenado que compare literales de texto
+-- (error 1267 "Illegal mix of collations") aunque las tablas en sí queden
+-- bien. Alinear aquí el collation por defecto de la base evita el problema
+-- para cualquier rutina futura, no solo las de app/database/seeds.sql.
+ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- Configuración general de la app. Por ahora solo guarda la contraseña
 -- compartida (hasheada) que pide app/asistencias antes de dejar escanear —
 -- ver app/asistencias/public/evento.php. Una sola fila (id fijo en 1, forzado
@@ -35,16 +46,16 @@ CREATE TABLE IF NOT EXISTS alumnos (
         COMMENT 'A dónde se envía la credencial digital generada (app/registro, Prompt 6)',
     foto_path               VARCHAR(255) NOT NULL
         COMMENT 'Ruta relativa dentro de app/registro/public/uploads/ — la foto no se guarda en la base de datos',
-    tema_interes            TEXT NULL
-        COMMENT 'Texto libre del registro: insumo para armar el catálogo final de ponencias/talleres en eventos, no una selección de catálogo',
+    camisa_corte            ENUM('Hombre','Mujer') NOT NULL
+        COMMENT 'Corte de la camisa oficial del aniversario que se le encargará al alumno',
+    camisa_talla            ENUM('S','M','L','XL','2XL') NOT NULL
+        COMMENT 'Talla de la camisa oficial del aniversario que se le encargará al alumno',
     token_descarga          CHAR(32) NOT NULL
         COMMENT 'Identificador aleatorio (no el numero_cuenta) usado en la URL de exito.php/recuperar.php para volver a descargar la credencial',
     credencial_path         VARCHAR(255) NULL
         COMMENT 'Ruta relativa dentro de app/registro/public/credenciales/ de la credencial (imagen) ya compuesta',
     credencial_generada     TINYINT(1) NOT NULL DEFAULT 0
         COMMENT 'true una vez que generar-credencial.php compuso la imagen con foto + datos + QR',
-    fecha_envio_credencial  DATETIME NULL
-        COMMENT 'Cuándo se envió la credencial por correo (Prompt 6) — NULL mientras no se ha enviado',
     fecha_registro          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'Cuándo se completó el registro',
     UNIQUE KEY uq_alumnos_numero_cuenta (numero_cuenta)

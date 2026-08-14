@@ -103,7 +103,7 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
 <link rel="stylesheet" href="/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
-<div class="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-8">
+<div class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8">
 
     <a href="/inscripciones/public/index.php" class="mb-4 flex items-center gap-1 text-sm font-medium text-slate-600">
         <?= icono('volver', 'h-4 w-4 shrink-0') ?>
@@ -173,7 +173,7 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
             </span>
             <?php else: ?>
             <button type="button" data-abrir-modal="formar-equipo-torneo-<?= $idTorneo ?>"
-                    class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                    class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
                 <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
                 Formar equipo
             </button>
@@ -220,7 +220,10 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
                 <?php endforeach; ?>
             </div>
             <form method="dialog" class="mt-4">
-                <button type="submit" class="w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Cerrar</button>
+                <button type="submit" class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white cursor-pointer">
+                    <?= icono('quitar', 'h-3.5 w-3.5 shrink-0') ?>
+                    Cerrar
+                </button>
             </form>
         </div>
     </dialog>
@@ -241,19 +244,25 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
 
                 <div class="mb-3">
                     <label class="mb-1 block text-xs font-medium">Nombre del equipo</label>
-                    <input type="text" name="nombre_equipo" required maxlength="150"
-                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none">
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('nombre', 'h-4 w-4') ?></span>
+                        <input type="text" name="nombre_equipo" required maxlength="150"
+                               class="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
+                    </div>
                 </div>
 
                 <div class="mb-3">
                     <label class="mb-1 block text-xs font-medium">Color de camisa</label>
-                    <select name="color_camisa" required
-                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none">
-                        <option value="">Elige un color…</option>
-                        <?php foreach ($coloresDisponibles as $color): ?>
-                        <option value="<?= htmlspecialchars($color, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($color, ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('camisa', 'h-4 w-4') ?></span>
+                        <select name="color_camisa" required
+                                class="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
+                            <option value="">Elige un color…</option>
+                            <?php foreach ($coloresDisponibles as $color): ?>
+                            <option value="<?= htmlspecialchars($color, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($color, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="mb-3 flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
@@ -282,7 +291,8 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
                                        class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-center text-sm uppercase focus:border-slate-500 focus:outline-none">
                             </div>
                             <button type="button" data-buscar-boton
-                                    class="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white active:bg-slate-700">
+                                    class="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
+                                <?= icono('buscar', 'h-3.5 w-3.5 shrink-0') ?>
                                 Buscar
                             </button>
                         </div>
@@ -306,11 +316,12 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
 
                 <div class="flex gap-2">
                     <button type="button" data-cerrar-modal="formar-equipo-torneo-<?= $idTorneo ?>"
-                            class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+                            class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                        <?= icono('quitar', 'h-3.5 w-3.5 shrink-0') ?>
                         Cancelar
                     </button>
                     <button type="submit" data-equipo-submit
-                            class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40">
+                            class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer">
                         <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
                         Registrar equipo
                     </button>

@@ -57,7 +57,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
         </div>
 
         <button type="submit"
-                class="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white active:bg-slate-700">
+                class="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white active:bg-slate-700 cursor-pointer">
             <?= icono('buscar', 'h-4 w-4 shrink-0') ?>
             Buscar mi credencial
         </button>

@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../includes/iconos.php';
-require __DIR__ . '/../includes/temas-interes.php';
 
 $errores = [
     'campos_incompletos' => 'Faltan campos obligatorios o el número de cuenta no tiene el formato correcto (8 caracteres).',
@@ -113,24 +112,46 @@ $mensajeError = $errores[$codigoError] ?? null;
 
         <fieldset>
             <legend class="mb-1 flex items-center gap-1.5 text-sm font-medium">
-                <?= icono('ideas', 'h-4 w-4 shrink-0 text-slate-400') ?>
-                Temas de tu interés (opcional)
+                <?= icono('camisa', 'h-4 w-4 shrink-0 text-slate-400') ?>
+                Camisa oficial del aniversario
             </legend>
-            <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-300 p-3 sm:grid-cols-2">
-                <?php foreach (TEMAS_INTERES_DISPONIBLES as $indice => $tema): ?>
-                <label class="flex items-center gap-2 text-sm">
-                    <input type="checkbox" name="temas_interes[]" value="<?= htmlspecialchars($tema, ENT_QUOTES, 'UTF-8') ?>"
-                           id="tema-<?= $indice ?>" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500">
-                    <?= htmlspecialchars($tema, ENT_QUOTES, 'UTF-8') ?>
-                </label>
-                <?php endforeach; ?>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="camisa_corte" class="mb-1 block text-xs text-slate-500">Corte</label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('camisa') ?></span>
+                        <select id="camisa_corte" name="camisa_corte" required
+                                class="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-base focus:border-slate-500 focus:outline-none">
+                            <option value="" disabled selected>Elige...</option>
+                            <option value="Hombre">Hombre</option>
+                            <option value="Mujer">Mujer</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="camisa_talla" class="mb-1 block text-xs text-slate-500">Talla</label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('talla') ?></span>
+                        <select id="camisa_talla" name="camisa_talla" required
+                                class="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-base focus:border-slate-500 focus:outline-none">
+                            <option value="" disabled selected>Elige...</option>
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="2XL">2XL</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <p class="mt-1 text-xs text-slate-500">Puedes elegir varios. Ayuda a definir el catálogo final de ponencias y talleres.</p>
+            <p class="mt-1 text-xs text-slate-500">Se usa para encargar tu camisa oficial del aniversario.</p>
         </fieldset>
 
         <p id="mensaje-validacion" class="hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"></p>
 
         <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <strong>Notas importantes.</strong>
+            <br/><br/>
             1. Solo puedes realizar el registro <strong>una única vez</strong> por número de cuenta.
             <br/><br/>
             2. Verifica que toda tu información sea correcta antes de continuar: <strong>no podrás editarla después de registrarte.</strong>

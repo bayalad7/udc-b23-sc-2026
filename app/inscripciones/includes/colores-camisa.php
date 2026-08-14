@@ -8,4 +8,4 @@ declare(strict_types=1);
 // Compartido entre public/deportivo.php (selección) e
 // includes/crear-equipo-deportivo.php (validación) para que ambos lados
 // vean siempre la misma lista.
-const COLORES_CAMISA = [ 'Blanco', 'Rojo', 'Azul Marino', 'Azul Rey', 'Amarillo','Verde', 'Negro', 'Gris', 'Naranja', 'Celeste', 'Tinto', 'Rosa', 'Morado', 'VerdeLima', 'Beige', 'Cafe'];
+const COLORES_CAMISA = [ 'Blanco', 'Rojo', 'Azul Marino', 'Azul Rey', 'Amarillo','Verde', 'Negro', 'Gris', 'Naranja', 'Celeste', 'Tinto', 'Rosa', 'Morado', 'Verde Lima', 'Beige', 'Cafe'];

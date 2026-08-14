@@ -145,23 +145,60 @@ function inicializarConstructorEquipo(builder) {
         });
     }
 
-    function crearIconoQuitar() {
+    // Constructor genérico de íconos SVG inline (mismos trazos Lucide que
+    // includes/iconos.php) para los botones que arma este módulo por
+    // JavaScript, donde no se puede llamar a la función icono() de PHP.
+    // `elementos` es un arreglo de [tagName, atributos].
+    function crearIconoSvg(elementos, clase, grosor) {
         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', '0 0 24 24');
         svg.setAttribute('fill', 'none');
         svg.setAttribute('stroke', 'currentColor');
-        svg.setAttribute('stroke-width', '3');
+        svg.setAttribute('stroke-width', grosor || '2');
         svg.setAttribute('stroke-linecap', 'round');
         svg.setAttribute('stroke-linejoin', 'round');
-        svg.setAttribute('class', 'h-3 w-3');
+        svg.setAttribute('class', clase);
         svg.setAttribute('aria-hidden', 'true');
-        var trazoA = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        trazoA.setAttribute('d', 'M18 6 6 18');
-        var trazoB = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        trazoB.setAttribute('d', 'm6 6 12 12');
-        svg.appendChild(trazoA);
-        svg.appendChild(trazoB);
+        elementos.forEach(function (elemento) {
+            var nodo = document.createElementNS('http://www.w3.org/2000/svg', elemento[0]);
+            Object.keys(elemento[1]).forEach(function (atributo) {
+                nodo.setAttribute(atributo, elemento[1][atributo]);
+            });
+            svg.appendChild(nodo);
+        });
         return svg;
+    }
+
+    // lucide "x"
+    function crearIconoQuitar() {
+        return crearIconoSvg([['path', { d: 'M18 6 6 18' }], ['path', { d: 'm6 6 12 12' }]], 'h-3 w-3', '3');
+    }
+
+    // lucide "user-round-plus" (botón "Agregar al equipo")
+    function crearIconoAgregarPersona() {
+        return crearIconoSvg([
+            ['path', { d: 'M2 21a8 8 0 0 1 13.292-6' }],
+            ['circle', { cx: '10', cy: '8', r: '5' }],
+            ['path', { d: 'M19 16v6' }],
+            ['path', { d: 'M22 19h-6' }]
+        ], 'h-3.5 w-3.5 shrink-0');
+    }
+
+    // lucide "user-round" (selector de rol alumno/padre/madre, torneos)
+    function crearIconoUsuario() {
+        return crearIconoSvg([
+            ['circle', { cx: '12', cy: '8', r: '5' }],
+            ['path', { d: 'M20 21a8 8 0 0 0-16 0' }]
+        ], 'h-3 w-3 shrink-0');
+    }
+
+    // lucide "type" (input de nombre del padre/madre)
+    function crearIconoNombre() {
+        return crearIconoSvg([
+            ['polyline', { points: '4 7 4 4 20 4 20 7' }],
+            ['line', { x1: '9', x2: '15', y1: '20', y2: '20' }],
+            ['line', { x1: '12', x2: '12', y1: '4', y2: '20' }]
+        ], 'h-4 w-4');
     }
 
     function renderizarGrid() {
@@ -172,7 +209,7 @@ function inicializarConstructorEquipo(builder) {
 
             var quitar = document.createElement('button');
             quitar.type = 'button';
-            quitar.className = 'absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700 active:bg-red-800';
+            quitar.className = 'absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700 active:bg-red-800 cursor-pointer';
             quitar.setAttribute('aria-label', 'Quitar integrante');
             quitar.title = 'Quitar';
             quitar.appendChild(crearIconoQuitar());
@@ -274,6 +311,7 @@ function inicializarConstructorEquipo(builder) {
 
         var tipoSeleccionado = 'alumno';
         var nombreFamiliarInput = null;
+        var contenedorNombreFamiliar = null;
 
         function actualizarAviso() {
             if (tipoSeleccionado === 'alumno' && cuenta === capitanCuenta) {
@@ -298,7 +336,7 @@ function inicializarConstructorEquipo(builder) {
             var etiquetasTipo = { alumno: 'El alumno', padre: 'Su papá', madre: 'Su mamá' };
             ['alumno', 'padre', 'madre'].forEach(function (valor) {
                 var etiqueta = document.createElement('label');
-                etiqueta.className = 'flex cursor-pointer items-center justify-center rounded-lg border border-slate-300 px-2 py-1.5 text-[11px] font-medium text-slate-600 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-900 has-[:checked]:text-white';
+                etiqueta.className = 'flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-slate-300 px-2 py-1.5 text-[11px] font-medium text-slate-600 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-900 has-[:checked]:text-white';
                 var radio = document.createElement('input');
                 radio.type = 'radio';
                 radio.name = 'tipo_busqueda_temp';
@@ -307,24 +345,35 @@ function inicializarConstructorEquipo(builder) {
                 radio.className = 'sr-only';
                 radio.addEventListener('change', function () {
                     tipoSeleccionado = valor;
-                    if (nombreFamiliarInput) {
-                        nombreFamiliarInput.hidden = valor === 'alumno';
+                    if (contenedorNombreFamiliar) {
+                        contenedorNombreFamiliar.hidden = valor === 'alumno';
                     }
                     actualizarAviso();
                 });
                 etiqueta.appendChild(radio);
+                etiqueta.appendChild(crearIconoUsuario());
                 etiqueta.appendChild(document.createTextNode(etiquetasTipo[valor]));
                 grupoTipo.appendChild(etiqueta);
             });
             cuerpo.appendChild(grupoTipo);
 
+            contenedorNombreFamiliar = document.createElement('div');
+            contenedorNombreFamiliar.className = 'relative mb-2';
+            contenedorNombreFamiliar.hidden = true;
+
+            var iconoNombreFamiliar = document.createElement('span');
+            iconoNombreFamiliar.className = 'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400';
+            iconoNombreFamiliar.appendChild(crearIconoNombre());
+            contenedorNombreFamiliar.appendChild(iconoNombreFamiliar);
+
             nombreFamiliarInput = document.createElement('input');
             nombreFamiliarInput.type = 'text';
             nombreFamiliarInput.placeholder = 'Nombre completo del padre/madre';
             nombreFamiliarInput.maxLength = 150;
-            nombreFamiliarInput.hidden = true;
-            nombreFamiliarInput.className = 'mb-2 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-slate-500 focus:outline-none';
-            cuerpo.appendChild(nombreFamiliarInput);
+            nombreFamiliarInput.className = 'w-full rounded-lg border border-slate-300 py-1.5 pl-8 pr-2 text-xs focus:border-slate-500 focus:outline-none';
+            contenedorNombreFamiliar.appendChild(nombreFamiliarInput);
+
+            cuerpo.appendChild(contenedorNombreFamiliar);
         }
 
         cuerpo.appendChild(avisoEl);
@@ -333,7 +382,8 @@ function inicializarConstructorEquipo(builder) {
         var botonAgregar = document.createElement('button');
         botonAgregar.type = 'button';
         botonAgregar.className = 'flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700';
-        botonAgregar.textContent = 'Agregar al equipo';
+        botonAgregar.appendChild(crearIconoAgregarPersona());
+        botonAgregar.appendChild(document.createTextNode('Agregar al equipo'));
         botonAgregar.addEventListener('click', function () {
             if (tipoSeleccionado === 'alumno' && (cuenta === capitanCuenta || !datos.puede_ser_alumno)) {
                 actualizarAviso();

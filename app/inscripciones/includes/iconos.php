@@ -46,6 +46,10 @@ const ICONOS_SVG = [
     'quitar' => '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     // lucide "shirt" (color de camisa, torneos deportivos)
     'camisa' => '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23"/>',
+    // lucide "search" (botón "Buscar" del constructor de equipos)
+    'buscar' => '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
+    // lucide "type" (campos de texto libre: nombre de equipo/acto)
+    'nombre' => '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
 ];
 
 /** Devuelve el markup de un ícono SVG inline (Lucide). $clase son clases Tailwind (tamaño/color). */

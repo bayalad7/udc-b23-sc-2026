@@ -33,9 +33,11 @@
         var grado = form.grado.value.trim();
         var grupo = form.grupo.value.trim();
         var correo = form.correo_institucional.value.trim();
+        var camisaCorte = form.camisa_corte.value.trim();
+        var camisaTalla = form.camisa_talla.value.trim();
         var foto = form.foto.files[0];
 
-        if (!nombre || !grado || !grupo || !correo) {
+        if (!nombre || !grado || !grupo || !correo || !camisaCorte || !camisaTalla) {
             evento.preventDefault();
             mostrarError('Completa todos los campos obligatorios.');
             return;
