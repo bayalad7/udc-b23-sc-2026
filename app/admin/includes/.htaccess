@@ -1,0 +1,45 @@
+Require all denied
+
+<Files "registrar-clave.php">
+    Require all granted
+</Files>
+
+<Files "verificar-clave.php">
+    Require all granted
+</Files>
+
+<Files "cerrar-sesion.php">
+    Require all granted
+</Files>
+
+<Files "guardar-alumno.php">
+    Require all granted
+</Files>
+
+<Files "eliminar-alumno.php">
+    Require all granted
+</Files>
+
+<Files "regenerar-credencial.php">
+    Require all granted
+</Files>
+
+<Files "exportar-alumnos.php">
+    Require all granted
+</Files>
+
+<Files "guardar-evento.php">
+    Require all granted
+</Files>
+
+<Files "eliminar-evento.php">
+    Require all granted
+</Files>
+
+<Files "guardar-competicion.php">
+    Require all granted
+</Files>
+
+<Files "eliminar-competicion.php">
+    Require all granted
+</Files>

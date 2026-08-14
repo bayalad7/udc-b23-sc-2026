@@ -12,20 +12,27 @@
 -- para cualquier rutina futura, no solo las de app/database/seeds.sql.
 ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Configuración general de la app. Por ahora solo guarda la contraseña
--- compartida (hasheada) que pide app/asistencias antes de dejar escanear —
--- ver app/asistencias/public/evento.php. Una sola fila (id fijo en 1, forzado
--- con el CHECK) para que sea trivial de leer/actualizar sin tener que buscar
--- cuál es "la" fila.
+-- Configuración general de la app: las contraseñas compartidas (hasheadas)
+-- que piden app/asistencias (clave_acceso) y app/admin (clave_admin) antes de
+-- dejar hacer nada — ver app/asistencias/public/evento.php y
+-- app/admin/public/index.php. Una sola fila (id fijo en 1, forzado con el
+-- CHECK) para que sea trivial de leer/actualizar sin tener que buscar cuál es
+-- "la" fila. Ambas columnas son NULL hasta que alguien configura esa
+-- contraseña por primera vez — y son independientes entre sí a propósito:
+-- quien entra primero a asistencias puede crear la fila (id=1) sin conocer
+-- todavía la clave de admin, y viceversa; cada módulo solo lee/escribe su
+-- propia columna y nunca asume que la otra ya tiene valor.
 CREATE TABLE IF NOT EXISTS sistema (
     id            TINYINT UNSIGNED NOT NULL DEFAULT 1
         COMMENT 'Fijo en 1 (ver CHECK) — tabla de una sola fila',
-    clave_acceso  VARCHAR(255) NOT NULL
-        COMMENT 'Hash (password_hash) de la contraseña de acceso a app/asistencias — nunca texto plano',
+    clave_acceso  VARCHAR(255) NULL DEFAULT NULL
+        COMMENT 'Hash (password_hash) de la contraseña de acceso a app/asistencias — NULL si aún no se configura, nunca texto plano',
+    clave_admin   VARCHAR(255) NULL DEFAULT NULL
+        COMMENT 'Hash (password_hash) de la contraseña de acceso a app/admin — NULL si aún no se configura, nunca texto plano',
     PRIMARY KEY (id),
     CONSTRAINT chk_sistema_id CHECK ( id = 1 )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Configuración general de la app (hoy: solo la contraseña de acceso a app/asistencias). Una sola fila.';
+  COMMENT='Configuración general de la app: contraseñas de acceso a app/asistencias y app/admin. Una sola fila.';
 
 -- Alumnos pre-registrados (app/registro) antes de la Semana Acádemica, Cultural y Deportiva. Es el
 -- padrón base del que cuelga todo lo demás: la credencial digital con QR que

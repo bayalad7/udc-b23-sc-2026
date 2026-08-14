@@ -8,7 +8,7 @@ iniciarSesionAsistencias();
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
-$claveYaRegistrada = $pdo->query('SELECT 1 FROM sistema LIMIT 1')->fetch() !== false;
+$claveYaRegistrada = $pdo->query('SELECT 1 FROM sistema WHERE clave_acceso IS NOT NULL LIMIT 1')->fetch() !== false;
 
 $errores = [
     'clave_incorrecta' => 'Contraseña incorrecta.',

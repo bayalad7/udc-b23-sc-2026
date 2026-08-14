@@ -25,16 +25,20 @@ if (!hash_equals($clave, $claveConfirmar)) {
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
 
-// La tabla sistema solo admite una fila (id fijo en 1, ver schema.sql). Si ya
-// existe (alguien más la registró justo antes), no la pisamos: el que llega
-// después debe usar el formulario normal de acceso con la clave ya definida.
-try {
-    $insertar = $pdo->prepare('INSERT INTO sistema (clave_acceso) VALUES (:clave)');
-    $insertar->execute(['clave' => password_hash($clave, PASSWORD_DEFAULT)]);
-} catch (PDOException $e) {
-    if ($e->getCode() !== '23000') {
-        throw $e;
-    }
+// La tabla sistema solo admite una fila (id fijo en 1, ver schema.sql) pero
+// clave_acceso y clave_admin (app/admin) se configuran por separado, en
+// momentos distintos e independientes — así que la fila puede ya existir con
+// clave_admin definida y clave_acceso todavía en NULL. Por eso el INSERT solo
+// toca su propia columna vía ON DUPLICATE KEY UPDATE, con un IF() que nunca
+// pisa una clave_acceso que ya tuviera valor. Si el UPDATE no cambió nada
+// (rowCount 0), es que alguien más ya la había registrado justo antes.
+$registrar = $pdo->prepare(
+    'INSERT INTO sistema (id, clave_acceso) VALUES (1, :clave)
+     ON DUPLICATE KEY UPDATE clave_acceso = IF(clave_acceso IS NULL, VALUES(clave_acceso), clave_acceso)'
+);
+$registrar->execute(['clave' => password_hash($clave, PASSWORD_DEFAULT)]);
+
+if ($registrar->rowCount() === 0) {
     header('Location: /asistencias/public/evento.php?error=ya_registrada');
     exit;
 }
