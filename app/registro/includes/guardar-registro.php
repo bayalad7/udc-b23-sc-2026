@@ -32,7 +32,7 @@ if (!in_array($grado, ['1', '3', '5'], true) || !in_array($grupo, ['A', 'B', 'C'
     volverConError('campos_incompletos');
 }
 
-if (!in_array($camisaCorte, ['Hombre', 'Mujer'], true) || !in_array($camisaTalla, ['S', 'M', 'L', 'XL', '2XL'], true)) {
+if (!in_array($camisaCorte, ['Unisex'], true) || !in_array($camisaTalla, ['XS', 'S', 'M', 'L', 'XL', '2XL'], true)) {
     volverConError('campos_incompletos');
 }
 

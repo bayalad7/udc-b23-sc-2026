@@ -53,9 +53,9 @@ CREATE TABLE IF NOT EXISTS alumnos (
         COMMENT 'A dónde se envía la credencial digital generada (app/registro, Prompt 6)',
     foto_path               VARCHAR(255) NOT NULL
         COMMENT 'Ruta relativa dentro de app/registro/public/uploads/ — la foto no se guarda en la base de datos',
-    camisa_corte            ENUM('Hombre','Mujer') NOT NULL
-        COMMENT 'Corte de la camisa oficial del aniversario que se le encargará al alumno',
-    camisa_talla            ENUM('S','M','L','XL','2XL') NOT NULL
+    camisa_corte            ENUM('Hombre','Mujer','Unisex') NOT NULL DEFAULT 'Unisex'
+        COMMENT 'Corte de la camisa oficial del aniversario que se le encargará al alumno — único corte disponible (Unisex)',
+    camisa_talla            ENUM('XS','S','M','L','XL','2XL') NOT NULL
         COMMENT 'Talla de la camisa oficial del aniversario que se le encargará al alumno',
     token_descarga          CHAR(32) NOT NULL
         COMMENT 'Identificador aleatorio (no el numero_cuenta) usado en la URL de exito.php/recuperar.php para volver a descargar la credencial',

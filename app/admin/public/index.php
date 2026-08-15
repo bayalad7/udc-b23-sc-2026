@@ -62,8 +62,35 @@ if ($claveYaRegistrada && adminAutorizado()) {
     // --- 5. Tallas de camisa solicitadas (pedido al proveedor) ---------------
     $tallasCamisa = $pdo->query(
         "SELECT camisa_talla, COUNT(*) AS total FROM alumnos GROUP BY camisa_talla
-         ORDER BY FIELD(camisa_talla, 'S', 'M', 'L', 'XL', '2XL')"
+         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL')"
     )->fetchAll();
+
+    // Mismo desglose pero por grado y grupo, para pedir las camisas con más control.
+    $tallasCamisaPorGradoGrupo = $pdo->query(
+        "SELECT camisa_talla, grado, grupo, COUNT(*) AS total FROM alumnos
+         GROUP BY camisa_talla, grado, grupo
+         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL'), grado, grupo"
+    )->fetchAll();
+    $gruposCamisa = [];
+    $tallasCamisaPivote = [];
+    foreach ($tallasCamisaPorGradoGrupo as $fila) {
+        $grupoEtiqueta = $fila['grado'] . '°' . $fila['grupo'];
+        $gruposCamisa[$grupoEtiqueta] = true;
+        $tallasCamisaPivote[$fila['camisa_talla']][$grupoEtiqueta] = (int) $fila['total'];
+    }
+    $gruposCamisa = array_keys($gruposCamisa);
+    sort($gruposCamisa);
+
+    // Detalle por alumno (para armar la lista de entrega), agrupado por grado y grupo.
+    $alumnosCamisaDetalle = $pdo->query(
+        "SELECT numero_cuenta, nombre_completo, grado, grupo, camisa_corte, camisa_talla
+         FROM alumnos ORDER BY grado, grupo, nombre_completo"
+    )->fetchAll();
+    $alumnosCamisaPorGrupo = [];
+    foreach ($alumnosCamisaDetalle as $alumnoFila) {
+        $grupoEtiqueta = $alumnoFila['grado'] . '°' . $alumnoFila['grupo'];
+        $alumnosCamisaPorGrupo[$grupoEtiqueta][] = $alumnoFila;
+    }
 
     // --- 6. Ausentismo: asistencia general vs. asistencia al evento asignado -
     // (solo Día Académico y Día Cultural, que son los que tienen eventos
@@ -435,7 +462,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
         </div>
     </dialog>
 
-    <dialog id="detalle-tallas-camisa" class="m-auto w-[90%] max-w-sm rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+    <dialog id="detalle-tallas-camisa" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
         <div class="p-5">
             <div class="mb-3 flex items-center justify-between">
                 <h3 class="text-base font-semibold">Tallas de camisa solicitadas</h3>
@@ -443,20 +470,83 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <?= icono('cerrar', 'h-4 w-4') ?>
                 </button>
             </div>
-            <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
+
+            <div class="mb-2 flex items-center justify-between gap-2">
+                <h4 class="text-sm font-semibold text-slate-700">Resumen por talla</h4>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+            </div>
+            <div class="max-h-72 overflow-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="sticky top-0 bg-slate-50">
                         <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
                             <th class="px-3 py-2 text-center">Talla</th>
-                            <th class="px-3 py-2 text-center">Alumnos</th>
+                            <?php foreach ($gruposCamisa as $grupoEtiqueta): ?>
+                            <th class="px-3 py-2 text-center"><?= htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') ?></th>
+                            <?php endforeach; ?>
+                            <th class="px-3 py-2 text-center">Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($tallasCamisa as $talla): ?>
                         <tr class="border-b border-slate-100 last:border-0">
                             <td class="px-3 py-2 text-center font-medium"><?= htmlspecialchars($talla['camisa_talla'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td class="px-3 py-2 text-center text-slate-500"><?= number_format((int) $talla['total']) ?></td>
+                            <?php foreach ($gruposCamisa as $grupoEtiqueta): ?>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= number_format($tallasCamisaPivote[$talla['camisa_talla']][$grupoEtiqueta] ?? 0) ?></td>
+                            <?php endforeach; ?>
+                            <td class="px-3 py-2 text-center font-medium"><?= number_format((int) $talla['total']) ?></td>
                         </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <br/>
+            <div class="mb-2 mt-8 flex items-center justify-between gap-2 pt-5">
+                <h4 class="text-sm font-semibold text-slate-700">Detalle por alumno</h4>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+            </div>
+            <div class="max-h-72 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="px-3 py-2 text-center">#</th>
+                            <th class="px-3 py-2">No. cuenta</th>
+                            <th class="px-3 py-2">Nombre completo</th>
+                            <th class="px-3 py-2 text-center">Corte</th>
+                            <th class="px-3 py-2 text-center">Talla</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($alumnosCamisaPorGrupo as $grupoEtiqueta => $alumnosDelGrupo): ?>
+                        <tr class="border-b border-slate-200 bg-slate-100">
+                            <td colspan="5" class="px-3 py-1.5 text-xs font-semibold text-slate-600"><?= htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                        <?php foreach ($alumnosDelGrupo as $indice => $alumnoFila): ?>
+                        <tr class="border-b border-slate-100 last:border-0">
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $indice + 1 ?></td>
+                            <td class="px-3 py-2 font-mono text-xs"><?= htmlspecialchars($alumnoFila['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2"><?= htmlspecialchars($alumnoFila['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center"><?= htmlspecialchars($alumnoFila['camisa_corte'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center"><?= htmlspecialchars($alumnoFila['camisa_talla'], ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                        <?php endforeach; ?>
                         <?php endforeach; ?>
                     </tbody>
                 </table>

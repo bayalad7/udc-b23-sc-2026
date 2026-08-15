@@ -201,10 +201,7 @@ if ($mensajeError) {
                     <div class="relative">
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('camisa', 'h-4 w-4') ?></span>
                         <select id="camisa_corte" name="camisa_corte" required class="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
-                            <option value="">Elige...</option>
-                            <?php foreach (['Hombre', 'Mujer'] as $corte): ?>
-                            <option value="<?= $corte ?>" <?= $alumno['camisa_corte'] === $corte ? 'selected' : '' ?>><?= $corte ?></option>
-                            <?php endforeach; ?>
+                            <option value="Unisex" selected>Unisex</option>
                         </select>
                     </div>
                 </div>
@@ -215,8 +212,17 @@ if ($mensajeError) {
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('camisa', 'h-4 w-4') ?></span>
                         <select id="camisa_talla" name="camisa_talla" required class="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
                             <option value="">Elige...</option>
-                            <?php foreach (['S', 'M', 'L', 'XL', '2XL'] as $talla): ?>
-                            <option value="<?= $talla ?>" <?= $alumno['camisa_talla'] === $talla ? 'selected' : '' ?>><?= $talla ?></option>
+                            <?php
+                            $tallasCamisaLabels = [
+                                'XS' => 'Extra Chica',
+                                'S' => 'Chica',
+                                'M' => 'Mediana',
+                                'L' => 'Grande',
+                                'XL' => 'Extra Grande',
+                                '2XL' => 'Doble Extra Grande',
+                            ];
+                            foreach ($tallasCamisaLabels as $talla => $etiqueta): ?>
+                            <option value="<?= $talla ?>" <?= $alumno['camisa_talla'] === $talla ? 'selected' : '' ?>><?= $etiqueta ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

@@ -8,6 +8,7 @@
         "ext-gd": "*",
         "ext-pdo": "*",
         "pendalff/phpqrcode": "1.0.1",
-        "phpoffice/phpspreadsheet": "^2.0"
+        "phpoffice/phpspreadsheet": "^2.0",
+        "dompdf/dompdf": "^3.1"
     }
 }

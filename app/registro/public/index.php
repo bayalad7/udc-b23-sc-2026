@@ -122,9 +122,7 @@ $mensajeError = $errores[$codigoError] ?? null;
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('camisa') ?></span>
                         <select id="camisa_corte" name="camisa_corte" required
                                 class="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-base focus:border-slate-500 focus:outline-none">
-                            <option value="" disabled selected>Elige...</option>
-                            <option value="Hombre">Hombre</option>
-                            <option value="Mujer">Mujer</option>
+                            <option value="Unisex" selected>Unisex</option>
                         </select>
                     </div>
                 </div>
@@ -135,11 +133,12 @@ $mensajeError = $errores[$codigoError] ?? null;
                         <select id="camisa_talla" name="camisa_talla" required
                                 class="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-base focus:border-slate-500 focus:outline-none">
                             <option value="" disabled selected>Elige...</option>
-                            <option value="S">S</option>
-                            <option value="M">M</option>
-                            <option value="L">L</option>
-                            <option value="XL">XL</option>
-                            <option value="2XL">2XL</option>
+                            <option value="XS">Extra Chica</option>
+                            <option value="S">Chica</option>
+                            <option value="M">Mediana</option>
+                            <option value="L">Grande</option>
+                            <option value="XL">Extra Grande</option>
+                            <option value="2XL">Doble Extra Grande</option>
                         </select>
                     </div>
                 </div>
