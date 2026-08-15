@@ -37,7 +37,10 @@ if (!$esNuevo) {
     $evento = $fila;
 
     $consultaInscritos = $pdo->prepare(
-        'SELECT i.origen, i.hora_entrada, i.hora_salida, a.nombre_completo, a.numero_cuenta, a.grado, a.grupo
+        'SELECT i.origen, i.registrado_por,
+                i.hora_entrada, i.punto_control_entrada, i.escaneado_por_entrada,
+                i.hora_salida, i.punto_control_salida, i.escaneado_por_salida,
+                a.nombre_completo, a.numero_cuenta, a.grado, a.grupo
          FROM inscripciones i
          JOIN alumnos a ON a.id = i.id_alumno
          WHERE i.id_evento = :id
@@ -217,6 +220,13 @@ if ($mensajeError) {
         <div class="rounded-xl bg-white p-5 shadow-sm">
             <h2 class="mb-4 flex items-center justify-between text-base font-semibold">
                 <span>Inscritos (<?= count($inscritos) ?>/<?= (int) $evento['cupo_maximo'] ?>)</span>
+                <?php if ($inscritos !== []): ?>
+                <a href="/admin/includes/exportar-inscripciones.php?id=<?= (int) $evento['id'] ?>"
+                   class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <?= icono('descargar', 'h-3.5 w-3.5') ?>
+                    Exportar a Excel
+                </a>
+                <?php endif; ?>
             </h2>
             <?php if ($inscritos === []): ?>
             <p class="flex items-center gap-2 text-sm text-slate-500">
@@ -225,26 +235,46 @@ if ($mensajeError) {
             </p>
             <?php else: ?>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full min-w-[1000px] text-sm">
                     <thead>
                         <tr class="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
                             <th class="py-2 pr-3">Alumno</th>
                             <th class="py-2 pr-3 text-center">No. cuenta</th>
                             <th class="py-2 pr-3 text-center">Grado/Grupo</th>
                             <th class="py-2 pr-3 text-center">Origen</th>
+                            <th class="py-2 pr-3 text-center">Registró</th>
+                            <th class="py-2 pr-3 text-center">Estado</th>
                             <th class="py-2 pr-3 text-center">Entrada</th>
-                            <th class="py-2 text-center">Salida</th>
+                            <th class="py-2 pr-3 text-center">Punto (entrada)</th>
+                            <th class="py-2 pr-3 text-center">Escaneó (entrada)</th>
+                            <th class="py-2 pr-3 text-center">Salida</th>
+                            <th class="py-2 pr-3 text-center">Punto (salida)</th>
+                            <th class="py-2 text-center">Escaneó (salida)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($inscritos as $inscrito): ?>
+                        <?php foreach ($inscritos as $inscrito):
+                            if ($inscrito['hora_entrada'] === null) {
+                                $estado = ['label' => 'Sin llegar', 'clase' => 'text-slate-500'];
+                            } elseif ($inscrito['hora_salida'] === null) {
+                                $estado = ['label' => 'Presente', 'clase' => 'font-medium text-emerald-700'];
+                            } else {
+                                $estado = ['label' => 'Salió', 'clase' => 'text-slate-500'];
+                            }
+                        ?>
                         <tr class="border-b border-slate-100 last:border-0">
                             <td class="py-2 pr-3 font-medium"><?= htmlspecialchars($inscrito['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="py-2 pr-3 text-center font-mono text-xs text-slate-500"><?= htmlspecialchars($inscrito['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="py-2 pr-3 text-center text-slate-500"><?= htmlspecialchars($inscrito['grado'], ENT_QUOTES, 'UTF-8') ?>°<?= htmlspecialchars($inscrito['grupo'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="py-2 pr-3 text-center text-slate-500"><?= $inscrito['origen'] === 'previo' ? 'Previo' : 'Orden de llegada' ?></td>
+                            <td class="py-2 pr-3 text-center text-slate-500"><?= htmlspecialchars($inscrito['registrado_por'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="py-2 pr-3 text-center <?= $estado['clase'] ?>"><?= $estado['label'] ?></td>
                             <td class="py-2 pr-3 text-center text-slate-500"><?= $inscrito['hora_entrada'] ? htmlspecialchars((string) $inscrito['hora_entrada'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
-                            <td class="py-2 text-center text-slate-500"><?= $inscrito['hora_salida'] ? htmlspecialchars((string) $inscrito['hora_salida'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="py-2 pr-3 text-center text-slate-500"><?= $inscrito['punto_control_entrada'] ? htmlspecialchars((string) $inscrito['punto_control_entrada'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="py-2 pr-3 text-center text-slate-500"><?= $inscrito['escaneado_por_entrada'] ? htmlspecialchars((string) $inscrito['escaneado_por_entrada'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="py-2 pr-3 text-center text-slate-500"><?= $inscrito['hora_salida'] ? htmlspecialchars((string) $inscrito['hora_salida'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="py-2 pr-3 text-center text-slate-500"><?= $inscrito['punto_control_salida'] ? htmlspecialchars((string) $inscrito['punto_control_salida'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="py-2 text-center text-slate-500"><?= $inscrito['escaneado_por_salida'] ? htmlspecialchars((string) $inscrito['escaneado_por_salida'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

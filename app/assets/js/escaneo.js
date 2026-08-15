@@ -6,9 +6,12 @@
         return;
     }
 
-    // El día (evento) no se manda desde el cliente: el backend lo toma de la
+    // El día/evento no se manda desde el cliente: el backend lo toma de la
     // sesión del turno (ver includes/sesion.php), así no se puede falsear.
-    var ENDPOINT = '/asistencias/includes/registrar-escaneo.php';
+    // El endpoint sí varía según la pantalla (asistencia general vs. a un
+    // evento específico) — data-endpoint en #escaneo-app, con el general
+    // como valor por defecto para no romper escaneo.php.
+    var ENDPOINT = app.dataset.endpoint || '/asistencias/includes/registrar-escaneo.php';
     var RETRASO_REANUDAR_MS = 4000;
 
     var video = document.getElementById('video-camara');
@@ -24,6 +27,7 @@
         entrada: { fondo: 'bg-emerald-600', icono: 'entrada' },
         salida: { fondo: 'bg-blue-600', icono: 'salida' },
         sin_registro: { fondo: 'bg-slate-700', icono: 'verificado' },
+        sin_inscripcion: { fondo: 'bg-amber-600', icono: 'alerta' },
         error: { fondo: 'bg-red-600', icono: 'alerta' }
     };
 
@@ -140,7 +144,13 @@
 
         contenedorResultado.className = 'mt-4 flex flex-col items-center gap-3 rounded-2xl p-5 text-center ' + estilo.fondo;
 
-        var etiquetas = { entrada: 'Entrada', salida: 'Salida (actualizada)', sin_registro: 'Sin registro', error: 'No se pudo registrar' };
+        var etiquetas = {
+            entrada: 'Entrada',
+            salida: 'Salida (actualizada)',
+            sin_registro: 'Sin registro',
+            sin_inscripcion: 'Sin inscripción',
+            error: 'No se pudo registrar'
+        };
         elementoEtiqueta.innerHTML = iconoSvg('h-3.5 w-3.5 shrink-0', estilo.icono) + '<span>' + etiquetas[tipoResultado] + (datos.ok ? ' · ' + datos.hora : '') + '</span>';
         elementoEtiqueta.className = 'flex items-center gap-1.5 rounded-full bg-black/20 px-3 py-1 text-xs font-bold uppercase tracking-wide';
 

@@ -42,3 +42,18 @@ function turnoListo(): bool
         && trim((string) ($_SESSION['operador'] ?? '')) !== ''
         && trim((string) ($_SESSION['punto_control'] ?? '')) !== '';
 }
+
+/**
+ * True si además del token ya se fijó un evento específico (ponencia/taller)
+ * + operador + punto de control (listo para escanear asistencia a ESE
+ * evento). Claves de sesión separadas de turnoListo() a propósito: son dos
+ * turnos independientes (asistencia general del día vs. asistencia a un
+ * evento puntual) que pueden coexistir en el mismo dispositivo sin pisarse.
+ */
+function turnoEventoListo(): bool
+{
+    return turnoAutorizado()
+        && (int) ($_SESSION['id_evento'] ?? 0) > 0
+        && trim((string) ($_SESSION['operador_evento'] ?? '')) !== ''
+        && trim((string) ($_SESSION['punto_control_evento'] ?? '')) !== '';
+}

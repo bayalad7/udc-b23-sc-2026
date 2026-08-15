@@ -16,6 +16,7 @@ $errores = [
     'clave_muy_corta' => 'La contraseña debe tener al menos 8 caracteres.',
     'ya_registrada' => 'La contraseña ya había sido registrada — usa el formulario de acceso.',
     'campos_incompletos' => 'Elige un día e ingresa tu nombre y el punto de control.',
+    'evento_no_valido' => 'Elige un evento, ingresa tu nombre y el punto de control.',
 ];
 $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 ?>
@@ -156,6 +157,11 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
                 Comenzar a escanear
             </button>
         </form>
+
+        <a href="/asistencias/public/turno-evento.php" class="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-3 text-center text-sm font-medium text-slate-700 shadow-sm">
+            <?= icono('lista', 'h-4 w-4 shrink-0') ?>
+            Asistencia a un evento específico (ponencia/taller)
+        </a>
 
         <a href="/asistencias/includes/cerrar-turno.php?modo=todo" class="mt-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline">
             <?= icono('salida', 'h-3.5 w-3.5 shrink-0') ?>

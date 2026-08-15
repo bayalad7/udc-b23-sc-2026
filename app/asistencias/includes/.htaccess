@@ -19,3 +19,11 @@ Require all denied
 <Files "registrar-escaneo.php">
     Require all granted
 </Files>
+
+<Files "iniciar-turno-evento.php">
+    Require all granted
+</Files>
+
+<Files "registrar-escaneo-evento.php">
+    Require all granted
+</Files>

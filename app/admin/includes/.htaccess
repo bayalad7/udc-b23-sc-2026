@@ -28,6 +28,14 @@ Require all denied
     Require all granted
 </Files>
 
+<Files "exportar-inscripciones.php">
+    Require all granted
+</Files>
+
+<Files "exportar-tallas-camisa.php">
+    Require all granted
+</Files>
+
 <Files "guardar-evento.php">
     Require all granted
 </Files>

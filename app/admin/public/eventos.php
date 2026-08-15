@@ -13,10 +13,33 @@ require __DIR__ . '/../includes/layout.php';
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
 
-$eventos = $pdo->query(
-    'SELECT id, dia, tipo, hora_inicio, hora_fin, nombre, espacio, facilitador, cupo_maximo, cupo_disponible
-     FROM eventos ORDER BY dia, hora_inicio, nombre'
-)->fetchAll();
+$buscar = trim((string) ($_GET['buscar'] ?? ''));
+
+$condiciones = [];
+$parametros = [];
+if ($buscar !== '') {
+    $condiciones[] = '(e.nombre LIKE :buscar OR e.facilitador LIKE :buscar)';
+    $parametros['buscar'] = '%' . $buscar . '%';
+}
+$whereSql = $condiciones !== [] ? 'WHERE ' . implode(' AND ', $condiciones) : '';
+
+// Inscritos/entrada/salida se calculan desde inscripciones (no desde
+// cupo_disponible) para que reflejen la realidad aunque cupo y conteo real
+// llegaran a desalinearse.
+$eventos = $pdo->prepare(
+    "SELECT e.id, e.dia, e.tipo, e.hora_inicio, e.hora_fin, e.nombre, e.espacio, e.facilitador,
+            e.cupo_maximo, e.cupo_disponible,
+            COUNT(i.id_alumno) AS total_inscritos,
+            COUNT(i.hora_entrada) AS total_entrada,
+            COUNT(i.hora_salida) AS total_salida
+     FROM eventos e
+     LEFT JOIN inscripciones i ON i.id_evento = e.id
+     $whereSql
+     GROUP BY e.id
+     ORDER BY e.dia, e.hora_inicio, e.nombre"
+);
+$eventos->execute($parametros);
+$eventos = $eventos->fetchAll();
 
 $diasLabel = ['academico' => 'Día Académico', 'cultural' => 'Día Cultural'];
 $eventosPorDia = ['academico' => [], 'cultural' => []];
@@ -38,7 +61,15 @@ if ($mensajeError) {
 }
 ?>
 
-<div class="mb-6 flex justify-end">
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <form action="/admin/public/eventos.php" method="get" class="flex-1">
+        <div class="relative max-w-sm">
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('buscar', 'h-4 w-4') ?></span>
+            <input type="search" name="buscar" value="<?= htmlspecialchars($buscar, ENT_QUOTES, 'UTF-8') ?>"
+                   placeholder="Buscar por nombre o facilitador..."
+                   class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
+        </div>
+    </form>
     <a href="/admin/public/evento.php?nuevo=1" class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
         <?= icono('agregar', 'h-4 w-4') ?>
         Nuevo evento
@@ -67,6 +98,9 @@ if ($mensajeError) {
                     <th class="px-4 py-3 text-center">Tipo</th>
                     <th class="px-4 py-3">Espacio</th>
                     <th class="px-4 py-3 text-center">Cupo</th>
+                    <th class="px-4 py-3 text-center">Inscritos</th>
+                    <th class="px-4 py-3 text-center">Entrada</th>
+                    <th class="px-4 py-3 text-center">Salida</th>
                     <th class="px-4 py-3 text-center">Acciones</th>
                 </tr>
             </thead>
@@ -84,6 +118,9 @@ if ($mensajeError) {
                     <td class="px-4 py-3 text-center">
                         <span class="<?= $lleno ? 'text-red-600 font-medium' : 'text-slate-500' ?>"><?= $ocupados ?>/<?= $evento['cupo_maximo'] ?></span>
                     </td>
+                    <td class="px-4 py-3 text-center text-slate-500"><?= (int) $evento['total_inscritos'] ?></td>
+                    <td class="px-4 py-3 text-center text-slate-500"><?= (int) $evento['total_entrada'] ?></td>
+                    <td class="px-4 py-3 text-center text-slate-500"><?= (int) $evento['total_salida'] ?></td>
                     <td class="px-4 py-3 text-center">
                         <a href="/admin/public/evento.php?id=<?= (int) $evento['id'] ?>" title="Ver / editar evento"
                            class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">

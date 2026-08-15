@@ -14,6 +14,10 @@ if ($modo === 'todo') {
         setcookie(session_name(), '', time() - 42000, $parametros['path'], $parametros['domain'], $parametros['secure'], $parametros['httponly']);
     }
     session_destroy();
+} elseif ($modo === 'turno_evento') {
+    // Solo termina el turno de evento específico (ponencia/taller): sigue
+    // autorizado por el token, y el turno general (si lo hubiera) no se toca.
+    unset($_SESSION['id_evento'], $_SESSION['operador_evento'], $_SESSION['punto_control_evento']);
 } else {
     // Solo termina el turno actual (día/operador/punto de control): sigue
     // autorizado por el token, evento.php no lo vuelve a pedir.
