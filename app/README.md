@@ -117,9 +117,45 @@ Todas relativas a la raíz del sitio (`http://localhost:8080` en desarrollo). So
 | `/torneos/public/inscripcion.php` | Torneos | ⬜ Pendiente — inscripción de equipos del Día Deportivo (Prompts 12–18). |
 | `http://localhost:8081` | — | Adminer (visor de base de datos) — solo desarrollo, no forma parte de la app. |
 
-## Base de datos fuera de Docker (VPS de producción)
+## Despliegue en producción (VPS)
 
-`config/db.php` detecta automáticamente el entorno: si existen las variables de entorno `DB_HOST`/`DB_NAME`/`DB_USER`/`DB_PASSWORD` (como las define `docker-compose.yml`), las usa; si no, busca `config/db-credenciales.php` (copiar desde `config/db-credenciales.example.php`, **no se sube al repositorio** — ver `.gitignore`).
+En desarrollo, Docker resuelve automáticamente casi todo lo de esta sección (variables de entorno, esquema de base de datos, compilación de Tailwind). En el VPS de producción no hay `docker-compose.yml` corriendo, así que cada punto hay que dejarlo listo a mano — esta es la checklist de todo lo que está ligado al código o a algún archivo de configuración.
+
+### Requisitos del servidor
+
+- **PHP** ≥ 8.1 (desarrollo usa 8.2) con las extensiones `gd`, `pdo` y `pdo_mysql` (ver `composer.json` y `Dockerfile`).
+- **Apache** con `mod_rewrite` habilitado y `AllowOverride All` en el `DocumentRoot` — los módulos dependen de sus propios `.htaccess` (`config/.htaccess`, `*/includes/.htaccess`) para bloquear el acceso HTTP directo a `config/` e `includes/`; sin `AllowOverride All` esas reglas no se aplican.
+- **MariaDB 11**.
+- **Composer**, para instalar las dependencias de `composer.json` (`pendalff/phpqrcode`, `phpoffice/phpspreadsheet`, `dompdf/dompdf`).
+- **HTTPS obligatorio**: `app/asistencias` usa la cámara del navegador para leer el QR, y los navegadores solo dan acceso a la cámara en contextos seguros (HTTPS) — confirmar el certificado SSL del VPS antes del evento.
+
+### Pasos de instalación
+
+1. Clonar el repositorio y correr `composer install --no-dev` dentro de `app/`.
+2. Bloquear `vendor/` por HTTP en el vhost real del VPS, replicando la regla `LocationMatch "^/(.*/)?vendor/"` de `docker/apache-vhost.conf` — ese archivo solo se usa dentro de la imagen Docker, no se referencia directo en el VPS.
+3. Crear `config/db-credenciales.php` copiando `config/db-credenciales.example.php` y poniendo las credenciales reales de MariaDB (**no se sube al repositorio**, ver `.gitignore`). Alternativa: definir las variables de entorno `DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USER`/`DB_PASSWORD` en el servidor — `config/db.php` las usa automáticamente si existen, antes de buscar `db-credenciales.php` (mismo mecanismo que usa `docker-compose.yml` en desarrollo).
+4. Importar `database/schema.sql` (y `database/seeds.sql`) a la base de datos — en Docker esto pasa solo al crear el volumen; en el VPS hay que correrlo a mano.
+5. Crear a mano las carpetas de subida, no versionadas por `.gitignore`, con permisos de escritura para el usuario de Apache: `registro/public/uploads/` y `registro/public/credenciales/`.
+6. Compilar `assets/css/tailwind.css` con el Tailwind CLI standalone (ver `docker/tailwind.Dockerfile` para la referencia de cómo se invoca) y subir solo el `.css` ya compilado — el binario **no** se instala en el VPS, solo hace falta donde se compile (máquina de desarrollo o un paso de CI).
+7. Configurar las dos contraseñas compartidas del sistema — no viven en ningún archivo de configuración, se guardan hasheadas (`password_hash`) en la tabla `sistema` y cada módulo las pide/configura la primera vez que alguien entra a él (columnas `NULL` hasta ese momento):
+   - `sistema.clave_acceso` → `app/asistencias`.
+   - `sistema.clave_admin` → `app/admin`.
+
+   No hay UI de "olvidé mi contraseña": para reiniciar alguna en producción hay que hacer `UPDATE sistema SET clave_acceso = NULL` (o `clave_admin = NULL`) directo por SQL, y el módulo la vuelve a pedir como si fuera la primera vez.
+8. **Pendiente (Prompt 6)**: una vez integrado PHPMailer, configurar ahí las credenciales SMTP reales (institucionales o del VPS/empresa — ver la pregunta abierta en `PROMPTS-DESARROLLO.md`).
+
+### Qué no se sube al repositorio (`.gitignore`)
+
+Todo esto hay que crearlo o configurarlo a mano en cada entorno nuevo (VPS incluido):
+
+| Ruta | Qué es |
+|---|---|
+| `config/db-credenciales.php` | Credenciales de MariaDB fuera de Docker (paso 3 arriba). |
+| `config/*.local.php` | Cualquier config local adicional específica del entorno. |
+| `.env` | Variables de entorno de Docker (solo aplica a desarrollo local). |
+| `**/vendor/` | Dependencias de Composer — se regeneran con `composer install`. |
+| `registro/public/uploads/` | Fotos subidas por los alumnos en el pre-registro. |
+| `registro/public/credenciales/` | Credenciales PNG generadas para cada alumno. |
 
 ## Convenciones del código
 
