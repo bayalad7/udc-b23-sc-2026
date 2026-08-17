@@ -57,12 +57,17 @@ INSERT INTO eventos (dia, tipo, hora_inicio, hora_fin, facilitador, nombre, desc
 -- Concurso del Conocimiento (Académico), Escenario de Talentos (Cultural) y
 -- los 3 torneos deportivos — cupo/capacidad de equipos vive en equipos, no
 -- aquí (ver schema.sql).
-INSERT INTO competiciones (dia, tipo, hora_inicio, hora_fin, nombre, fecha_limite) VALUES
-('academico', 'concurso', '10:30:00', '12:30:00', 'Concurso del Conocimiento',                  '2026-09-30 23:59:59'),
-('cultural',  'concurso', '16:00:00', '17:20:00', 'Escenario de Talentos "Expresa tu esencia"', '2026-09-30 23:59:59'),
-('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Fútbol Rápido',                    '2026-09-30 23:59:59'),
-('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Voleibol',                         '2026-09-30 23:59:59'),
-('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Quemados',                         '2026-09-30 23:59:59');
+-- max_equipos/tam_equipo (configurables desde app/admin — ver schema.sql):
+-- Concurso del Conocimiento (12 equipos de 10) y los 3 torneos deportivos
+-- (16 equipos de 10, resuelto — ver torneos-deportivos.md) los traen; el
+-- Escenario de Talentos queda en NULL = sin esa regla (tamaño de acto libre,
+-- sin tope de actos).
+INSERT INTO competiciones (dia, tipo, hora_inicio, hora_fin, nombre, fecha_limite, max_equipos, tam_equipo) VALUES
+('academico', 'concurso', '10:30:00', '12:30:00', 'Concurso del Conocimiento',                  '2026-09-30 23:59:59', 12,   10),
+('cultural',  'concurso', '16:00:00', '17:20:00', 'Escenario de Talentos "Expresa tu esencia"', '2026-09-30 23:59:59', NULL, NULL),
+('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Fútbol Rápido',                    '2026-09-30 23:59:59', 16,   10),
+('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Voleibol',                         '2026-09-30 23:59:59', 16,   10),
+('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Quemados',                         '2026-09-30 23:59:59', 16,   10);
 
 -- ──────────────────────────────────────────────────────────────────────── ──
 -- ── Carga masiva de datos de prueba (350 alumnos + inscripciones/equipos) ──

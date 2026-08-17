@@ -57,7 +57,7 @@ El escaneo de **entrada** se concentra en el bloque 07:00–07:30 de la [matriz 
 ## Formato de llaves
 
 - Eliminación directa (single elimination) en los tres torneos.
-- El número de equipos por deporte se desconoce hasta el cierre de inscripciones (30 de septiembre) — si no es una potencia de 2 (4, 8, 16...), algunos equipos necesitarán un "bye" (pase directo) en la primera ronda. Quien arme las llaves el 2 de octubre debe considerarlo.
+- Tope de **16 equipos por torneo** (configurable desde `app/admin` sin tocar código — ver `competiciones.max_equipos`), para que las rondas quepan en la ventana fija de 4 horas (07:30–11:30). El número real de equipos por deporte se conoce hasta el cierre de inscripciones (30 de septiembre) y puede ser menor a 16 — si no es una potencia de 2 (4, 8, 16...), algunos equipos necesitarán un "bye" (pase directo) en la primera ronda. Quien arme las llaves el 2 de octubre debe considerarlo.
 - Las llaves se publican el **2 de octubre**, un día antes del evento, para que los equipos sepan su primer rival y horario aproximado.
 
 ## Reglas por deporte

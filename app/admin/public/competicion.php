@@ -17,7 +17,7 @@ $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 $competicion = [
     'id' => null, 'dia' => '', 'tipo' => '', 'hora_inicio' => '', 'hora_fin' => '',
-    'nombre' => '', 'fecha_limite' => '',
+    'nombre' => '', 'fecha_limite' => '', 'max_equipos' => null, 'tam_equipo' => null,
 ];
 $equipos = [];
 
@@ -54,8 +54,6 @@ if (!$esNuevo) {
         $equipos[] = $equipoFila;
     }
 }
-
-$esConocimiento = $competicion['dia'] === 'academico' && $competicion['tipo'] === 'concurso';
 
 require __DIR__ . '/../includes/layout.php';
 
@@ -159,6 +157,23 @@ if ($mensajeError) {
                     </div>
                 </div>
 
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="max_equipos" class="mb-1 block text-sm font-medium">Tope de equipos</label>
+                        <input type="number" id="max_equipos" name="max_equipos" min="1" placeholder="Sin tope"
+                               value="<?= $competicion['max_equipos'] !== null ? (int) $competicion['max_equipos'] : '' ?>"
+                               class="w-full rounded-lg border border-slate-300 py-2 px-3 text-sm focus:border-slate-500 focus:outline-none">
+                        <p class="mt-1 text-xs text-slate-400">Vacío = sin límite de equipos.</p>
+                    </div>
+                    <div>
+                        <label for="tam_equipo" class="mb-1 block text-sm font-medium">Tamaño de equipo</label>
+                        <input type="number" id="tam_equipo" name="tam_equipo" min="1" placeholder="Sin regla fija"
+                               value="<?= $competicion['tam_equipo'] !== null ? (int) $competicion['tam_equipo'] : '' ?>"
+                               class="w-full rounded-lg border border-slate-300 py-2 px-3 text-sm focus:border-slate-500 focus:outline-none">
+                        <p class="mt-1 text-xs text-slate-400">Integrantes por equipo, capitán incluido.</p>
+                    </div>
+                </div>
+
                 <button type="submit" class="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white active:bg-slate-700">
                     <?= icono('verificado', 'h-4 w-4') ?>
                     <?= $esNuevo ? 'Crear competición' : 'Guardar cambios' ?>
@@ -182,11 +197,12 @@ if ($mensajeError) {
     <div class="lg:col-span-2">
         <div class="rounded-xl bg-white p-5 shadow-sm">
             <h2 class="mb-4 flex items-center justify-between text-base font-semibold">
-                <span>Equipos (<?= count($equipos) ?><?= $esConocimiento ? '/12' : '' ?>)</span>
-                <?php if ($esConocimiento && count($equipos) >= 10): ?>
-                <span class="flex items-center gap-1 text-xs font-medium <?= count($equipos) >= 12 ? 'text-red-700' : 'text-amber-700' ?>">
+                <?php $maxEquiposCompeticion = $competicion['max_equipos'] !== null ? (int) $competicion['max_equipos'] : null; ?>
+                <span>Equipos (<?= count($equipos) ?><?= $maxEquiposCompeticion !== null ? '/' . $maxEquiposCompeticion : '' ?>)</span>
+                <?php if ($maxEquiposCompeticion !== null && count($equipos) >= max(0, $maxEquiposCompeticion - 2)): ?>
+                <span class="flex items-center gap-1 text-xs font-medium <?= count($equipos) >= $maxEquiposCompeticion ? 'text-red-700' : 'text-amber-700' ?>">
                     <?= icono('alerta', 'h-3.5 w-3.5') ?>
-                    <?= count($equipos) >= 12 ? 'Límite alcanzado' : 'Cerca del límite de 12' ?>
+                    <?= count($equipos) >= $maxEquiposCompeticion ? 'Límite alcanzado' : 'Cerca del límite de ' . $maxEquiposCompeticion ?>
                 </span>
                 <?php endif; ?>
             </h2>

@@ -14,10 +14,10 @@ require __DIR__ . '/../includes/layout.php';
 $pdo = require __DIR__ . '/../../config/db.php';
 
 $competiciones = $pdo->query(
-    "SELECT c.id, c.dia, c.tipo, c.hora_inicio, c.hora_fin, c.nombre, c.fecha_limite, COUNT(e.id) AS total_equipos
+    "SELECT c.id, c.dia, c.tipo, c.hora_inicio, c.hora_fin, c.nombre, c.fecha_limite, c.max_equipos, COUNT(e.id) AS total_equipos
      FROM competiciones c
      LEFT JOIN equipos e ON e.id_competicion = c.id
-     GROUP BY c.id, c.dia, c.tipo, c.hora_inicio, c.hora_fin, c.nombre, c.fecha_limite
+     GROUP BY c.id, c.dia, c.tipo, c.hora_inicio, c.hora_fin, c.nombre, c.fecha_limite, c.max_equipos
      ORDER BY c.dia, c.hora_inicio"
 )->fetchAll();
 
@@ -67,9 +67,9 @@ if ($mensajeError) {
             </td></tr>
             <?php endif; ?>
             <?php foreach ($competiciones as $competicion):
-                $esConocimiento = $competicion['dia'] === 'academico' && $competicion['tipo'] === 'concurso';
+                $maxEquiposFila = $competicion['max_equipos'] !== null ? (int) $competicion['max_equipos'] : null;
                 $total = (int) $competicion['total_equipos'];
-                $cercaDelLimite = $esConocimiento && $total >= 10;
+                $cercaDelLimite = $maxEquiposFila !== null && $total >= max(0, $maxEquiposFila - 2);
             ?>
             <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                 <td class="px-4 py-3 font-mono text-xs text-slate-400">#<?= (int) $competicion['id'] ?></td>
@@ -80,7 +80,7 @@ if ($mensajeError) {
                 <td class="px-4 py-3 text-center">
                     <span class="flex items-center justify-center gap-1 <?= $cercaDelLimite ? 'font-medium text-amber-700' : 'text-slate-500' ?>">
                         <?php if ($cercaDelLimite): ?><?= icono('alerta', 'h-3.5 w-3.5') ?><?php endif; ?>
-                        <?= $total ?><?= $esConocimiento ? '/12' : '' ?>
+                        <?= $total ?><?= $maxEquiposFila !== null ? '/' . $maxEquiposFila : '' ?>
                     </span>
                 </td>
                 <td class="px-4 py-3 text-center">

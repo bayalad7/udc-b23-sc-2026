@@ -52,10 +52,10 @@ if ($claveYaRegistrada && adminAutorizado()) {
 
     // --- 4. Equipos inscritos por competición ---------------------------------
     $equiposPorCompeticion = $pdo->query(
-        "SELECT c.id, c.nombre, c.dia, c.tipo, COUNT(e.id) AS total_equipos
+        "SELECT c.id, c.nombre, c.dia, c.tipo, c.max_equipos, COUNT(e.id) AS total_equipos
          FROM competiciones c
          LEFT JOIN equipos e ON e.id_competicion = c.id
-         GROUP BY c.id, c.nombre, c.dia, c.tipo
+         GROUP BY c.id, c.nombre, c.dia, c.tipo, c.max_equipos
          ORDER BY c.dia, c.hora_inicio"
     )->fetchAll();
 
@@ -141,6 +141,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
         return [
             'nombre' => $c['nombre'],
             'total' => (int) $c['total_equipos'],
+            'max_equipos' => $c['max_equipos'] !== null ? (int) $c['max_equipos'] : null,
             'es_conocimiento' => $c['dia'] === 'academico' && $c['tipo'] === 'concurso',
         ];
     }, $equiposPorCompeticion);
@@ -208,7 +209,9 @@ if ($claveYaRegistrada && adminAutorizado()) {
         </div>
 
         <?php if ($conocimientoActual !== null):
-            $cdEstado = $conocimientoActual['total'] >= 12 ? 'lleno' : ($conocimientoActual['total'] >= 10 ? 'cerca' : 'ok');
+            $cdMaxEquipos = $conocimientoActual['max_equipos'];
+            $cdCercaUmbral = $cdMaxEquipos !== null ? max(0, $cdMaxEquipos - 2) : null;
+            $cdEstado = $cdMaxEquipos === null ? 'ok' : ($conocimientoActual['total'] >= $cdMaxEquipos ? 'lleno' : ($conocimientoActual['total'] >= $cdCercaUmbral ? 'cerca' : 'ok'));
             $cdClases = [
                 'lleno' => ['border-red-500 bg-red-50', 'bg-red-100 text-red-600', 'text-red-700', 'text-red-900', 'text-red-600'],
                 'cerca' => ['border-amber-500 bg-amber-50', 'bg-amber-100 text-amber-600', 'text-amber-700', 'text-amber-900', 'text-amber-600'],
@@ -221,7 +224,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
             </span>
             <div class="min-w-0">
                 <span class="block truncate text-xs font-medium <?= $cdClases[2] ?>" title="Concurso del Conocimiento">Concurso del Conocimiento</span>
-                <span class="block text-xl font-bold <?= $cdClases[3] ?>"><?= $conocimientoActual['total'] ?>/12</span>
+                <span class="block text-xl font-bold <?= $cdClases[3] ?>"><?= $conocimientoActual['total'] ?><?= $cdMaxEquipos !== null ? '/' . $cdMaxEquipos : '' ?></span>
                 <span class="block truncate text-[11px] <?= $cdClases[4] ?>">equipos inscritos</span>
             </div>
         </div>
@@ -309,7 +312,9 @@ if ($claveYaRegistrada && adminAutorizado()) {
             <p class="text-sm text-slate-500">Todavía no hay competiciones registradas.</p>
             <?php else: ?>
             <div class="h-64"><canvas id="grafica-equipos-competicion"></canvas></div>
-            <p class="mt-2 text-xs text-slate-400">La línea punteada marca el límite de 12 equipos del Concurso del Conocimiento.</p>
+            <?php if ($conocimientoActual !== null && $conocimientoActual['max_equipos'] !== null): ?>
+            <p class="mt-2 text-xs text-slate-400">La línea punteada marca el límite de <?= $conocimientoActual['max_equipos'] ?> equipos del Concurso del Conocimiento.</p>
+            <?php endif; ?>
             <?php endif; ?>
         </section>
 
@@ -444,15 +449,16 @@ if ($claveYaRegistrada && adminAutorizado()) {
                         <?php foreach ($equiposCompeticionOrdenado as $c):
                             $estadoTexto = '—';
                             $estadoClase = 'text-slate-400';
-                            if ($c['es_conocimiento']) {
-                                if ($c['total'] >= 12) { $estadoTexto = 'Límite alcanzado'; $estadoClase = 'text-red-600 font-medium'; }
-                                elseif ($c['total'] >= 10) { $estadoTexto = 'Cerca del límite'; $estadoClase = 'text-amber-600 font-medium'; }
-                                else { $estadoTexto = 'Bajo el límite (12)'; $estadoClase = 'text-emerald-600'; }
+                            if ($c['max_equipos'] !== null) {
+                                $cercaUmbral = max(0, $c['max_equipos'] - 2);
+                                if ($c['total'] >= $c['max_equipos']) { $estadoTexto = 'Límite alcanzado'; $estadoClase = 'text-red-600 font-medium'; }
+                                elseif ($c['total'] >= $cercaUmbral) { $estadoTexto = 'Cerca del límite'; $estadoClase = 'text-amber-600 font-medium'; }
+                                else { $estadoTexto = 'Bajo el límite (' . $c['max_equipos'] . ')'; $estadoClase = 'text-emerald-600'; }
                             }
                         ?>
                         <tr class="border-b border-slate-100 last:border-0">
                             <td class="px-3 py-2 font-medium"><?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td class="px-3 py-2 text-center text-slate-500"><?= $c['total'] ?><?= $c['es_conocimiento'] ? '/12' : '' ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $c['total'] ?><?= $c['max_equipos'] !== null ? '/' . $c['max_equipos'] : '' ?></td>
                             <td class="px-3 py-2 text-center <?= $estadoClase ?>"><?= $estadoTexto ?></td>
                         </tr>
                         <?php endforeach; ?>
@@ -658,8 +664,9 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     label: 'Equipos inscritos',
                     data: <?= json_encode(array_map(fn($c) => $c['total'], $equiposCompeticionDatos)) ?>,
                     backgroundColor: <?= json_encode(array_map(function ($c) {
-                        if (!$c['es_conocimiento']) return '#6366f1';
-                        return $c['total'] >= 12 ? '#ef4444' : ($c['total'] >= 10 ? '#f59e0b' : '#10b981');
+                        if ($c['max_equipos'] === null) return '#6366f1';
+                        $cercaUmbral = max(0, $c['max_equipos'] - 2);
+                        return $c['total'] >= $c['max_equipos'] ? '#ef4444' : ($c['total'] >= $cercaUmbral ? '#f59e0b' : '#10b981');
                     }, $equiposCompeticionDatos)) ?>,
                     borderRadius: 4
                 }]
@@ -672,7 +679,9 @@ if ($claveYaRegistrada && adminAutorizado()) {
             plugins: [{
                 id: 'lineaLimiteConocimiento',
                 afterDraw: function (chart) {
-                    var y = chart.scales.y.getPixelForValue(12);
+                    var limite = <?= $conocimientoActual !== null && $conocimientoActual['max_equipos'] !== null ? (int) $conocimientoActual['max_equipos'] : 'null' ?>;
+                    if (limite === null) { return; }
+                    var y = chart.scales.y.getPixelForValue(limite);
                     if (y < chart.chartArea.top || y > chart.chartArea.bottom) { return; }
                     var ctx = chart.ctx;
                     ctx.save();

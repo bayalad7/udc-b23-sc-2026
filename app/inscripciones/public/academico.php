@@ -75,7 +75,7 @@ $idsCompeticionesInscrito = array_map('intval', array_column($consultaEquipos->f
 // alumno individual), con el capitán y cuántos integrantes lleva cada uno.
 
 $competicionConocimiento = $pdo->query(
-    "SELECT id, nombre, hora_inicio, hora_fin FROM competiciones WHERE dia = 'academico' AND tipo = 'concurso' LIMIT 1"
+    "SELECT id, nombre, hora_inicio, hora_fin, max_equipos, tam_equipo FROM competiciones WHERE dia = 'academico' AND tipo = 'concurso' LIMIT 1"
 )->fetch();
 
 $equiposConocimiento = [];
@@ -110,8 +110,10 @@ if ($equiposConocimiento !== []) {
     }
 }
 
-const LIMITE_EQUIPOS_CONOCIMIENTO = 12;
-$limiteEquiposAlcanzado = count($equiposConocimiento) >= LIMITE_EQUIPOS_CONOCIMIENTO;
+$limiteEquipos = $competicionConocimiento !== false ? (int) $competicionConocimiento['max_equipos'] : 0;
+$tamEquipoConocimiento = $competicionConocimiento !== false ? (int) $competicionConocimiento['tam_equipo'] : 0;
+$acompanantesEsperadosConocimiento = $tamEquipoConocimiento - 1;
+$limiteEquiposAlcanzado = count($equiposConocimiento) >= $limiteEquipos;
 
 function seTraslapan(string $inicioA, string $finA, string $inicioB, string $finB): bool
 {
@@ -333,14 +335,14 @@ $errores = [
     'evento_invalido' => 'Ese evento ya no está disponible.',
     'error_servidor' => 'Ocurrió un error al guardar tu inscripción. Intenta de nuevo.',
     'nombre_equipo_invalido' => 'Ingresa un nombre de equipo válido.',
-    'integrantes_incompletos' => 'Debes capturar el número de cuenta de los 9 integrantes restantes (10 en total, contigo).',
+    'integrantes_incompletos' => 'Debes capturar el número de cuenta de los ' . $acompanantesEsperadosConocimiento . ' integrantes restantes (' . $tamEquipoConocimiento . ' en total, contigo).',
     'numero_cuenta_invalido' => 'Alguno de los números de cuenta capturados no tiene el formato correcto (8 caracteres).',
     'integrante_duplicado' => 'Capturaste dos veces el mismo número de cuenta entre los integrantes.',
     'integrante_no_encontrado' => 'Alguno de los números de cuenta capturados no corresponde a ningún alumno pre-registrado.',
     'integrante_ya_en_equipo' => 'Alguno de los integrantes ya forma parte de otro equipo del Concurso del Conocimiento.',
     'integrante_cruce_horario' => 'Alguno de los integrantes ya tiene otro evento inscrito en el horario del concurso (10:30–12:30).',
     'ya_tienes_equipo' => 'Ya formas parte de un equipo del Concurso del Conocimiento.',
-    'equipo_limite_alcanzado' => 'El Concurso del Conocimiento ya alcanzó su límite de 12 equipos.',
+    'equipo_limite_alcanzado' => 'El Concurso del Conocimiento ya alcanzó su límite de ' . $limiteEquipos . ' equipos.',
 ];
 $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 $mensajesExito = [
@@ -423,9 +425,9 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                             <?php elseif ($bloqueado): ?>
                                 Ya elegiste un taller en este horario
                             <?php elseif ($limiteEquiposAlcanzado): ?>
-                                Cupo de equipos completo (<?= LIMITE_EQUIPOS_CONOCIMIENTO ?>/<?= LIMITE_EQUIPOS_CONOCIMIENTO ?>)
+                                Cupo de equipos completo (<?= $limiteEquipos ?>/<?= $limiteEquipos ?>)
                             <?php else: ?>
-                                Equipos de 10 alumnos — tú serías el capitán (<?= count($equiposConocimiento) ?>/<?= LIMITE_EQUIPOS_CONOCIMIENTO ?> equipos)
+                                Equipos de <?= $tamEquipoConocimiento ?> alumnos — tú serías el capitán (<?= count($equiposConocimiento) ?>/<?= $limiteEquipos ?> equipos)
                             <?php endif; ?>
                         </span>
                     </span>
@@ -458,7 +460,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                 <div class="max-h-[85vh] overflow-y-auto p-5">
                     <h3 class="text-base font-semibold">Equipos del Concurso del Conocimiento</h3>
                     <p class="mb-3 text-xs text-slate-500">
-                        <?= count($equiposConocimiento) ?>/<?= LIMITE_EQUIPOS_CONOCIMIENTO ?> equipos registrados
+                        <?= count($equiposConocimiento) ?>/<?= $limiteEquipos ?> equipos registrados
                     </p>
                     <div class="flex flex-col gap-3">
                         <?php foreach ($equiposConocimiento as $indice => $equipo): ?>
@@ -469,7 +471,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                                 </span>
                                 <span class="text-[11px] text-slate-500">
                                     Capitán: <?= htmlspecialchars($equipo['capitan'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($equipo['capitan_cuenta'], ENT_QUOTES, 'UTF-8') ?>)
-                                    · <?= (int) $equipo['total_integrantes'] ?>/10
+                                    · <?= (int) $equipo['total_integrantes'] ?>/<?= $tamEquipoConocimiento ?>
                                     · <?= date('d/m/Y H:i', strtotime((string) $equipo['fecha_registro'])) ?>
                                 </span>
                             </div>
@@ -501,8 +503,8 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                 <div class="max-h-[85vh] overflow-y-auto p-5">
                     <h3 class="mb-1 text-base font-semibold">Formar equipo — Concurso del Conocimiento</h3>
                     <p class="mb-4 text-xs text-slate-500">
-                        Un equipo son <strong>exactamente 10 alumnos</strong>. Tú quedas registrado como capitán;
-                        busca a los otros 9 por número de cuenta. Ninguno puede tener ya un taller de este
+                        Un equipo son <strong>exactamente <?= $tamEquipoConocimiento ?> alumnos</strong>. Tú quedas registrado como capitán;
+                        busca a los otros <?= $acompanantesEsperadosConocimiento ?> por número de cuenta. Ninguno puede tener ya un taller de este
                         horario (10:30–12:30) ni pertenecer a otro equipo del concurso.
                     </p>
                     <form action="/inscripciones/includes/crear-equipo-conocimiento.php" method="post" data-equipo-form novalidate>
@@ -522,7 +524,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
 
                         <div data-equipo-builder
                              data-contexto="conocimiento"
-                             data-max-integrantes="9"
+                             data-max-integrantes="<?= $acompanantesEsperadosConocimiento ?>"
                              data-requiere-exactos="true"
                              data-capitan-cuenta="<?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?>">
 
@@ -547,7 +549,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                             <div class="rounded-lg border border-slate-200 p-3">
                                 <div class="mb-2 flex items-center justify-between">
                                     <label class="block text-xs font-medium text-slate-700">Integrantes agregados</label>
-                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600" data-contador-integrantes>0/9</span>
+                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600" data-contador-integrantes>0/<?= $acompanantesEsperadosConocimiento ?></span>
                                 </div>
                                 <div data-grid-integrantes class="grid grid-cols-3 gap-2"></div>
                                 <p class="mt-2 text-xs text-red-600" data-error-integrantes hidden></p>

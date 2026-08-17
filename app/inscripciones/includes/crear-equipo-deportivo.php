@@ -7,9 +7,10 @@ require __DIR__ . '/colores-camisa.php';
 iniciarSesionInscripciones();
 
 // Backend de formación de equipo de un torneo deportivo (Día Deportivo).
-// Equipos de exactamente 10 integrantes mezclando alumnos y padres/madres de
-// familia — a diferencia del Concurso del Conocimiento y el Escenario de
-// Talentos. Quien envía el formulario queda como capitán (siempre alumno).
+// Equipos de exactamente competiciones.tam_equipo integrantes mezclando
+// alumnos y padres/madres de familia — a diferencia del Concurso del
+// Conocimiento y el Escenario de Talentos. Quien envía el formulario queda
+// como capitán (siempre alumno).
 //
 // Cada integrante (alumno o padre/madre) se captura con el número de cuenta
 // del alumno "ancla" de su familia (ver nota de integrantes.id_alumno en
@@ -22,9 +23,11 @@ iniciarSesionInscripciones();
 //   1. Un alumno no puede repetirse como integrante tipo=alumno en dos
 //      equipos del MISMO torneo (sí puede en torneos distintos — no se valida
 //      aquí, cada torneo es una competición independiente).
-//   2. Exactamente 10 integrantes (capitán incluido).
+//   2. Exactamente competiciones.tam_equipo integrantes (capitán incluido).
 //   3. NO se valida cruce de horario entre torneos (ver "Reglas de
 //      inscripción a más de un torneo").
+//   4. Tope de equipos por torneo — competiciones.max_equipos, exigido por el
+//      trigger trg_equipos_limite_maximo (ver schema.sql), no aquí.
 
 const TIPOS_INTEGRANTE_VALIDOS = ['alumno', 'padre', 'madre'];
 
@@ -60,11 +63,23 @@ if (!in_array($colorCamisa, COLORES_CAMISA, true)) {
     volverConMensaje('error', 'color_invalido');
 }
 
+/** @var PDO $pdo */
+$pdo = require __DIR__ . '/../../config/db.php';
+
+$consultaTorneo = $pdo->prepare("SELECT id, tam_equipo FROM competiciones WHERE id = :id AND dia = 'deportivo'");
+$consultaTorneo->execute(['id' => $idCompeticion]);
+$torneo = $consultaTorneo->fetch();
+if ($torneo === false) {
+    volverConMensaje('error', 'torneo_invalido');
+}
+$tamEquipo = (int) $torneo['tam_equipo'];
+$acompanantesEsperados = $tamEquipo - 1;
+
 $tipos = array_map(static fn ($v): string => strtolower(trim((string) $v)), (array) ($_POST['integrantes_tipo'] ?? []));
 $cuentas = array_map(static fn ($v): string => strtoupper(trim((string) $v)), (array) ($_POST['integrantes_cuenta'] ?? []));
 $nombres = array_map(static fn ($v): string => trim((string) $v), (array) ($_POST['integrantes_nombre'] ?? []));
 
-if (count($tipos) !== 9 || count($cuentas) !== 9 || count($nombres) !== 9) {
+if (count($tipos) !== $acompanantesEsperados || count($cuentas) !== $acompanantesEsperados || count($nombres) !== $acompanantesEsperados) {
     volverConMensaje('error', 'integrantes_incompletos');
 }
 
@@ -82,15 +97,6 @@ foreach ($tipos as $indice => $tipo) {
     if ($tipo !== 'alumno' && $nombres[$indice] === '') {
         volverConMensaje('error', 'nombre_integrante_invalido');
     }
-}
-
-/** @var PDO $pdo */
-$pdo = require __DIR__ . '/../../config/db.php';
-
-$consultaTorneo = $pdo->prepare("SELECT id FROM competiciones WHERE id = :id AND dia = 'deportivo'");
-$consultaTorneo->execute(['id' => $idCompeticion]);
-if ($consultaTorneo->fetch() === false) {
-    volverConMensaje('error', 'torneo_invalido');
 }
 
 $consultaCapitan = $pdo->prepare('SELECT id, nombre_completo, numero_cuenta FROM alumnos WHERE id = :id');
@@ -125,7 +131,7 @@ foreach ($cuentas as $cuenta) {
     }
 }
 
-// Arma las 9 filas de integrantes a insertar (id_alumno ancla, tipo, nombre).
+// Arma las filas de acompañantes a insertar (id_alumno ancla, tipo, nombre).
 // Los alumnos tipo='alumno' que se repitan como ancla (ej. el mismo alumno
 // aparece dos veces, uno como "alumno" y otra fila padre/madre de la MISMA
 // familia) sí están permitidos — solo se valida duplicado de integrantes
@@ -183,7 +189,7 @@ try {
         volverConMensaje('error', 'integrante_ya_en_equipo');
     }
 
-    // --- 2. Guardar equipo + 10 integrantes -------------------------------
+    // --- 2. Guardar equipo + integrantes -----------------------------------
 
     $insertarEquipo = $pdo->prepare(
         'INSERT INTO equipos (id_competicion, nombre, id_alumno_capitan, color_camisa) VALUES (:competicion, :nombre, :capitan, :color)'
@@ -227,6 +233,11 @@ try {
         // UNIQUE (id_competicion, color_camisa) — alguien tomó el color justo
         // antes, o duplicado de integrante (id_equipo, id_alumno, tipo).
         volverConMensaje('error', str_contains($e->getMessage(), 'uq_equipos_color') ? 'color_tomado' : 'integrante_ya_en_equipo');
+    }
+    if ($e->getCode() === '45000') {
+        // SIGNAL del trigger trg_equipos_limite_maximo (ver schema.sql) — ya
+        // se alcanzó competiciones.max_equipos para este torneo.
+        volverConMensaje('error', 'equipo_limite_alcanzado');
     }
     error_log('Error al crear equipo del torneo ' . $idCompeticion . ' (capitán ' . $idCapitan . '): ' . $e->getMessage());
     volverConMensaje('error', 'error_servidor');

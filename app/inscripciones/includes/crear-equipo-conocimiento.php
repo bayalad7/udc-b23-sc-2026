@@ -6,9 +6,10 @@ require __DIR__ . '/codigo-participante.php';
 iniciarSesionInscripciones();
 
 // Backend de formación de equipo del Concurso del Conocimiento (Día
-// Académico) — equipos de exactamente 10 alumnos (sin padres/madres, a
-// diferencia de los torneos deportivos). Quien envía el formulario queda
-// como capitán; valida, para el capitán y para cada uno de los otros 9:
+// Académico) — equipos de exactamente competiciones.tam_equipo alumnos (sin
+// padres/madres, a diferencia de los torneos deportivos). Quien envía el
+// formulario queda como capitán; valida, para el capitán y para cada uno de
+// los demás integrantes:
 //   1. Que el número de cuenta exista en el padrón (alumnos).
 //   2. Que nadie se repita entre los 10 (ni consigo mismo).
 //   3. Que ninguno esté ya en OTRO equipo de esta misma competición.
@@ -39,13 +40,26 @@ if ($nombreEquipo === '' || mb_strlen($nombreEquipo) > 150) {
     volverConMensaje('error', 'nombre_equipo_invalido');
 }
 
+/** @var PDO $pdo */
+$pdo = require __DIR__ . '/../../config/db.php';
+
+$competicion = $pdo->query(
+    "SELECT id, hora_inicio, hora_fin, tam_equipo FROM competiciones WHERE dia = 'academico' AND tipo = 'concurso' LIMIT 1"
+)->fetch();
+if ($competicion === false) {
+    volverConMensaje('error', 'error_servidor');
+}
+$idCompeticion = (int) $competicion['id'];
+$tamEquipo = (int) $competicion['tam_equipo'];
+$acompanantesEsperados = $tamEquipo - 1;
+
 $numerosCuentaIntegrantes = array_map(
     static fn ($v): string => strtoupper(trim((string) $v)),
     (array) ($_POST['integrantes'] ?? [])
 );
 $numerosCuentaIntegrantes = array_values(array_filter($numerosCuentaIntegrantes, static fn (string $v): bool => $v !== ''));
 
-if (count($numerosCuentaIntegrantes) !== 9) {
+if (count($numerosCuentaIntegrantes) !== $acompanantesEsperados) {
     volverConMensaje('error', 'integrantes_incompletos');
 }
 
@@ -54,9 +68,6 @@ foreach ($numerosCuentaIntegrantes as $numeroCuenta) {
         volverConMensaje('error', 'numero_cuenta_invalido');
     }
 }
-
-/** @var PDO $pdo */
-$pdo = require __DIR__ . '/../../config/db.php';
 
 $consultaCapitan = $pdo->prepare('SELECT id, nombre_completo, numero_cuenta FROM alumnos WHERE id = :id');
 $consultaCapitan->execute(['id' => $idCapitan]);
@@ -68,19 +79,11 @@ if ($capitan === false) {
 if (in_array($capitan['numero_cuenta'], $numerosCuentaIntegrantes, true)) {
     volverConMensaje('error', 'integrante_duplicado');
 }
-if (count(array_unique($numerosCuentaIntegrantes)) !== 9) {
+if (count(array_unique($numerosCuentaIntegrantes)) !== $acompanantesEsperados) {
     volverConMensaje('error', 'integrante_duplicado');
 }
 
-$competicion = $pdo->query(
-    "SELECT id, hora_inicio, hora_fin FROM competiciones WHERE dia = 'academico' AND tipo = 'concurso' LIMIT 1"
-)->fetch();
-if ($competicion === false) {
-    volverConMensaje('error', 'error_servidor');
-}
-$idCompeticion = (int) $competicion['id'];
-
-// Resolver los 9 números de cuenta contra el padrón — todos deben existir.
+// Resolver los números de cuenta de los acompañantes contra el padrón — todos deben existir.
 $marcadores = implode(',', array_fill(0, count($numerosCuentaIntegrantes), '?'));
 $consultaAlumnos = $pdo->prepare(
     "SELECT id, nombre_completo, numero_cuenta FROM alumnos WHERE numero_cuenta IN ($marcadores)"
@@ -88,7 +91,7 @@ $consultaAlumnos = $pdo->prepare(
 $consultaAlumnos->execute($numerosCuentaIntegrantes);
 $alumnosEncontrados = $consultaAlumnos->fetchAll();
 
-if (count($alumnosEncontrados) !== 9) {
+if (count($alumnosEncontrados) !== $acompanantesEsperados) {
     volverConMensaje('error', 'integrante_no_encontrado');
 }
 
@@ -97,7 +100,7 @@ $integrantes = [$capitan['id'] => $capitan['nombre_completo']];
 foreach ($alumnosEncontrados as $alumnoFila) {
     $integrantes[(int) $alumnoFila['id']] = $alumnoFila['nombre_completo'];
 }
-if (count($integrantes) !== 10) {
+if (count($integrantes) !== $tamEquipo) {
     // Dos números de cuenta distintos resolvieron al mismo id (no debería
     // pasar con numero_cuenta UNIQUE, pero se cubre por seguridad).
     volverConMensaje('error', 'integrante_duplicado');
@@ -187,8 +190,8 @@ try {
         volverConMensaje('error', 'integrante_ya_en_equipo');
     }
     if ($e->getCode() === '45000') {
-        // SIGNAL del trigger trg_equipos_limite_conocimiento (ver schema.sql)
-        // — ya hay 12 equipos registrados.
+        // SIGNAL del trigger trg_equipos_limite_maximo (ver schema.sql) — ya
+        // se alcanzó competiciones.max_equipos para este concurso.
         volverConMensaje('error', 'equipo_limite_alcanzado');
     }
     error_log('Error al crear equipo del Concurso del Conocimiento (capitán ' . $idCapitan . '): ' . $e->getMessage());

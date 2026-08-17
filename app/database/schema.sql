@@ -171,6 +171,10 @@ CREATE TABLE IF NOT EXISTS competiciones (
         COMMENT 'Nombre de la competición (ej. "Concurso del Conocimiento", "Torneo de Voleibol")',
     fecha_limite      DATETIME NOT NULL
         COMMENT 'Fecha límite de inscripción a esta competición',
+    max_equipos       INT UNSIGNED NULL
+        COMMENT 'Tope de equipos permitidos en esta competición (ver trg_equipos_limite_maximo); NULL = sin tope',
+    tam_equipo        INT UNSIGNED NULL
+        COMMENT 'Cantidad exacta de integrantes por equipo, capitán incluido (validado en la app, no aquí); NULL = sin regla de tamaño fijo',
     fecha_registro    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'Cuándo se registró la competición',
     CONSTRAINT chk_competiciones_horario CHECK ( hora_fin > hora_inicio )
@@ -202,30 +206,31 @@ CREATE TABLE IF NOT EXISTS equipos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Equipos de concursos y torneos (Concurso del Conocimiento, Concurso de Talentos, torneos deportivos).';
 
--- Tope de 12 equipos para el Concurso del Conocimiento (regla de negocio
--- nueva) — se controla a nivel de base de datos, no solo en la app, para que
--- ninguna vía de inserción (la app, una carga manual, otro script) pueda
--- rebasarlo por accidente. No se modela como columna/UNIQUE porque es un
--- límite de CONTEO, no de unicidad — un trigger es la única forma de
--- expresarlo en MariaDB. Se identifica la competición por dia/tipo en vez de
--- un id fijo, porque el id real depende del orden de inserción de las
--- semillas (ver seeds.sql) y puede variar entre entornos.
+-- Tope de equipos por competición (regla de negocio configurable desde
+-- competiciones.max_equipos — ver app/admin/public/competicion.php) — se
+-- controla a nivel de base de datos, no solo en la app, para que ninguna vía
+-- de inserción (la app, una carga manual, otro script) pueda rebasarlo por
+-- accidente. No se modela como columna/UNIQUE en equipos porque es un límite
+-- de CONTEO, no de unicidad — un trigger es la única forma de expresarlo en
+-- MariaDB. Genérico para cualquier competición con max_equipos NOT NULL (hoy
+-- solo el Concurso del Conocimiento la trae, ver seeds.sql); una competición
+-- con max_equipos NULL no tiene tope.
 DELIMITER $$
-CREATE TRIGGER trg_equipos_limite_conocimiento
+CREATE TRIGGER trg_equipos_limite_maximo
 BEFORE INSERT ON equipos
 FOR EACH ROW
 BEGIN
-    DECLARE es_conocimiento TINYINT DEFAULT 0;
-    DECLARE total_equipos INT DEFAULT 0;
+    DECLARE v_max_equipos INT UNSIGNED DEFAULT NULL;
+    DECLARE v_total_equipos INT DEFAULT 0;
 
-    SELECT (dia = 'academico' AND tipo = 'concurso') INTO es_conocimiento
+    SELECT max_equipos INTO v_max_equipos
     FROM competiciones WHERE id = NEW.id_competicion;
 
-    IF es_conocimiento = 1 THEN
-        SELECT COUNT(*) INTO total_equipos FROM equipos WHERE id_competicion = NEW.id_competicion;
-        IF total_equipos >= 12 THEN
+    IF v_max_equipos IS NOT NULL THEN
+        SELECT COUNT(*) INTO v_total_equipos FROM equipos WHERE id_competicion = NEW.id_competicion;
+        IF v_total_equipos >= v_max_equipos THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'El Concurso del Conocimiento ya alcanzó su límite de 12 equipos.';
+                SET MESSAGE_TEXT = 'Esta competición ya alcanzó su límite de equipos.';
         END IF;
     END IF;
 END$$
