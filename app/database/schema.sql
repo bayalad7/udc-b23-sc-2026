@@ -1,15 +1,20 @@
 -- Esquema de base de datos — Semana Acádemica, Cultural y Deportiva B23
 -- Ver app/PROMPTS-DESARROLLO.md para el detalle de cada tabla y su prompt de origen.
 
--- El contenedor de MariaDB crea la base (variable MYSQL_DATABASE, ver
--- docker-compose.yml) con el collation por defecto del servidor —
--- utf8mb4_uca1400_ai_ci en MariaDB 11 — pero todas las tablas de este
--- archivo se crean explícitamente en utf8mb4_unicode_ci. Sin este ALTER, esa
--- discrepancia entre el collation "de la base" y el de las tablas rompe
--- cualquier procedimiento/función almacenado que compare literales de texto
--- (error 1267 "Illegal mix of collations") aunque las tablas en sí queden
--- bien. Alinear aquí el collation por defecto de la base evita el problema
--- para cualquier rutina futura, no solo las de app/database/seeds.sql.
+CREATE DATABASE IF NOT EXISTS b23_sc
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE b23_sc;
+
+-- Al correr este script fuera de docker-compose (mysql/mariadb directo), la
+-- base ya queda creada arriba con el collation correcto. Cuando el contenedor
+-- de MariaDB la crea por su cuenta (variable MYSQL_DATABASE, ver
+-- docker-compose.yml) usa el collation por defecto del servidor —
+-- utf8mb4_uca1400_ai_ci en MariaDB 11 — distinto al utf8mb4_unicode_ci en que
+-- se crean todas las tablas de este archivo. Sin este ALTER, esa discrepancia
+-- entre el collation "de la base" y el de las tablas rompe cualquier
+-- procedimiento/función almacenado que compare literales de texto (error 1267
+-- "Illegal mix of collations") aunque las tablas en sí queden bien. Alinear
+-- aquí el collation por defecto de la base cubre ambos casos.
 ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Configuración general de la app: las contraseñas compartidas (hasheadas)
