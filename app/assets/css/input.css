@@ -1,1 +1,40 @@
 @import "tailwindcss";
+
+/* Marca de agua institucional (logo del Aniversario #45) detrás del
+   contenido de cada página. mix-blend-mode: multiply hace que el fondo
+   blanco del logo se funda con el fondo de la página sin dejar un
+   recuadro visible, y la máscara radial difumina el borde. */
+body {
+  position: relative;
+  isolation: isolate;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  pointer-events: none;
+  --marca-agua-tamano: min(50vw, 230px);
+  height: var(--marca-agua-tamano);
+  /* Ruta relativa al propio archivo CSS (no absoluta desde "/"): así
+     funciona igual si la app se publica en la raíz del dominio (Docker) o
+     bajo una subcarpeta en el VPS (ver BASE_URL en config/rutas.php) sin
+     depender de esa constante, que un .css estático no puede usar. */
+  background-image: url("../img/logo/A45.png");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: var(--marca-agua-tamano);
+  mix-blend-mode: multiply;
+  opacity: 0.16;
+  -webkit-mask-image: radial-gradient(circle, #000 42%, transparent 72%);
+  mask-image: radial-gradient(circle, #000 42%, transparent 72%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center top;
+  mask-position: center top;
+  -webkit-mask-size: var(--marca-agua-tamano);
+  mask-size: var(--marca-agua-tamano);
+}

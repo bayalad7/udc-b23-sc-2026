@@ -1507,6 +1507,35 @@
     }
   }
 }
+body {
+  position: relative;
+  isolation: isolate;
+}
+body::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  pointer-events: none;
+  --marca-agua-tamano: min(50vw, 230px);
+  height: var(--marca-agua-tamano);
+  background-image: url("../img/logo/A45.png");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: var(--marca-agua-tamano);
+  mix-blend-mode: multiply;
+  opacity: 0.16;
+  -webkit-mask-image: radial-gradient(circle, #000 42%, transparent 72%);
+  mask-image: radial-gradient(circle, #000 42%, transparent 72%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center top;
+  mask-position: center top;
+  -webkit-mask-size: var(--marca-agua-tamano);
+  mask-size: var(--marca-agua-tamano);
+}
 @property --tw-translate-x {
   syntax: "*";
   inherits: false;

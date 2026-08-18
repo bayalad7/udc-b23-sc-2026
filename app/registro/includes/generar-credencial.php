@@ -8,6 +8,9 @@ const CREDENCIAL_ALTO = 1920;
 const CREDENCIAL_FUENTE_REGULAR = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
 const CREDENCIAL_FUENTE_NEGRITA = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
 const CREDENCIAL_LOGO = __DIR__ . '/../../assets/img/logo/UdeC_2L izq Negro.png';
+const CREDENCIAL_MARCA_AGUA = __DIR__ . '/../../assets/img/logo/A45.png';
+const CREDENCIAL_MARCA_AGUA_LADO = 1000;
+const CREDENCIAL_MARCA_AGUA_OPACIDAD = 12;
 
 /**
  * Genera la credencial digital vertical (foto + datos + QR) de un alumno ya
@@ -35,6 +38,13 @@ function generarCredencial(PDO $pdo, string $numeroCuenta, string $token): void
     $gris = imagecolorallocate($lienzo, 100, 116, 139);     // slate-500
     $bordeClaro = imagecolorallocate($lienzo, 226, 232, 240); // slate-200
     imagefill($lienzo, 0, 0, $blanco);
+
+    // --- Marca de agua institucional (logo Aniversario #45) ---------------
+    // Se dibuja primero, sobre el fondo blanco: como el logo también tiene
+    // fondo blanco, imagecopymerge() se funde con el lienzo sin dejar un
+    // recuadro visible. Todo lo que se dibuja después (foto, textos, QR) es
+    // opaco y la tapa donde corresponde, así que nunca cae encima del QR.
+    dibujarMarcaDeAgua($lienzo);
 
     $margen = 70;
 
@@ -110,6 +120,22 @@ function generarCredencial(PDO $pdo, string $numeroCuenta, string $token): void
         'ruta' => $rutaCredencialRelativa,
         'cuenta' => $numeroCuenta,
     ]);
+}
+
+/** Dibuja el logo del Aniversario #45 centrado y semitransparente como marca de agua. */
+function dibujarMarcaDeAgua(GdImage $lienzo): void
+{
+    $lado = CREDENCIAL_MARCA_AGUA_LADO;
+    $marca = cargarImagen(CREDENCIAL_MARCA_AGUA);
+    $marcaRedimensionada = imagecreatetruecolor($lado, $lado);
+    imagecopyresampled($marcaRedimensionada, $marca, 0, 0, 0, 0, $lado, $lado, imagesx($marca), imagesy($marca));
+
+    $x = (int) ((CREDENCIAL_ANCHO - $lado) / 2);
+    $y = (int) ((CREDENCIAL_ALTO - $lado) / 2) - 140;
+    imagecopymerge($lienzo, $marcaRedimensionada, $x, $y, 0, 0, $lado, $lado, CREDENCIAL_MARCA_AGUA_OPACIDAD);
+
+    imagedestroy($marcaRedimensionada);
+    imagedestroy($marca);
 }
 
 /** Carga un JPG o PNG según su tipo MIME real (no según la extensión). */
