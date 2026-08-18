@@ -4,7 +4,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpng-dev \
         libjpeg62-turbo-dev \
         libfreetype6-dev \
-        fonts-dejavu-core \
         unzip \
         git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \

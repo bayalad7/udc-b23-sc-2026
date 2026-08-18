@@ -5,8 +5,11 @@ require __DIR__ . '/../../vendor/pendalff/phpqrcode/qrlib.php';
 
 const CREDENCIAL_ANCHO = 1080;
 const CREDENCIAL_ALTO = 1920;
-const CREDENCIAL_FUENTE_REGULAR = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
-const CREDENCIAL_FUENTE_NEGRITA = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+// Fuentes DejaVu empacadas con la dependencia dompdf/dompdf (vendor/), no del
+// sistema operativo -- así no dependen de tener el paquete de fuentes
+// instalado (ej. fonts-dejavu-core) en cada servidor donde corra la app.
+const CREDENCIAL_FUENTE_REGULAR = __DIR__ . '/../../vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ttf';
+const CREDENCIAL_FUENTE_NEGRITA = __DIR__ . '/../../vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf';
 const CREDENCIAL_LOGO = __DIR__ . '/../../assets/img/logo/UdeC_2L izq Negro.png';
 const CREDENCIAL_MARCA_AGUA = __DIR__ . '/../../assets/img/logo/A45.png';
 const CREDENCIAL_MARCA_AGUA_LADO = 1000;
