@@ -33,6 +33,8 @@ const ICONOS_SVG = [
     'buscar' => '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
     // lucide "list-checks"
     'lista' => '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
+    // lucide "pencil"
+    'editar' => '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .624.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
 ];
 
 /** Devuelve el markup de un ícono SVG inline (Lucide). $clase son clases Tailwind (tamaño/color). */

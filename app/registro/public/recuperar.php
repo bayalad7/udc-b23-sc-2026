@@ -57,11 +57,18 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
             <p class="mt-1 text-xs text-slate-500">El mismo que usaste al pre-registrarte.</p>
         </div>
 
-        <button type="submit"
+        <button type="submit" formaction="<?= BASE_URL ?>/registro/includes/recuperar-credencial.php"
                 class="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white active:bg-slate-700 cursor-pointer">
             <?= icono('buscar', 'h-4 w-4 shrink-0') ?>
             Buscar mi credencial
         </button>
+
+        <button type="submit" formaction="<?= BASE_URL ?>/registro/includes/iniciar-regeneracion.php"
+                class="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-800 active:bg-slate-100 cursor-pointer">
+            <?= icono('editar', 'h-4 w-4 shrink-0') ?>
+            Regenerar credencial (Corregir mis datos)
+        </button>
+        <p class="text-center text-xs text-slate-500">¿Te equivocaste en algún dato o subiste la foto incorrecta? Usa este botón con tu número de cuenta y correo para corregirlo.</p>
     </form>
 
     <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">

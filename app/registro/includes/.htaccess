@@ -7,3 +7,11 @@ Require all denied
 <Files "recuperar-credencial.php">
     Require all granted
 </Files>
+
+<Files "iniciar-regeneracion.php">
+    Require all granted
+</Files>
+
+<Files "regenerar-credencial.php">
+    Require all granted
+</Files>

@@ -30,5 +30,5 @@ if ($alumno === false) {
     exit;
 }
 
-header('Location: ' . BASE_URL . '/registro/public/exito.php?token=' . urlencode($alumno['token_descarga']));
+header('Location: ' . BASE_URL . '/registro/public/regenerar.php?token=' . urlencode($alumno['token_descarga']));
 exit;

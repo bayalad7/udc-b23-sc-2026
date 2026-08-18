@@ -42,14 +42,25 @@ if (preg_match('/^[a-f0-9]{32}$/', $token)) {
 
         <?php if ($alumno['credencial_generada'] && $alumno['credencial_path']): ?>
 
+            <?php
+            // La credencial se regenera sobre el mismo archivo (mismo token_descarga)
+            // cuando el alumno corrige sus datos en regenerar.php, así que su URL no
+            // cambia. Sin un parámetro que la distinga, el navegador sirve de caché la
+            // imagen vieja y el alumno ve su credencial anterior. filemtime() de la
+            // imagen ya compuesta sirve como "versión" que cambia en cada regeneración.
+            $credencialRutaAbsoluta = __DIR__ . '/' . $alumno['credencial_path'];
+            $credencialVersion = is_file($credencialRutaAbsoluta) ? filemtime($credencialRutaAbsoluta) : time();
+            $credencialUrl = BASE_URL . '/registro/public/' . $alumno['credencial_path'] . '?v=' . $credencialVersion;
+            ?>
+
             <div class="mt-6 w-full overflow-hidden rounded-xl bg-white shadow-sm">
-                <img src="<?= BASE_URL ?>/registro/public/<?= htmlspecialchars($alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
+                <img src="<?= htmlspecialchars($credencialUrl, ENT_QUOTES, 'UTF-8') ?>"
                      alt="Credencial digital" class="w-full">
             </div>
-            
+
             <p class="mt-4 text-xs text-slate-500">Guarda esta imagen en tu celular, <b>es tu credencial para tomar tus asistencias todos los días de los eventos.</b></p>
 
-            <a href="<?= BASE_URL ?>/registro/public/<?= htmlspecialchars($alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
+            <a href="<?= htmlspecialchars($credencialUrl, ENT_QUOTES, 'UTF-8') ?>"
                download="credencial-<?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?>.png"
                class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white">
                 <?= icono('descargar', 'h-4 w-4 shrink-0') ?>
