@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/rutas.php';
+
 // Conexión PDO compartida a MariaDB. No contiene credenciales reales:
 // - En Docker (desarrollo local), las lee de variables de entorno (ver docker-compose.yml).
 // - Fuera de Docker (ej. VPS), las toma de db-credenciales.php (no se sube al repositorio — copiar desde db-credenciales.example.php).

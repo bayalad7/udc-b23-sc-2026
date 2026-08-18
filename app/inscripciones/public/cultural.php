@@ -8,7 +8,7 @@ iniciarSesionInscripciones();
 
 $idAlumno = alumnoIdentificadoId();
 if ($idAlumno === null) {
-    header('Location: /inscripciones/public/index.php?volver=cultural');
+    header('Location: ' . BASE_URL . '/inscripciones/public/index.php?volver=cultural');
     exit;
 }
 
@@ -19,7 +19,7 @@ $consultaAlumno = $pdo->prepare('SELECT nombre_completo, numero_cuenta FROM alum
 $consultaAlumno->execute(['id' => $idAlumno]);
 $alumno = $consultaAlumno->fetch();
 if ($alumno === false) {
-    header('Location: /inscripciones/includes/salir.php');
+    header('Location: ' . BASE_URL . '/inscripciones/includes/salir.php');
     exit;
 }
 
@@ -300,7 +300,7 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
                         Cancelar
                     </button>
                 </form>
-                <form action="/inscripciones/includes/inscribir.php" method="post" class="flex-1">
+                <form action="<?= BASE_URL ?>/inscripciones/includes/inscribir.php" method="post" class="flex-1">
                     <input type="hidden" name="id_evento" value="<?= $idTaller ?>">
                     <input type="hidden" name="dia" value="cultural">
                     <button type="submit"
@@ -322,23 +322,23 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Día Cultural — Inscripciones B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8">
 
-    <a href="/inscripciones/public/index.php" class="mb-4 flex items-center gap-1 text-sm font-medium text-slate-600">
+    <a href="<?= BASE_URL ?>/inscripciones/public/index.php" class="mb-4 flex items-center gap-1 text-sm font-medium text-slate-600">
         <?= icono('volver', 'h-4 w-4 shrink-0') ?>
         <b>Regresar</b>
     </a>
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="flex items-center gap-2 text-xl font-bold"><?= icono('cultural', 'h-5 w-5 shrink-0') ?> Día Cultural</h1>
         <p class="mt-1 text-sm text-slate-600">
             Talleres (Bloque 1) y Escenario de Talentos "Expresa tu esencia" (Bloque 2).
             Hola, <?= htmlspecialchars($alumno['nombre_completo'], ENT_QUOTES, 'UTF-8') ?>
-            (<a href="/inscripciones/includes/salir.php" class="underline">no soy yo</a>).
+            (<a href="<?= BASE_URL ?>/inscripciones/includes/salir.php" class="underline">no soy yo</a>).
         </p>
     </div>
 
@@ -472,7 +472,7 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
                 Participa solo o agrega acompañantes por número de cuenta (hasta 9 más). Quedas registrado como
                 capitán del acto.
             </p>
-            <form action="/inscripciones/includes/crear-acto-cultural.php" method="post" data-equipo-form novalidate>
+            <form action="<?= BASE_URL ?>/inscripciones/includes/crear-acto-cultural.php" method="post" data-equipo-form novalidate>
                 <div class="mb-3">
                     <label for="nombre_acto" class="mb-1 block text-xs font-medium">Nombre del acto o presentación</label>
                     <div class="relative">
@@ -546,6 +546,6 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
     <?php endif; ?>
 
 </div>
-<script src="/assets/js/inscripciones.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/inscripciones.js"></script>
 </body>
 </html>

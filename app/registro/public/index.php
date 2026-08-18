@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../config/rutas.php';
 require __DIR__ . '/../includes/iconos.php';
 
 $errores = [
@@ -18,13 +19,13 @@ $mensajeError = $errores[$codigoError] ?? null;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Semana Acádemica, Cultural y Deportiva B23 — Registro de estudiantes</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
         <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
         <p>&nbsp;</p>
@@ -38,7 +39,7 @@ $mensajeError = $errores[$codigoError] ?? null;
     </div>
     <?php endif; ?>
 
-    <form id="form-registro" action="/registro/includes/guardar-registro.php" method="post" enctype="multipart/form-data" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
+    <form id="form-registro" action="<?= BASE_URL ?>/registro/includes/guardar-registro.php" method="post" enctype="multipart/form-data" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
 
         <div>
             <label for="nombre_completo" class="mb-1 block text-sm font-medium">Nombre completo</label>
@@ -167,17 +168,17 @@ $mensajeError = $errores[$codigoError] ?? null;
         Registro abierto hasta el 30 de septiembre. Con tu registro se genera tu credencial digital con código QR.
     </p>
 
-    <a href="/registro/public/recuperar.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+    <a href="<?= BASE_URL ?>/registro/public/recuperar.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
         <?= icono('buscar', 'h-3.5 w-3.5 shrink-0') ?>
         ¿Ya te registraste? Recupera tu credencial
     </a>
 
-    <a href="/inscripciones/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+    <a href="<?= BASE_URL ?>/inscripciones/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
         <?= icono('lista', 'h-3.5 w-3.5 shrink-0') ?>
         ¿Ya tienes tu credencial? Ve a Inscripciones
     </a>
 </div>
 
-<script src="/assets/js/registro.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/registro.js"></script>
 </body>
 </html>

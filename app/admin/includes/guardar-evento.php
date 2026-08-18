@@ -6,13 +6,13 @@ iniciarSesionAdmin();
 exigirAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/public/eventos.php');
+    header('Location: ' . BASE_URL . '/admin/public/eventos.php');
     exit;
 }
 
 function volverConError(?int $id, string $codigo): never
 {
-    $destino = $id !== null ? '/admin/public/evento.php?id=' . $id : '/admin/public/evento.php?nuevo=1';
+    $destino = $id !== null ? BASE_URL . '/admin/public/evento.php?id=' . $id : BASE_URL . '/admin/public/evento.php?nuevo=1';
     header('Location: ' . $destino . '&error=' . urlencode($codigo));
     exit;
 }
@@ -69,7 +69,7 @@ if ($id === null) {
         'cupo_maximo' => $cupoMaximo, 'cupo_disponible' => $cupoMaximo, 'responsable' => $responsable,
     ]);
     $idNuevo = (int) $pdo->lastInsertId();
-    header('Location: /admin/public/evento.php?id=' . $idNuevo . '&msg=creado');
+    header('Location: ' . BASE_URL . '/admin/public/evento.php?id=' . $idNuevo . '&msg=creado');
     exit;
 }
 
@@ -97,5 +97,5 @@ $actualizar->execute([
     'id' => $id,
 ]);
 
-header('Location: /admin/public/evento.php?id=' . $id . '&msg=actualizado');
+header('Location: ' . BASE_URL . '/admin/public/evento.php?id=' . $id . '&msg=actualizado');
 exit;

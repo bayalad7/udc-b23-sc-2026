@@ -41,7 +41,7 @@ $dias = [
         'icono' => 'academico',
         'label' => 'Día Académico',
         'descripcion' => 'Ponencias, talleres y Concurso del Conocimiento.',
-        'href' => '/inscripciones/public/academico.php',
+        'href' => BASE_URL . '/inscripciones/public/academico.php',
         'disponible' => true,
     ],
     [
@@ -49,7 +49,7 @@ $dias = [
         'icono' => 'cultural',
         'label' => 'Día Cultural',
         'descripcion' => 'Escenario de Talentos "Expresa tu esencia".',
-        'href' => '/inscripciones/public/cultural.php',
+        'href' => BASE_URL . '/inscripciones/public/cultural.php',
         'disponible' => true,
     ],
     [
@@ -57,7 +57,7 @@ $dias = [
         'icono' => 'trofeo',
         'label' => 'Día Deportivo',
         'descripcion' => 'Torneos deportivos.',
-        'href' => '/inscripciones/public/deportivo.php',
+        'href' => BASE_URL . '/inscripciones/public/deportivo.php',
         'disponible' => true,
     ],
 ];
@@ -68,13 +68,13 @@ $dias = [
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inscripciones — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
         <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
         <p>&nbsp;</p>
@@ -98,13 +98,13 @@ $dias = [
 
         <?php
         $destinosPorVolver = [
-            'academico' => '/inscripciones/public/academico.php',
-            'cultural' => '/inscripciones/public/cultural.php',
-            'deportivo' => '/inscripciones/public/deportivo.php',
+            'academico' => BASE_URL . '/inscripciones/public/academico.php',
+            'cultural' => BASE_URL . '/inscripciones/public/cultural.php',
+            'deportivo' => BASE_URL . '/inscripciones/public/deportivo.php',
         ];
-        $volverDestino = $destinosPorVolver[$_GET['volver'] ?? ''] ?? '/inscripciones/public/index.php';
+        $volverDestino = $destinosPorVolver[$_GET['volver'] ?? ''] ?? (BASE_URL . '/inscripciones/public/index.php');
         ?>
-        <form action="/inscripciones/includes/identificar.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
+        <form action="<?= BASE_URL ?>/inscripciones/includes/identificar.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
             <input type="hidden" name="volver" value="<?= htmlspecialchars($volverDestino, ENT_QUOTES, 'UTF-8') ?>">
             <div>
                 <label for="numero_cuenta" class="mb-1 block text-sm font-medium">Número de cuenta</label>
@@ -133,7 +133,7 @@ $dias = [
             </button>
         </form>
 
-        <a href="/registro/public/index.php" class="mt-4 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+        <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-4 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
             <?= icono('credencial', 'h-3.5 w-3.5 shrink-0') ?>
             ¿Aún no te registras? Regístrate aquí
         </a>
@@ -141,7 +141,7 @@ $dias = [
     <?php else: ?>
 
         <div class="mb-4 flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
-            <img src="/registro/public/<?= htmlspecialchars($alumno['foto_path'], ENT_QUOTES, 'UTF-8') ?>" alt=""
+            <img src="<?= BASE_URL ?>/registro/public/<?= htmlspecialchars($alumno['foto_path'], ENT_QUOTES, 'UTF-8') ?>" alt=""
                  class="h-16 w-16 shrink-0 rounded-full border border-slate-200 object-cover">
             <div class="min-w-0 text-sm">
                 <span class="block text-xs text-slate-500">Hola,</span>
@@ -174,7 +174,7 @@ $dias = [
             <?php endforeach; ?>
         </nav>
 
-        <a href="/inscripciones/includes/salir.php" class="mt-6 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline cursor-pointer">
+        <a href="<?= BASE_URL ?>/inscripciones/includes/salir.php" class="mt-6 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline cursor-pointer">
             <?= icono('salir', 'h-3.5 w-3.5 shrink-0') ?>
             Cerrar sesión en este dispositivo
         </a>

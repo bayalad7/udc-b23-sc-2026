@@ -119,7 +119,7 @@ responder([
         'nombre_completo' => $alumno['nombre_completo'],
         'grado' => $alumno['grado'],
         'grupo' => $alumno['grupo'],
-        'foto_url' => '/registro/public/' . $alumno['foto_path'],
+        'foto_url' => BASE_URL . '/registro/public/' . $alumno['foto_path'],
     ],
     'puede_ser_alumno' => $puedeSerAlumno,
     'motivo' => $motivo,

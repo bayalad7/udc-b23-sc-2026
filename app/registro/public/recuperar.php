@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../config/rutas.php';
 require __DIR__ . '/../includes/iconos.php';
 
 $errores = [
@@ -14,13 +15,13 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recuperar credencial — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
         <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
         <p>&nbsp;</p>
@@ -34,7 +35,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
     </div>
     <?php endif; ?>
 
-    <form action="/registro/includes/recuperar-credencial.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
+    <form action="<?= BASE_URL ?>/registro/includes/recuperar-credencial.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
 
         <div>
             <label for="numero_cuenta" class="mb-1 block text-sm font-medium">Número de cuenta</label>
@@ -63,7 +64,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
         </button>
     </form>
 
-    <a href="/registro/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+    <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
         <?= icono('correo', 'h-3.5 w-3.5 shrink-0') ?>
         Volver al registro
     </a>

@@ -12,7 +12,7 @@ iniciarSesionInscripciones();
 
 function destinoSeguro(string $destino): string
 {
-    return str_starts_with($destino, '/inscripciones/public/') ? $destino : '/inscripciones/public/index.php';
+    return str_starts_with($destino, BASE_URL . '/inscripciones/public/') ? $destino : BASE_URL . '/inscripciones/public/index.php';
 }
 
 function volverConError(string $destino, string $codigo): never
@@ -22,7 +22,7 @@ function volverConError(string $destino, string $codigo): never
     exit;
 }
 
-$destino = destinoSeguro((string) ($_POST['volver'] ?? '/inscripciones/public/index.php'));
+$destino = destinoSeguro((string) ($_POST['volver'] ?? (BASE_URL . '/inscripciones/public/index.php')));
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ' . $destino);

@@ -109,7 +109,7 @@ if ($evento === 'academico' || $evento === 'cultural') {
         'persona' => [
             'nombre' => $alumno['nombre_completo'],
             'detalle' => $alumno['grado'] . '° ' . $alumno['grupo'],
-            'foto_url' => '/registro/public/' . $alumno['foto_path'],
+            'foto_url' => BASE_URL . '/registro/public/' . $alumno['foto_path'],
         ],
         'mensaje' => $tipoResultado === 'entrada' ? 'Entrada registrada' : 'Salida registrada (actualizada)',
     ];
@@ -130,7 +130,7 @@ if ($evento === 'academico' || $evento === 'cultural') {
         if ($asignaciones !== []) {
             $respuesta['asignaciones'] = $asignaciones;
         } else {
-            $respuesta['redirect_url'] = '/inscripciones/public/index.php?'
+            $respuesta['redirect_url'] = BASE_URL . '/inscripciones/public/index.php?'
                 . http_build_query(['numero_cuenta' => $numeroCuenta]);
         }
     }

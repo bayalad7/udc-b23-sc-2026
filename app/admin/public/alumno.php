@@ -5,7 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 iniciarSesionAdmin();
 if (!adminAutorizado()) {
-    header('Location: /admin/public/index.php');
+    header('Location: ' . BASE_URL . '/admin/public/index.php');
     exit;
 }
 
@@ -31,14 +31,14 @@ $alumno = [
 
 if (!$esNuevo) {
     if ($id === null || $id <= 0) {
-        header('Location: /admin/public/alumnos.php?error=no_encontrado');
+        header('Location: ' . BASE_URL . '/admin/public/alumnos.php?error=no_encontrado');
         exit;
     }
     $consulta = $pdo->prepare('SELECT * FROM alumnos WHERE id = :id');
     $consulta->execute(['id' => $id]);
     $fila = $consulta->fetch();
     if ($fila === false) {
-        header('Location: /admin/public/alumnos.php?error=no_encontrado');
+        header('Location: ' . BASE_URL . '/admin/public/alumnos.php?error=no_encontrado');
         exit;
     }
     $alumno = $fila;
@@ -72,7 +72,7 @@ if ($mensajeError) {
 }
 ?>
 
-<a href="/admin/public/alumnos.php" class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
+<a href="<?= BASE_URL ?>/admin/public/alumnos.php" class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
     <?= icono('atras', 'h-3.5 w-3.5') ?>
     Volver al listado
 </a>
@@ -98,7 +98,7 @@ if ($mensajeError) {
             </div>
 
             <?php if ($alumno['credencial_generada'] && $alumno['credencial_path']): ?>
-            <a href="/registro/public/<?= htmlspecialchars((string) $alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
+            <a href="<?= BASE_URL ?>/registro/public/<?= htmlspecialchars((string) $alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
                download="credencial-<?= htmlspecialchars((string) $alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?>.png"
                class="mt-4 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
                 <?= icono('descargar', 'h-4 w-4') ?>
@@ -106,7 +106,7 @@ if ($mensajeError) {
             </a>
             <?php endif; ?>
 
-            <form action="/admin/includes/regenerar-credencial.php" method="post" class="mt-4">
+            <form action="<?= BASE_URL ?>/admin/includes/regenerar-credencial.php" method="post" class="mt-4">
                 <input type="hidden" name="id" value="<?= (int) $alumno['id'] ?>">
                 <button type="submit" class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                     <?= icono('cambiar', 'h-4 w-4') ?>
@@ -116,7 +116,7 @@ if ($mensajeError) {
 
             <p class="mt-3 text-xs text-slate-400">Registrado el <?= htmlspecialchars((string) $alumno['fecha_registro'], ENT_QUOTES, 'UTF-8') ?></p>
 
-            <form action="/admin/includes/eliminar-alumno.php" method="post" class="mt-6 border-t border-slate-100 pt-4"
+            <form action="<?= BASE_URL ?>/admin/includes/eliminar-alumno.php" method="post" class="mt-6 border-t border-slate-100 pt-4"
                   onsubmit="return confirm('¿Eliminar a este alumno de forma permanente? Esta acción no se puede deshacer.');">
                 <input type="hidden" name="id" value="<?= (int) $alumno['id'] ?>">
                 <button type="submit" class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
@@ -131,7 +131,7 @@ if ($mensajeError) {
     <div class="lg:col-span-2">
         <div class="rounded-xl bg-white p-5 shadow-sm">
             <h2 class="mb-4 text-base font-semibold"><?= $esNuevo ? 'Datos del alumno' : 'Editar datos' ?></h2>
-            <form action="/admin/includes/guardar-alumno.php" method="post" enctype="multipart/form-data" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <form action="<?= BASE_URL ?>/admin/includes/guardar-alumno.php" method="post" enctype="multipart/form-data" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <?php if (!$esNuevo): ?>
                 <input type="hidden" name="id" value="<?= (int) $alumno['id'] ?>">
                 <?php endif; ?>

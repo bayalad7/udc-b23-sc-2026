@@ -24,5 +24,5 @@ if ($modo === 'todo') {
     unset($_SESSION['evento'], $_SESSION['operador'], $_SESSION['punto_control']);
 }
 
-header('Location: /asistencias/public/evento.php');
+header('Location: ' . BASE_URL . '/asistencias/public/evento.php');
 exit;

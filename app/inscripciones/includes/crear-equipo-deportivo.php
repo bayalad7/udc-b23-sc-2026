@@ -33,18 +33,18 @@ const TIPOS_INTEGRANTE_VALIDOS = ['alumno', 'padre', 'madre'];
 
 function volverConMensaje(string $tipo, string $codigo): never
 {
-    header('Location: /inscripciones/public/deportivo.php?' . $tipo . '=' . urlencode($codigo));
+    header('Location: ' . BASE_URL . '/inscripciones/public/deportivo.php?' . $tipo . '=' . urlencode($codigo));
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /inscripciones/public/deportivo.php');
+    header('Location: ' . BASE_URL . '/inscripciones/public/deportivo.php');
     exit;
 }
 
 $idCapitan = alumnoIdentificadoId();
 if ($idCapitan === null) {
-    header('Location: /inscripciones/public/index.php?volver=deportivo');
+    header('Location: ' . BASE_URL . '/inscripciones/public/index.php?volver=deportivo');
     exit;
 }
 

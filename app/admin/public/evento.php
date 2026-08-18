@@ -5,7 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 iniciarSesionAdmin();
 if (!adminAutorizado()) {
-    header('Location: /admin/public/index.php');
+    header('Location: ' . BASE_URL . '/admin/public/index.php');
     exit;
 }
 
@@ -24,14 +24,14 @@ $inscritos = [];
 
 if (!$esNuevo) {
     if ($id === null || $id <= 0) {
-        header('Location: /admin/public/eventos.php?error=no_encontrado');
+        header('Location: ' . BASE_URL . '/admin/public/eventos.php?error=no_encontrado');
         exit;
     }
     $consulta = $pdo->prepare('SELECT * FROM eventos WHERE id = :id');
     $consulta->execute(['id' => $id]);
     $fila = $consulta->fetch();
     if ($fila === false) {
-        header('Location: /admin/public/eventos.php?error=no_encontrado');
+        header('Location: ' . BASE_URL . '/admin/public/eventos.php?error=no_encontrado');
         exit;
     }
     $evento = $fila;
@@ -72,7 +72,7 @@ if ($mensajeError) {
 }
 ?>
 
-<a href="/admin/public/eventos.php" class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
+<a href="<?= BASE_URL ?>/admin/public/eventos.php" class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
     <?= icono('atras', 'h-3.5 w-3.5') ?>
     Volver al listado
 </a>
@@ -82,7 +82,7 @@ if ($mensajeError) {
     <div class="<?= $esNuevo ? '' : 'lg:col-span-1' ?>">
         <div class="rounded-xl bg-white p-5 shadow-sm">
             <h2 class="mb-4 text-base font-semibold"><?= $esNuevo ? 'Datos del evento' : 'Editar evento' ?></h2>
-            <form action="/admin/includes/guardar-evento.php" method="post" class="grid grid-cols-1 gap-4">
+            <form action="<?= BASE_URL ?>/admin/includes/guardar-evento.php" method="post" class="grid grid-cols-1 gap-4">
                 <?php if (!$esNuevo): ?>
                 <input type="hidden" name="id" value="<?= (int) $evento['id'] ?>">
                 <?php endif; ?>
@@ -203,7 +203,7 @@ if ($mensajeError) {
             </form>
 
             <?php if (!$esNuevo): ?>
-            <form action="/admin/includes/eliminar-evento.php" method="post" class="mt-6 border-t border-slate-100 pt-4"
+            <form action="<?= BASE_URL ?>/admin/includes/eliminar-evento.php" method="post" class="mt-6 border-t border-slate-100 pt-4"
                   onsubmit="return confirm('¿Eliminar este evento de forma permanente?');">
                 <input type="hidden" name="id" value="<?= (int) $evento['id'] ?>">
                 <button type="submit" class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
@@ -221,7 +221,7 @@ if ($mensajeError) {
             <h2 class="mb-4 flex items-center justify-between text-base font-semibold">
                 <span>Inscritos (<?= count($inscritos) ?>/<?= (int) $evento['cupo_maximo'] ?>)</span>
                 <?php if ($inscritos !== []): ?>
-                <a href="/admin/includes/exportar-inscripciones.php?id=<?= (int) $evento['id'] ?>"
+                <a href="<?= BASE_URL ?>/admin/includes/exportar-inscripciones.php?id=<?= (int) $evento['id'] ?>"
                    class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
                     <?= icono('descargar', 'h-3.5 w-3.5') ?>
                     Exportar a Excel

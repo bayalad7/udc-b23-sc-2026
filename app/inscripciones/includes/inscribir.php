@@ -29,20 +29,20 @@ function diaSeguro(string $dia): string
 
 function volverConMensaje(string $dia, string $tipo, string $codigo): never
 {
-    header('Location: /inscripciones/public/' . diaSeguro($dia) . '.php?' . $tipo . '=' . urlencode($codigo));
+    header('Location: ' . BASE_URL . '/inscripciones/public/' . diaSeguro($dia) . '.php?' . $tipo . '=' . urlencode($codigo));
     exit;
 }
 
 $diaSolicitado = diaSeguro((string) ($_POST['dia'] ?? 'academico'));
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /inscripciones/public/' . $diaSolicitado . '.php');
+    header('Location: ' . BASE_URL . '/inscripciones/public/' . $diaSolicitado . '.php');
     exit;
 }
 
 $idAlumno = alumnoIdentificadoId();
 if ($idAlumno === null) {
-    header('Location: /inscripciones/public/index.php?volver=' . $diaSolicitado);
+    header('Location: ' . BASE_URL . '/inscripciones/public/index.php?volver=' . $diaSolicitado);
     exit;
 }
 

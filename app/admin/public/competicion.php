@@ -5,7 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 iniciarSesionAdmin();
 if (!adminAutorizado()) {
-    header('Location: /admin/public/index.php');
+    header('Location: ' . BASE_URL . '/admin/public/index.php');
     exit;
 }
 
@@ -23,14 +23,14 @@ $equipos = [];
 
 if (!$esNuevo) {
     if ($id === null || $id <= 0) {
-        header('Location: /admin/public/competiciones.php?error=no_encontrado');
+        header('Location: ' . BASE_URL . '/admin/public/competiciones.php?error=no_encontrado');
         exit;
     }
     $consulta = $pdo->prepare('SELECT * FROM competiciones WHERE id = :id');
     $consulta->execute(['id' => $id]);
     $fila = $consulta->fetch();
     if ($fila === false) {
-        header('Location: /admin/public/competiciones.php?error=no_encontrado');
+        header('Location: ' . BASE_URL . '/admin/public/competiciones.php?error=no_encontrado');
         exit;
     }
     $competicion = $fila;
@@ -75,7 +75,7 @@ if ($mensajeError) {
 }
 ?>
 
-<a href="/admin/public/competiciones.php" class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
+<a href="<?= BASE_URL ?>/admin/public/competiciones.php" class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
     <?= icono('atras', 'h-3.5 w-3.5') ?>
     Volver al listado
 </a>
@@ -85,7 +85,7 @@ if ($mensajeError) {
     <div class="<?= $esNuevo ? '' : 'lg:col-span-1' ?>">
         <div class="rounded-xl bg-white p-5 shadow-sm">
             <h2 class="mb-4 text-base font-semibold"><?= $esNuevo ? 'Datos de la competición' : 'Editar competición' ?></h2>
-            <form action="/admin/includes/guardar-competicion.php" method="post" class="grid grid-cols-1 gap-4">
+            <form action="<?= BASE_URL ?>/admin/includes/guardar-competicion.php" method="post" class="grid grid-cols-1 gap-4">
                 <?php if (!$esNuevo): ?>
                 <input type="hidden" name="id" value="<?= (int) $competicion['id'] ?>">
                 <?php endif; ?>
@@ -181,7 +181,7 @@ if ($mensajeError) {
             </form>
 
             <?php if (!$esNuevo): ?>
-            <form action="/admin/includes/eliminar-competicion.php" method="post" class="mt-6 border-t border-slate-100 pt-4"
+            <form action="<?= BASE_URL ?>/admin/includes/eliminar-competicion.php" method="post" class="mt-6 border-t border-slate-100 pt-4"
                   onsubmit="return confirm('¿Eliminar esta competición de forma permanente?');">
                 <input type="hidden" name="id" value="<?= (int) $competicion['id'] ?>">
                 <button type="submit" class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">

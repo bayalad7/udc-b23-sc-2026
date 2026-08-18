@@ -22,7 +22,7 @@ if (preg_match('/^[a-f0-9]{32}$/', $token)) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registro completado — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col items-center px-4 py-8 text-center">
@@ -32,7 +32,7 @@ if (preg_match('/^[a-f0-9]{32}$/', $token)) {
         <div class="mt-16 rounded-xl bg-white p-6 shadow-sm">
             <p class="text-lg font-semibold">No encontramos ese registro.</p>
             <p class="mt-2 text-sm text-slate-600">Verifica el enlace o vuelve a registrarte.</p>
-            <a href="/registro/public/index.php" class="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Ir al registro</a>
+            <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Ir al registro</a>
         </div>
 
     <?php else: ?>
@@ -43,13 +43,13 @@ if (preg_match('/^[a-f0-9]{32}$/', $token)) {
         <?php if ($alumno['credencial_generada'] && $alumno['credencial_path']): ?>
 
             <div class="mt-6 w-full overflow-hidden rounded-xl bg-white shadow-sm">
-                <img src="/registro/public/<?= htmlspecialchars($alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
+                <img src="<?= BASE_URL ?>/registro/public/<?= htmlspecialchars($alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
                      alt="Credencial digital" class="w-full">
             </div>
             
             <p class="mt-4 text-xs text-slate-500">Guarda esta imagen en tu celular, <b>es tu credencial para tomar tus asistencias todos los días de los eventos.</b></p>
 
-            <a href="/registro/public/<?= htmlspecialchars($alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
+            <a href="<?= BASE_URL ?>/registro/public/<?= htmlspecialchars($alumno['credencial_path'], ENT_QUOTES, 'UTF-8') ?>"
                download="credencial-<?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?>.png"
                class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white">
                 <?= icono('descargar', 'h-4 w-4 shrink-0') ?>

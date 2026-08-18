@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/config/rutas.php';
+
 // Página principal: accesos directos a las secciones de la app. No tiene
 // lógica propia (sin includes/ ni base de datos) — solo enlaza a los
 // módulos, cada uno con su propio flujo y control de acceso.
@@ -29,28 +31,28 @@ $secciones = [
         'icono' => 'credencial',
         'titulo' => 'Registro de alumnos',
         'descripcion' => 'Registro y credencial digital con QR.',
-        'href' => '/registro/public/index.php',
+        'href' => BASE_URL . '/registro/public/index.php',
         'disponible' => true,
     ],
     [
         'icono' => 'qr',
         'titulo' => 'Control de asistencias generales',
         'descripcion' => 'Escaneo QR — solo maestros/staff en el punto de control, para la hora de llegada y salida en cada día (académico/cultural/deportivo).',
-        'href' => '/asistencias/public/evento.php',
+        'href' => BASE_URL . '/asistencias/public/evento.php',
         'disponible' => true,
     ],
     [
         'icono' => 'lista',
         'titulo' => 'Inscripciones a eventos',
         'descripcion' => 'Ponencias, talleres y concursos de la semana.',
-        'href' => '/inscripciones/public/index.php',
+        'href' => BASE_URL . '/inscripciones/public/index.php',
         'disponible' => true,
     ],
     [
         'icono' => 'admin',
         'titulo' => 'Panel de administración',
         'descripcion' => 'Solo para el staff organizador — reportes, estadísticas y gestión de alumnos, eventos y competiciones.',
-        'href' => '/admin/public/index.php',
+        'href' => BASE_URL . '/admin/public/index.php',
         'disponible' => true,
     ],
 ];
@@ -61,13 +63,13 @@ $secciones = [
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
         <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
         <p class="mt-1 text-sm text-slate-600">Aniversario #45</p>

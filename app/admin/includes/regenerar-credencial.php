@@ -7,7 +7,7 @@ iniciarSesionAdmin();
 exigirAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/public/alumnos.php');
+    header('Location: ' . BASE_URL . '/admin/public/alumnos.php');
     exit;
 }
 
@@ -21,15 +21,15 @@ $consulta->execute(['id' => $id]);
 $alumno = $consulta->fetch();
 
 if ($alumno === false) {
-    header('Location: /admin/public/alumnos.php?error=no_encontrado');
+    header('Location: ' . BASE_URL . '/admin/public/alumnos.php?error=no_encontrado');
     exit;
 }
 
 try {
     generarCredencial($pdo, $alumno['numero_cuenta'], $alumno['token_descarga']);
-    header('Location: /admin/public/alumno.php?id=' . $id . '&msg=credencial_regenerada');
+    header('Location: ' . BASE_URL . '/admin/public/alumno.php?id=' . $id . '&msg=credencial_regenerada');
 } catch (Throwable $e) {
     error_log('Error regenerando credencial (admin) para alumno id ' . $id . ': ' . $e->getMessage());
-    header('Location: /admin/public/alumno.php?id=' . $id . '&error=error_servidor');
+    header('Location: ' . BASE_URL . '/admin/public/alumno.php?id=' . $id . '&error=error_servidor');
 }
 exit;

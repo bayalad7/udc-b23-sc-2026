@@ -9,9 +9,9 @@
     // El día/evento no se manda desde el cliente: el backend lo toma de la
     // sesión del turno (ver includes/sesion.php), así no se puede falsear.
     // El endpoint sí varía según la pantalla (asistencia general vs. a un
-    // evento específico) — data-endpoint en #escaneo-app, con el general
-    // como valor por defecto para no romper escaneo.php.
-    var ENDPOINT = app.dataset.endpoint || '/asistencias/includes/registrar-escaneo.php';
+    // evento específico) — ambas pantallas lo fijan en data-endpoint de
+    // #escaneo-app (con BASE_URL ya incluido, ver config/rutas.php).
+    var ENDPOINT = app.dataset.endpoint;
     var RETRASO_REANUDAR_MS = 4000;
 
     var video = document.getElementById('video-camara');

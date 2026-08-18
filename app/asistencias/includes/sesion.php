@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../config/rutas.php';
+
 // Sesión propia de app/asistencias (nombre de cookie distinto al de PHP por
 // defecto para no chocar con otras partes del sitio) que guarda, mientras
 // dura el turno del maestro/staff en el punto de control:
@@ -20,7 +22,7 @@ function iniciarSesionAsistencias(): void
     session_name('b23_asistencias');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/asistencias/',
+        'path' => BASE_URL . '/asistencias/',
         'httponly' => true,
         'samesite' => 'Lax',
         'secure' => (($_SERVER['HTTPS'] ?? '') !== '') || (($_SERVER['SERVER_PORT'] ?? '') === '443'),

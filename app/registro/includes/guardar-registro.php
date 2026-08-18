@@ -2,13 +2,13 @@
 declare(strict_types=1);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /registro/public/index.php');
+    header('Location: ' . BASE_URL . '/registro/public/index.php');
     exit;
 }
 
 function volverConError(string $codigo): never
 {
-    header('Location: /registro/public/index.php?error=' . urlencode($codigo));
+    header('Location: ' . BASE_URL . '/registro/public/index.php?error=' . urlencode($codigo));
     exit;
 }
 
@@ -139,5 +139,5 @@ try {
     // El alumno ya quedó registrado; la credencial se puede regenerar después.
 }
 
-header('Location: /registro/public/exito.php?token=' . urlencode($token));
+header('Location: ' . BASE_URL . '/registro/public/exito.php?token=' . urlencode($token));
 exit;

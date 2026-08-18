@@ -6,13 +6,13 @@ iniciarSesionAdmin();
 exigirAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/public/alumnos.php');
+    header('Location: ' . BASE_URL . '/admin/public/alumnos.php');
     exit;
 }
 
 $id = (int) ($_POST['id'] ?? 0);
 if ($id <= 0) {
-    header('Location: /admin/public/alumnos.php?error=no_encontrado');
+    header('Location: ' . BASE_URL . '/admin/public/alumnos.php?error=no_encontrado');
     exit;
 }
 
@@ -49,7 +49,7 @@ if ((int) $consultaCapitan->fetch()['n'] > 0) {
 }
 
 if ($dependientes !== []) {
-    header('Location: /admin/public/alumno.php?id=' . $id . '&error=tiene_dependientes&detalle=' . urlencode(implode(', ', $dependientes)));
+    header('Location: ' . BASE_URL . '/admin/public/alumno.php?id=' . $id . '&error=tiene_dependientes&detalle=' . urlencode(implode(', ', $dependientes)));
     exit;
 }
 
@@ -57,7 +57,7 @@ $consulta = $pdo->prepare('SELECT foto_path, credencial_path FROM alumnos WHERE 
 $consulta->execute(['id' => $id]);
 $alumno = $consulta->fetch();
 if ($alumno === false) {
-    header('Location: /admin/public/alumnos.php?error=no_encontrado');
+    header('Location: ' . BASE_URL . '/admin/public/alumnos.php?error=no_encontrado');
     exit;
 }
 
@@ -80,5 +80,5 @@ if ($alumno['credencial_path']) {
     }
 }
 
-header('Location: /admin/public/alumnos.php?msg=eliminado');
+header('Location: ' . BASE_URL . '/admin/public/alumnos.php?msg=eliminado');
 exit;

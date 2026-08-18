@@ -6,13 +6,13 @@ iniciarSesionAdmin();
 exigirAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/public/eventos.php');
+    header('Location: ' . BASE_URL . '/admin/public/eventos.php');
     exit;
 }
 
 $id = (int) ($_POST['id'] ?? 0);
 if ($id <= 0) {
-    header('Location: /admin/public/eventos.php?error=no_encontrado');
+    header('Location: ' . BASE_URL . '/admin/public/eventos.php?error=no_encontrado');
     exit;
 }
 
@@ -22,12 +22,12 @@ $pdo = require __DIR__ . '/../../config/db.php';
 $consulta = $pdo->prepare('SELECT COUNT(*) AS n FROM inscripciones WHERE id_evento = :id');
 $consulta->execute(['id' => $id]);
 if ((int) $consulta->fetch()['n'] > 0) {
-    header('Location: /admin/public/evento.php?id=' . $id . '&error=tiene_dependientes');
+    header('Location: ' . BASE_URL . '/admin/public/evento.php?id=' . $id . '&error=tiene_dependientes');
     exit;
 }
 
 $eliminar = $pdo->prepare('DELETE FROM eventos WHERE id = :id');
 $eliminar->execute(['id' => $id]);
 
-header('Location: /admin/public/eventos.php?msg=eliminado');
+header('Location: ' . BASE_URL . '/admin/public/eventos.php?msg=eliminado');
 exit;

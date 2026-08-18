@@ -61,7 +61,7 @@ if ($alumno === false) {
 $persona = [
     'nombre' => $alumno['nombre_completo'],
     'detalle' => $alumno['grado'] . '° ' . $alumno['grupo'],
-    'foto_url' => '/registro/public/' . $alumno['foto_path'],
+    'foto_url' => BASE_URL . '/registro/public/' . $alumno['foto_path'],
 ];
 
 // Alcance de este módulo: SOLO actualiza hora_entrada/hora_salida sobre una

@@ -5,7 +5,7 @@ require __DIR__ . '/sesion.php';
 iniciarSesionAsistencias();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /asistencias/public/evento.php');
+    header('Location: ' . BASE_URL . '/asistencias/public/evento.php');
     exit;
 }
 
@@ -13,12 +13,12 @@ $clave = (string) ($_POST['clave'] ?? '');
 $claveConfirmar = (string) ($_POST['clave_confirmar'] ?? '');
 
 if (mb_strlen($clave) < 8) {
-    header('Location: /asistencias/public/evento.php?error=clave_muy_corta');
+    header('Location: ' . BASE_URL . '/asistencias/public/evento.php?error=clave_muy_corta');
     exit;
 }
 
 if (!hash_equals($clave, $claveConfirmar)) {
-    header('Location: /asistencias/public/evento.php?error=claves_no_coinciden');
+    header('Location: ' . BASE_URL . '/asistencias/public/evento.php?error=claves_no_coinciden');
     exit;
 }
 
@@ -39,11 +39,11 @@ $registrar = $pdo->prepare(
 $registrar->execute(['clave' => password_hash($clave, PASSWORD_DEFAULT)]);
 
 if ($registrar->rowCount() === 0) {
-    header('Location: /asistencias/public/evento.php?error=ya_registrada');
+    header('Location: ' . BASE_URL . '/asistencias/public/evento.php?error=ya_registrada');
     exit;
 }
 
 $_SESSION['autorizado'] = true;
 
-header('Location: /asistencias/public/evento.php');
+header('Location: ' . BASE_URL . '/asistencias/public/evento.php');
 exit;

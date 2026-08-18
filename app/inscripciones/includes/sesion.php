@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../config/rutas.php';
+
 // Sesión propia de app/inscripciones: identifica al alumno que está
 // consultando/inscribiéndose por autoservicio (numero_cuenta), sin relación
 // con la sesión de staff de app/asistencias (esa es del operador del punto
@@ -17,7 +19,7 @@ function iniciarSesionInscripciones(): void
     session_name('b23_inscripciones');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/inscripciones/',
+        'path' => BASE_URL . '/inscripciones/',
         'httponly' => true,
         'samesite' => 'Lax',
         'secure' => (($_SERVER['HTTPS'] ?? '') !== '') || (($_SERVER['SERVER_PORT'] ?? '') === '443'),

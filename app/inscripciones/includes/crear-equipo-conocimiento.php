@@ -20,18 +20,18 @@ iniciarSesionInscripciones();
 
 function volverConMensaje(string $tipo, string $codigo): never
 {
-    header('Location: /inscripciones/public/academico.php?' . $tipo . '=' . urlencode($codigo));
+    header('Location: ' . BASE_URL . '/inscripciones/public/academico.php?' . $tipo . '=' . urlencode($codigo));
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /inscripciones/public/academico.php');
+    header('Location: ' . BASE_URL . '/inscripciones/public/academico.php');
     exit;
 }
 
 $idCapitan = alumnoIdentificadoId();
 if ($idCapitan === null) {
-    header('Location: /inscripciones/public/index.php?volver=academico');
+    header('Location: ' . BASE_URL . '/inscripciones/public/index.php?volver=academico');
     exit;
 }
 

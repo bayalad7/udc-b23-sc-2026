@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../config/rutas.php';
+
 // Sesión propia de app/admin (nombre de cookie y path distintos a los otros
 // módulos para no chocar entre sí — mismo patrón que
 // app/asistencias/includes/sesion.php). Solo guarda si ya se validó la
@@ -16,7 +18,7 @@ function iniciarSesionAdmin(): void
     session_name('b23_admin');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/admin/',
+        'path' => BASE_URL . '/admin/',
         'httponly' => true,
         'samesite' => 'Lax',
         'secure' => (($_SERVER['HTTPS'] ?? '') !== '') || (($_SERVER['SERVER_PORT'] ?? '') === '443'),

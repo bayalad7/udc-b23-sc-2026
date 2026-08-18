@@ -480,11 +480,11 @@ if ($claveYaRegistrada && adminAutorizado()) {
             <div class="mb-2 flex items-center justify-between gap-2">
                 <h4 class="text-sm font-semibold text-slate-700">Resumen por talla</h4>
                 <div class="flex shrink-0 items-center gap-2">
-                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=xlsx"
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=xlsx"
                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
                         <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
                     </a>
-                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=pdf"
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=pdf"
                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
                         <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
                     </a>
@@ -518,11 +518,11 @@ if ($claveYaRegistrada && adminAutorizado()) {
             <div class="mb-2 mt-8 flex items-center justify-between gap-2 pt-5">
                 <h4 class="text-sm font-semibold text-slate-700">Detalle por alumno</h4>
                 <div class="flex shrink-0 items-center gap-2">
-                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=xlsx"
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=xlsx"
                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
                         <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
                     </a>
-                    <a href="/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=pdf"
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=pdf"
                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
                         <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
                     </a>
@@ -757,13 +757,13 @@ if ($claveYaRegistrada && adminAutorizado()) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Panel de administración — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
         <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
         <p>&nbsp;</p>
@@ -785,7 +785,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
             <span>Todavía no hay contraseña de administrador registrada. Como quien haga esto primero será el encargado del panel, defínela aquí — queda guardada de forma segura (hasheada), nadie puede leerla después.</span>
         </div>
 
-        <form action="/admin/includes/registrar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
+        <form action="<?= BASE_URL ?>/admin/includes/registrar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
             <div>
                 <label for="clave" class="mb-1 block text-sm font-medium">Nueva contraseña de administrador</label>
                 <div class="relative">
@@ -812,7 +812,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
 
     <?php else: ?>
 
-        <form action="/admin/includes/verificar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
+        <form action="<?= BASE_URL ?>/admin/includes/verificar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
             <div>
                 <label for="clave" class="mb-1 block text-sm font-medium">Contraseña de administrador</label>
                 <div class="relative">

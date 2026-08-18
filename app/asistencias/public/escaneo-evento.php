@@ -7,7 +7,7 @@ require __DIR__ . '/../includes/iconos.php';
 iniciarSesionAsistencias();
 
 if (!turnoEventoListo()) {
-    header('Location: /asistencias/public/turno-evento.php');
+    header('Location: ' . BASE_URL . '/asistencias/public/turno-evento.php');
     exit;
 }
 
@@ -27,7 +27,7 @@ $evento = $consulta->fetch();
 if ($evento === false) {
     // El evento se borró desde app/admin mientras el turno seguía abierto.
     unset($_SESSION['id_evento'], $_SESSION['operador_evento'], $_SESSION['punto_control_evento']);
-    header('Location: /asistencias/public/turno-evento.php');
+    header('Location: ' . BASE_URL . '/asistencias/public/turno-evento.php');
     exit;
 }
 
@@ -39,13 +39,13 @@ $diasLabel = ['academico' => 'Día Académico', 'cultural' => 'Día Cultural'];
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Escaneando — <?= htmlspecialchars($evento['nombre'], ENT_QUOTES, 'UTF-8') ?> — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-950 text-white">
-<div id="escaneo-app" data-endpoint="/asistencias/includes/registrar-escaneo-evento.php" class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-5">
+<div id="escaneo-app" data-endpoint="<?= BASE_URL ?>/asistencias/includes/registrar-escaneo-evento.php" class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-5">
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Blanco.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Blanco.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
         <h1 class="text-xl font-bold">Aniversario #45</h1>
         <h1 class="text-xl font-bold">Asistencia a evento</h1>
@@ -73,7 +73,7 @@ $diasLabel = ['academico' => 'Día Académico', 'cultural' => 'Día Cultural'];
                 <?= htmlspecialchars($puntoControl, ENT_QUOTES, 'UTF-8') ?>
             </p>
         </div>
-        <a href="/asistencias/includes/cerrar-turno.php?modo=turno_evento"
+        <a href="<?= BASE_URL ?>/asistencias/includes/cerrar-turno.php?modo=turno_evento"
            class="flex shrink-0 items-center gap-1 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-300">
             <?= icono('cambiar', 'h-3.5 w-3.5 shrink-0') ?>
             Cambiar evento
@@ -110,7 +110,7 @@ $diasLabel = ['academico' => 'Día Académico', 'cultural' => 'Día Cultural'];
     </template>
 </div>
 
-<script src="/assets/js/lib/jsQR.js"></script>
-<script src="/assets/js/escaneo.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/lib/jsQR.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/escaneo.js"></script>
 </body>
 </html>

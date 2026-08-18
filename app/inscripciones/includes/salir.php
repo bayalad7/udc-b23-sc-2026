@@ -7,5 +7,5 @@ iniciarSesionInscripciones();
 $_SESSION = [];
 session_destroy();
 
-header('Location: /inscripciones/public/index.php');
+header('Location: ' . BASE_URL . '/inscripciones/public/index.php');
 exit;

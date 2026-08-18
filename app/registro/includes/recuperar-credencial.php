@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /registro/public/recuperar.php');
+    header('Location: ' . BASE_URL . '/registro/public/recuperar.php');
     exit;
 }
 
@@ -10,7 +10,7 @@ $numeroCuenta = strtoupper(trim((string) ($_POST['numero_cuenta'] ?? '')));
 $correoInstitucional = trim((string) ($_POST['correo_institucional'] ?? ''));
 
 if (!preg_match('/^[A-Z0-9]{8}$/', $numeroCuenta) || !filter_var($correoInstitucional, FILTER_VALIDATE_EMAIL)) {
-    header('Location: /registro/public/recuperar.php?error=no_encontrado');
+    header('Location: ' . BASE_URL . '/registro/public/recuperar.php?error=no_encontrado');
     exit;
 }
 
@@ -24,9 +24,9 @@ $consulta->execute(['cuenta' => $numeroCuenta, 'correo' => $correoInstitucional]
 $alumno = $consulta->fetch();
 
 if ($alumno === false) {
-    header('Location: /registro/public/recuperar.php?error=no_encontrado');
+    header('Location: ' . BASE_URL . '/registro/public/recuperar.php?error=no_encontrado');
     exit;
 }
 
-header('Location: /registro/public/exito.php?token=' . urlencode($alumno['token_descarga']));
+header('Location: ' . BASE_URL . '/registro/public/exito.php?token=' . urlencode($alumno['token_descarga']));
 exit;

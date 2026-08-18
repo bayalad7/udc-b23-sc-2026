@@ -5,7 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 iniciarSesionAdmin();
 if (!adminAutorizado()) {
-    header('Location: /admin/public/index.php');
+    header('Location: ' . BASE_URL . '/admin/public/index.php');
     exit;
 }
 require __DIR__ . '/../includes/layout.php';
@@ -117,12 +117,12 @@ if ($mensajeError) {
         </button>
     </form>
     <div class="flex items-center gap-2">
-        <a href="/admin/includes/exportar-alumnos.php?<?= htmlspecialchars(http_build_query($filtrosActuales), ENT_QUOTES, 'UTF-8') ?>"
+        <a href="<?= BASE_URL ?>/admin/includes/exportar-alumnos.php?<?= htmlspecialchars(http_build_query($filtrosActuales), ENT_QUOTES, 'UTF-8') ?>"
            class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
             <?= icono('descargar', 'h-4 w-4') ?>
             Exportar a Excel
         </a>
-        <a href="/admin/public/alumno.php?nuevo=1"
+        <a href="<?= BASE_URL ?>/admin/public/alumno.php?nuevo=1"
            class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
             <?= icono('agregar', 'h-4 w-4') ?>
             Nuevo alumno
@@ -169,7 +169,7 @@ if ($mensajeError) {
                     <?php endif; ?>
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <a href="/admin/public/alumno.php?id=<?= (int) $alumno['id'] ?>" title="Ver / editar alumno"
+                    <a href="<?= BASE_URL ?>/admin/public/alumno.php?id=<?= (int) $alumno['id'] ?>" title="Ver / editar alumno"
                        class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
                         <?= icono('editar', 'h-4 w-4') ?>
                     </a>

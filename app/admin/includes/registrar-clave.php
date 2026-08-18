@@ -5,7 +5,7 @@ require __DIR__ . '/sesion.php';
 iniciarSesionAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/public/index.php');
+    header('Location: ' . BASE_URL . '/admin/public/index.php');
     exit;
 }
 
@@ -13,12 +13,12 @@ $clave = (string) ($_POST['clave'] ?? '');
 $claveConfirmar = (string) ($_POST['clave_confirmar'] ?? '');
 
 if (mb_strlen($clave) < 8) {
-    header('Location: /admin/public/index.php?error=clave_muy_corta');
+    header('Location: ' . BASE_URL . '/admin/public/index.php?error=clave_muy_corta');
     exit;
 }
 
 if (!hash_equals($clave, $claveConfirmar)) {
-    header('Location: /admin/public/index.php?error=claves_no_coinciden');
+    header('Location: ' . BASE_URL . '/admin/public/index.php?error=claves_no_coinciden');
     exit;
 }
 
@@ -37,11 +37,11 @@ $registrar = $pdo->prepare(
 $registrar->execute(['clave' => password_hash($clave, PASSWORD_DEFAULT)]);
 
 if ($registrar->rowCount() === 0) {
-    header('Location: /admin/public/index.php?error=ya_registrada');
+    header('Location: ' . BASE_URL . '/admin/public/index.php?error=ya_registrada');
     exit;
 }
 
 $_SESSION['admin_autorizado'] = true;
 
-header('Location: /admin/public/index.php');
+header('Location: ' . BASE_URL . '/admin/public/index.php');
 exit;

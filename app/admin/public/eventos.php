@@ -5,7 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 iniciarSesionAdmin();
 if (!adminAutorizado()) {
-    header('Location: /admin/public/index.php');
+    header('Location: ' . BASE_URL . '/admin/public/index.php');
     exit;
 }
 require __DIR__ . '/../includes/layout.php';
@@ -62,7 +62,7 @@ if ($mensajeError) {
 ?>
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <form action="/admin/public/eventos.php" method="get" class="flex-1">
+    <form action="<?= BASE_URL ?>/admin/public/eventos.php" method="get" class="flex-1">
         <div class="relative max-w-sm">
             <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('buscar', 'h-4 w-4') ?></span>
             <input type="search" name="buscar" value="<?= htmlspecialchars($buscar, ENT_QUOTES, 'UTF-8') ?>"
@@ -70,7 +70,7 @@ if ($mensajeError) {
                    class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
         </div>
     </form>
-    <a href="/admin/public/evento.php?nuevo=1" class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+    <a href="<?= BASE_URL ?>/admin/public/evento.php?nuevo=1" class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
         <?= icono('agregar', 'h-4 w-4') ?>
         Nuevo evento
     </a>
@@ -122,7 +122,7 @@ if ($mensajeError) {
                     <td class="px-4 py-3 text-center text-slate-500"><?= (int) $evento['total_entrada'] ?></td>
                     <td class="px-4 py-3 text-center text-slate-500"><?= (int) $evento['total_salida'] ?></td>
                     <td class="px-4 py-3 text-center">
-                        <a href="/admin/public/evento.php?id=<?= (int) $evento['id'] ?>" title="Ver / editar evento"
+                        <a href="<?= BASE_URL ?>/admin/public/evento.php?id=<?= (int) $evento['id'] ?>" title="Ver / editar evento"
                            class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
                             <?= icono('editar', 'h-4 w-4') ?>
                         </a>

@@ -6,13 +6,13 @@ iniciarSesionAdmin();
 exigirAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/public/competiciones.php');
+    header('Location: ' . BASE_URL . '/admin/public/competiciones.php');
     exit;
 }
 
 function volverConError(?int $id, string $codigo): never
 {
-    $destino = $id !== null ? '/admin/public/competicion.php?id=' . $id : '/admin/public/competicion.php?nuevo=1';
+    $destino = $id !== null ? BASE_URL . '/admin/public/competicion.php?id=' . $id : BASE_URL . '/admin/public/competicion.php?nuevo=1';
     header('Location: ' . $destino . '&error=' . urlencode($codigo));
     exit;
 }
@@ -77,7 +77,7 @@ if ($id === null) {
         'max_equipos' => $maxEquipos, 'tam_equipo' => $tamEquipo,
     ]);
     $idNuevo = (int) $pdo->lastInsertId();
-    header('Location: /admin/public/competicion.php?id=' . $idNuevo . '&msg=creado');
+    header('Location: ' . BASE_URL . '/admin/public/competicion.php?id=' . $idNuevo . '&msg=creado');
     exit;
 }
 
@@ -92,5 +92,5 @@ $actualizar->execute([
     'max_equipos' => $maxEquipos, 'tam_equipo' => $tamEquipo,
 ]);
 
-header('Location: /admin/public/competicion.php?id=' . $id . '&msg=actualizado');
+header('Location: ' . BASE_URL . '/admin/public/competicion.php?id=' . $id . '&msg=actualizado');
 exit;

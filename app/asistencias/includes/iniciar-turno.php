@@ -5,7 +5,7 @@ require __DIR__ . '/sesion.php';
 iniciarSesionAsistencias();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !turnoAutorizado()) {
-    header('Location: /asistencias/public/evento.php');
+    header('Location: ' . BASE_URL . '/asistencias/public/evento.php');
     exit;
 }
 
@@ -18,7 +18,7 @@ if (
     || $operador === '' || mb_strlen($operador) > 100
     || $puntoControl === '' || mb_strlen($puntoControl) > 100
 ) {
-    header('Location: /asistencias/public/evento.php?error=campos_incompletos');
+    header('Location: ' . BASE_URL . '/asistencias/public/evento.php?error=campos_incompletos');
     exit;
 }
 
@@ -26,5 +26,5 @@ $_SESSION['evento'] = $evento;
 $_SESSION['operador'] = $operador;
 $_SESSION['punto_control'] = $puntoControl;
 
-header('Location: /asistencias/public/escaneo.php');
+header('Location: ' . BASE_URL . '/asistencias/public/escaneo.php');
 exit;

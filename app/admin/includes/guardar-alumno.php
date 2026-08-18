@@ -7,13 +7,13 @@ iniciarSesionAdmin();
 exigirAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/public/alumnos.php');
+    header('Location: ' . BASE_URL . '/admin/public/alumnos.php');
     exit;
 }
 
 function volverConError(?int $id, string $codigo): never
 {
-    $destino = $id !== null ? '/admin/public/alumno.php?id=' . $id : '/admin/public/alumno.php?nuevo=1';
+    $destino = $id !== null ? BASE_URL . '/admin/public/alumno.php?id=' . $id : BASE_URL . '/admin/public/alumno.php?nuevo=1';
     header('Location: ' . $destino . '&error=' . urlencode($codigo));
     exit;
 }
@@ -119,7 +119,7 @@ if ($id === null) {
         error_log('Error generando credencial (admin, alta manual) para ' . $numeroCuenta . ': ' . $e->getMessage());
     }
 
-    header('Location: /admin/public/alumno.php?id=' . $idNuevo . '&msg=creado');
+    header('Location: ' . BASE_URL . '/admin/public/alumno.php?id=' . $idNuevo . '&msg=creado');
     exit;
 }
 
@@ -132,7 +132,7 @@ if ($alumnoActual === false) {
     if ($fotoNueva) {
         unlink($rutaFotoAbsoluta);
     }
-    header('Location: /admin/public/alumnos.php?error=no_encontrado');
+    header('Location: ' . BASE_URL . '/admin/public/alumnos.php?error=no_encontrado');
     exit;
 }
 
@@ -181,5 +181,5 @@ if ($fotoNueva && $alumnoActual['foto_path']) {
     }
 }
 
-header('Location: /admin/public/alumno.php?id=' . $id . '&msg=actualizado');
+header('Location: ' . BASE_URL . '/admin/public/alumno.php?id=' . $id . '&msg=actualizado');
 exit;

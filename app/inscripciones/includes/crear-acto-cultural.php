@@ -14,18 +14,18 @@ iniciarSesionInscripciones();
 
 function volverConMensaje(string $tipo, string $codigo): never
 {
-    header('Location: /inscripciones/public/cultural.php?' . $tipo . '=' . urlencode($codigo));
+    header('Location: ' . BASE_URL . '/inscripciones/public/cultural.php?' . $tipo . '=' . urlencode($codigo));
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /inscripciones/public/cultural.php');
+    header('Location: ' . BASE_URL . '/inscripciones/public/cultural.php');
     exit;
 }
 
 $idCapitan = alumnoIdentificadoId();
 if ($idCapitan === null) {
-    header('Location: /inscripciones/public/index.php?volver=cultural');
+    header('Location: ' . BASE_URL . '/inscripciones/public/index.php?volver=cultural');
     exit;
 }
 

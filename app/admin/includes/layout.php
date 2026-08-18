@@ -9,16 +9,17 @@ declare(strict_types=1);
 // con varias secciones — de ahí el layout propio en vez de reusar el de
 // registro/asistencias/inscripciones.
 
-const ADMIN_NAV = [
-    ['clave' => 'dashboard', 'icono' => 'dashboard', 'label' => 'Dashboard', 'href' => '/admin/public/index.php'],
-    ['clave' => 'alumnos', 'icono' => 'usuarios', 'label' => 'Alumnos', 'href' => '/admin/public/alumnos.php'],
-    ['clave' => 'eventos', 'icono' => 'lista', 'label' => 'Eventos', 'href' => '/admin/public/eventos.php'],
-    ['clave' => 'competiciones', 'icono' => 'trofeo', 'label' => 'Competiciones', 'href' => '/admin/public/competiciones.php'],
-    ['clave' => 'asistencias', 'icono' => 'qr', 'label' => 'Asistencias', 'href' => '/admin/public/asistencias.php'],
+$ADMIN_NAV = [
+    ['clave' => 'dashboard', 'icono' => 'dashboard', 'label' => 'Dashboard', 'href' => BASE_URL . '/admin/public/index.php'],
+    ['clave' => 'alumnos', 'icono' => 'usuarios', 'label' => 'Alumnos', 'href' => BASE_URL . '/admin/public/alumnos.php'],
+    ['clave' => 'eventos', 'icono' => 'lista', 'label' => 'Eventos', 'href' => BASE_URL . '/admin/public/eventos.php'],
+    ['clave' => 'competiciones', 'icono' => 'trofeo', 'label' => 'Competiciones', 'href' => BASE_URL . '/admin/public/competiciones.php'],
+    ['clave' => 'asistencias', 'icono' => 'qr', 'label' => 'Asistencias', 'href' => BASE_URL . '/admin/public/asistencias.php'],
 ];
 
 function layoutAdminAbrir(string $titulo, string $activa): void
 {
+    global $ADMIN_NAV;
     ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -26,7 +27,7 @@ function layoutAdminAbrir(string $titulo, string $activa): void
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8') ?> — Panel de administración B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="flex min-h-screen">
@@ -36,14 +37,14 @@ function layoutAdminAbrir(string $titulo, string $activa): void
 
     <aside class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col bg-slate-900 text-white transition-transform duration-200 peer-checked:translate-x-0 lg:static lg:z-auto lg:translate-x-0">
         <div class="flex items-center gap-3 px-5 py-6">
-            <img src="/assets/img/logo/UdeC_2L%20izq%20Blanco.png" alt="Universidad de Colima" class="h-9 w-auto">
+            <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Blanco.png" alt="Universidad de Colima" class="h-9 w-auto">
             <div class="leading-tight">
                 <span class="block text-sm font-bold">Bachillerato 23</span>
                 <span class="block text-xs text-slate-400">Panel de administración</span>
             </div>
         </div>
         <nav class="flex-1 space-y-1 px-3">
-            <?php foreach (ADMIN_NAV as $item): ?>
+            <?php foreach ($ADMIN_NAV as $item): ?>
             <a href="<?= htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') ?>"
                class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium <?= $activa === $item['clave'] ? 'bg-white text-slate-900' : 'text-slate-300 hover:bg-slate-800 hover:text-white' ?>">
                 <?= icono($item['icono'], 'h-4 w-4 shrink-0') ?>
@@ -51,7 +52,7 @@ function layoutAdminAbrir(string $titulo, string $activa): void
             </a>
             <?php endforeach; ?>
         </nav>
-        <a href="/admin/includes/cerrar-sesion.php" class="mx-3 mb-5 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white">
+        <a href="<?= BASE_URL ?>/admin/includes/cerrar-sesion.php" class="mx-3 mb-5 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white">
             <?= icono('salida', 'h-4 w-4 shrink-0') ?>
             Cerrar sesión
         </a>
@@ -86,8 +87,8 @@ function layoutAdminCerrar(): void
     </div>
 </dialog>
 
-<script src="/assets/js/chart.min.js"></script>
-<script src="/assets/js/admin.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/chart.min.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/admin.js"></script>
 </body>
 </html>
     <?php
@@ -113,7 +114,7 @@ function fotoMiniatura(?string $fotoPath, string $alt, string $tamano = 'h-9 w-9
         return;
     }
 
-    $url = '/registro/public/' . htmlspecialchars($fotoPath, ENT_QUOTES, 'UTF-8');
+    $url = BASE_URL . '/registro/public/' . htmlspecialchars($fotoPath, ENT_QUOTES, 'UTF-8');
     ?>
     <button type="button" data-foto-lightbox="<?= $url ?>" data-foto-alt="<?= htmlspecialchars($alt, ENT_QUOTES, 'UTF-8') ?>"
             title="Ver foto completa"

@@ -26,13 +26,13 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Escaneo de asistencia — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
 
     <div class="mb-6 flex flex-col items-center text-center">
-        <img src="/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
+        <img src="<?= BASE_URL ?>/assets/img/logo/UdeC_2L%20izq%20Negro.png" alt="Universidad de Colima" class="mb-4 h-16 w-auto">
         <h1 class="text-xl font-bold">Bachillerato 23</h1>
         <h1 class="text-xl font-bold">Semana Académica, Cultural y Deportiva</h1>
         <p>&nbsp;</p>
@@ -54,7 +54,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
             <span>Todavía no hay contraseña registrada. Como quien haga esto primero será el encargado del evento, defínela aquí — queda guardada de forma segura (hasheada), nadie puede leerla después.</span>
         </div>
 
-        <form action="/asistencias/includes/registrar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
+        <form action="<?= BASE_URL ?>/asistencias/includes/registrar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
             <div>
                 <label for="clave" class="mb-1 block text-sm font-medium">Nueva contraseña de acceso</label>
                 <div class="relative">
@@ -81,7 +81,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 
     <?php elseif (!turnoAutorizado()): ?>
 
-        <form action="/asistencias/includes/verificar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
+        <form action="<?= BASE_URL ?>/asistencias/includes/verificar-clave.php" method="post" novalidate class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm">
             <div>
                 <label for="clave" class="mb-1 block text-sm font-medium">Contraseña de acceso</label>
                 <div class="relative">
@@ -111,7 +111,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
         $puntoControlActual = (string) ($_SESSION['punto_control'] ?? '');
         ?>
 
-        <form action="/asistencias/includes/iniciar-turno.php" method="post" novalidate class="flex flex-col gap-5 rounded-xl bg-white p-5 shadow-sm">
+        <form action="<?= BASE_URL ?>/asistencias/includes/iniciar-turno.php" method="post" novalidate class="flex flex-col gap-5 rounded-xl bg-white p-5 shadow-sm">
 
             <fieldset>
                 <legend class="mb-2 text-sm font-medium">¿Qué día vas a escanear?</legend>
@@ -158,12 +158,12 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
             </button>
         </form>
 
-        <a href="/asistencias/public/turno-evento.php" class="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-3 text-center text-sm font-medium text-slate-700 shadow-sm">
+        <a href="<?= BASE_URL ?>/asistencias/public/turno-evento.php" class="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-3 text-center text-sm font-medium text-slate-700 shadow-sm">
             <?= icono('lista', 'h-4 w-4 shrink-0') ?>
             Asistencia a un evento específico (ponencia/taller)
         </a>
 
-        <a href="/asistencias/includes/cerrar-turno.php?modo=todo" class="mt-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline">
+        <a href="<?= BASE_URL ?>/asistencias/includes/cerrar-turno.php?modo=todo" class="mt-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline">
             <?= icono('salida', 'h-3.5 w-3.5 shrink-0') ?>
             Cerrar sesión en este dispositivo
         </a>

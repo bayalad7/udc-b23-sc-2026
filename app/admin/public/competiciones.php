@@ -5,7 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 iniciarSesionAdmin();
 if (!adminAutorizado()) {
-    header('Location: /admin/public/index.php');
+    header('Location: ' . BASE_URL . '/admin/public/index.php');
     exit;
 }
 require __DIR__ . '/../includes/layout.php';
@@ -38,7 +38,7 @@ if ($mensajeError) {
 ?>
 
 <div class="mb-6 flex justify-end">
-    <a href="/admin/public/competicion.php?nuevo=1" class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+    <a href="<?= BASE_URL ?>/admin/public/competicion.php?nuevo=1" class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
         <?= icono('agregar', 'h-4 w-4') ?>
         Nueva competición
     </a>
@@ -84,7 +84,7 @@ if ($mensajeError) {
                     </span>
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <a href="/admin/public/competicion.php?id=<?= (int) $competicion['id'] ?>" title="Ver / editar competición"
+                    <a href="<?= BASE_URL ?>/admin/public/competicion.php?id=<?= (int) $competicion['id'] ?>" title="Ver / editar competición"
                        class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
                         <?= icono('editar', 'h-4 w-4') ?>
                     </a>
