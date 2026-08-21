@@ -317,3 +317,30 @@ CREATE TABLE IF NOT EXISTS asistencias_generales (
     CONSTRAINT fk_asistencia_general_alumno FOREIGN KEY (id_alumno) REFERENCES alumnos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Asistencia general (¿ya entró/salió del plantel ese día?) de los 3 días — solo alumnos, independiente de a qué evento asiste.';
+
+-- Personal del plantel (administrativos y docentes) que pidió camisa oficial
+-- del aniversario. Vive aparte de `alumnos` a propósito y NO cuelga de nada
+-- más del esquema: el personal no genera credencial digital con QR, no toma
+-- asistencia, no se inscribe a eventos ni forma equipos — este registro
+-- existe ÚNICAMENTE para llevar el control de cuántas camisas encargar y de
+-- qué talla (ver app/trabajadores y app/admin/public/trabajadores.php). Por
+-- eso no tiene foto_path, correo, token_descarga ni FKs.
+CREATE TABLE IF NOT EXISTS trabajadores (
+    id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+        COMMENT 'Identificador interno',
+    tipo               ENUM('Administrativo','Docente') NOT NULL
+        COMMENT 'Si la persona es personal administrativo o docente',
+    numero_trabajador  VARCHAR(20) NOT NULL
+        COMMENT 'Número de trabajador oficial — la llave con la que se identifica a la persona (no hay QR)',
+    nombre_completo    VARCHAR(150) NOT NULL
+        COMMENT 'Nombre completo de la persona, como aparecerá en el listado de camisas',
+    camisa_corte       ENUM('Hombre','Mujer','Unisex') NOT NULL DEFAULT 'Unisex'
+        COMMENT 'Corte de la camisa oficial del aniversario — mismos valores que alumnos.camisa_corte (hoy solo se ofrece Unisex)',
+    camisa_talla       ENUM('XS','S','M','L','XL','2XL') NOT NULL
+        COMMENT 'Talla de la camisa oficial del aniversario — mismos valores que alumnos.camisa_talla',
+    fecha_registro     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        COMMENT 'Cuándo se completó el registro',
+    UNIQUE KEY uq_trabajadores_numero (numero_trabajador)
+        COMMENT 'Un número de trabajador no puede registrarse dos veces'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Personal administrativo y docente registrado solo para el control de camisas del aniversario.';

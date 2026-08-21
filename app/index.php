@@ -12,8 +12,10 @@ $iconos = [
     'credencial' => '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
     // lucide "qr-code"
     'qr' => '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+    // lucide "briefcase"
+    'personal' => '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
     // lucide "list-checks"
-    'lista' => '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
+    'lista' =>'<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
     // lucide "shield-check" (Panel de administración)
     'admin' => '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
 ];
@@ -32,6 +34,13 @@ $secciones = [
         'titulo' => 'Registro de alumnos',
         'descripcion' => 'Registro y credencial digital con QR.',
         'href' => BASE_URL . '/registro/public/index.php',
+        'disponible' => true,
+    ],
+    [
+        'icono' => 'personal',
+        'titulo' => 'Registro de personal',
+        'descripcion' => 'Solo para personal administrativo y docente — registro de la camisa oficial del aniversario (talla y corte).',
+        'href' => BASE_URL . '/trabajadores/public/index.php',
         'disponible' => true,
     ],
     [

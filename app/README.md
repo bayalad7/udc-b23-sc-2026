@@ -37,6 +37,10 @@ app/
 │   └── includes/
 │       ├── guardar-registro.php     Valida y guarda el pre-registro (POST de index.php)
 │       └── generar-credencial.php   Compone la credencial (GD) y el QR (phpqrcode)
+├── trabajadores/                    Registro de personal administrativo y docente — SOLO para el
+│                                    control de camisas del aniversario (sin credencial ni QR).
+│                                    Tabla `trabajadores`; el listado y la exportación viven en
+│                                    admin/public/trabajadores.php.
 ├── asistencias/                     Escaneo QR y control de entrada/salida, unificado para los
 │                                    3 días. Pide una contraseña compartida (tabla `sistema`) antes
 │                                    de dejar escanear — no es de acceso público.
