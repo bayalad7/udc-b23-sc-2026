@@ -166,7 +166,31 @@ if ($claveYaRegistrada && adminAutorizado()) {
         }
     }
 
+    // Resultado del reseteo del padrón (ver includes/resetear-alumnos.php) —
+    // aparte del $mensajeError de la pantalla de acceso, que solo aplica
+    // cuando todavía no hay sesión autorizada.
+    $resetMensajeExito = null;
+    if (($_GET['msg'] ?? '') === 'reseteado') {
+        $resetMensajeExito = sprintf(
+            'Padrón reseteado: se eliminaron %s alumnos (con sus inscripciones, equipos y asistencias) y %s archivos de fotos y credenciales.',
+            number_format((int) ($_GET['alumnos'] ?? 0)),
+            number_format((int) ($_GET['archivos'] ?? 0))
+        );
+    }
+    $resetErrores = [
+        'reset_clave' => 'Contraseña de administrador incorrecta — no se borró nada.',
+        'reset_confirmacion' => 'La confirmación no coincide: escribe RESETEAR tal cual para continuar.',
+        'reset_error' => 'No se pudo completar el reseteo; no se borró nada. Revisa el log del servidor.',
+    ];
+    $resetMensajeError = $resetErrores[$_GET['error'] ?? ''] ?? null;
+
     layoutAdminAbrir('Dashboard', 'dashboard');
+    if ($resetMensajeExito !== null) {
+        bannerAdmin('exito', $resetMensajeExito);
+    }
+    if ($resetMensajeError !== null) {
+        bannerAdmin('error', $resetMensajeError);
+    }
     ?>
 
     <!-- KPIs — tarjetas compactas tipo "chip"; la jerarquía visual queda en
@@ -357,6 +381,94 @@ if ($claveYaRegistrada && adminAutorizado()) {
         </section>
 
     </div>
+
+    <!-- Zona de peligro: reseteo total del padrón. Vive en el dashboard y no
+         en la sección de Alumnos porque no es parte del CRUD del día a día —
+         es la acción de "dejar el sistema en cero" antes de abrir el registro
+         de una nueva edición, y conviene tenerla lejos de los botones que el
+         staff usa a diario. -->
+    <section class="mt-6 rounded-xl border-2 border-red-200 bg-white p-5 shadow-sm">
+        <h2 class="mb-2 flex items-center gap-2 text-base font-semibold text-red-700">
+            <?= icono('alerta', 'h-4 w-4 shrink-0') ?>
+            Zona de peligro
+        </h2>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 text-sm text-slate-600">
+                <p class="font-medium text-slate-900">Resetear el padrón de alumnos</p>
+                <p class="mt-1">
+                    Elimina los <strong><?= number_format($totalAlumnos) ?></strong> alumnos registrados y todo lo que cuelga de ellos
+                    (inscripciones, asistencias generales, equipos e integrantes), más los archivos físicos de
+                    <strong>fotos y credenciales</strong>. El catálogo de eventos y competiciones se conserva; solo se les
+                    devuelve el cupo disponible.
+                </p>
+                <p class="mt-1 text-xs text-red-600">Es irreversible y no hay respaldo dentro de la app.</p>
+            </div>
+            <button type="button" data-abrir-modal="confirmar-reset-alumnos"
+                    class="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700">
+                <?= icono('eliminar', 'h-4 w-4 shrink-0') ?>
+                Resetear padrón de alumnos
+            </button>
+        </div>
+    </section>
+
+    <!-- Doble candado del reseteo: la contraseña de administrador otra vez
+         (aunque la sesión ya esté autorizada, por si el panel quedó abierto)
+         y la palabra RESETEAR escrita a mano, para que no baste con hacer
+         clic de más. Ambas se validan del lado del servidor, en
+         includes/resetear-alumnos.php: el formulario va con novalidate como
+         todos los del proyecto, así que el required de aquí no bloquea nada
+         por sí solo. -->
+    <dialog id="confirmar-reset-alumnos" class="m-auto w-[90%] max-w-md rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+        <div class="p-5">
+            <div class="mb-3 flex items-center justify-between">
+                <h3 class="flex items-center gap-2 text-base font-semibold text-red-700">
+                    <?= icono('alerta', 'h-4 w-4 shrink-0') ?>
+                    Resetear el padrón de alumnos
+                </h3>
+                <button type="button" data-cerrar-modal="confirmar-reset-alumnos" title="Cerrar" class="cursor-pointer rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <?= icono('cerrar', 'h-4 w-4') ?>
+                </button>
+            </div>
+
+            <div class="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <p class="font-medium">Se borrará de forma permanente:</p>
+                <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                    <li><?= number_format($totalAlumnos) ?> alumnos del padrón</li>
+                    <li>Sus inscripciones a ponencias y talleres</li>
+                    <li>Su asistencia general de los 3 días</li>
+                    <li>Todos los equipos e integrantes (incluidos padres y madres)</li>
+                    <li>Los archivos de fotos y de credenciales generadas</li>
+                </ul>
+            </div>
+
+            <form action="<?= BASE_URL ?>/admin/includes/resetear-alumnos.php" method="post" novalidate class="flex flex-col gap-4">
+                <div>
+                    <label for="reset_clave" class="mb-1 block text-sm font-medium">Contraseña de administrador</label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('candado') ?></span>
+                        <input type="password" id="reset_clave" name="clave" required autocomplete="off"
+                               class="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-base focus:border-red-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label for="reset_confirmacion" class="mb-1 block text-sm font-medium">Escribe <span class="font-mono font-bold">RESETEAR</span> para confirmar</label>
+                    <input type="text" id="reset_confirmacion" name="confirmacion" required autocomplete="off" spellcheck="false"
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-base uppercase focus:border-red-500 focus:outline-none">
+                </div>
+                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <button type="button" data-cerrar-modal="confirmar-reset-alumnos"
+                            class="cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700">
+                        <?= icono('eliminar', 'h-4 w-4 shrink-0') ?>
+                        Sí, borrar todo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
 
     <!-- Modales de detalle: la tabla completa (ordenada/clasificada) detrás
          de cada gráfica, para cuando el staff necesita los números exactos
