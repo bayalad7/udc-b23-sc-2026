@@ -51,3 +51,19 @@ Require all denied
 <Files "eliminar-competicion.php">
     Require all granted
 </Files>
+
+<Files "guardar-trabajador.php">
+    Require all granted
+</Files>
+
+<Files "eliminar-trabajador.php">
+    Require all granted
+</Files>
+
+<Files "exportar-trabajadores.php">
+    Require all granted
+</Files>
+
+<Files "resetear-alumnos.php">
+    Require all granted
+</Files>
