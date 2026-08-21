@@ -29,13 +29,13 @@ if (!in_array($vista, ['resumen', 'detalle'], true) || !in_array($formato, ['xls
 if ($vista === 'resumen') {
     $tallasCamisa = $pdo->query(
         "SELECT camisa_talla, COUNT(*) AS total FROM alumnos GROUP BY camisa_talla
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL')"
+         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL')"
     )->fetchAll();
 
     $tallasCamisaPorGradoGrupo = $pdo->query(
         "SELECT camisa_talla, grado, grupo, COUNT(*) AS total FROM alumnos
          GROUP BY camisa_talla, grado, grupo
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL'), grado, grupo"
+         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'), grado, grupo"
     )->fetchAll();
     $gruposCamisa = [];
     $tallasCamisaPivote = [];

@@ -174,7 +174,7 @@ if ($alumno !== null) {
                         <select id="camisa_talla" name="camisa_talla" required
                                 class="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-base focus:border-slate-500 focus:outline-none">
                             <option value="" disabled>Elige...</option>
-                            <?php foreach (['XS' => 'Extra Chica', 'S' => 'Chica', 'M' => 'Mediana', 'L' => 'Grande', 'XL' => 'Extra Grande', '2XL' => 'Doble Extra Grande'] as $valor => $etiqueta): ?>
+                            <?php foreach (['XS' => 'Extra Chica', 'S' => 'Chica', 'M' => 'Mediana', 'L' => 'Grande', 'XL' => 'Extra Grande', '2XL' => 'Doble Extra Grande', '3XL' => 'Triple Extra Grande'] as $valor => $etiqueta): ?>
                             <option value="<?= $valor ?>" <?= $alumno['camisa_talla'] === $valor ? 'selected' : '' ?>><?= $etiqueta ?></option>
                             <?php endforeach; ?>
                         </select>

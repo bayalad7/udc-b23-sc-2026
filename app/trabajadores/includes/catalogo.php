@@ -27,4 +27,5 @@ const TRABAJADOR_CAMISA_TALLAS = [
     'L' => 'Grande',
     'XL' => 'Extra Grande',
     '2XL' => 'Doble Extra Grande',
+    '3XL' => 'Triple Extra Grande',
 ];

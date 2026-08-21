@@ -137,7 +137,7 @@ SELECT
     CONCAT('alumno', LPAD(n, 5, '0'), '@ucol.mx'),
     'uploads/semilla-generica.jpg',
     'Unisex',
-    ELT(1 + (n MOD 6), 'XS', 'S', 'M', 'L', 'XL', '2XL'),
+    ELT(1 + (n MOD 7), 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'),
     MD5(CONCAT('semilla-b23-alumno-', n))
 FROM secuencia;
 

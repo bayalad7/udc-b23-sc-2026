@@ -220,6 +220,7 @@ if ($mensajeError) {
                                 'L' => 'Grande',
                                 'XL' => 'Extra Grande',
                                 '2XL' => 'Doble Extra Grande',
+                                '3XL' => 'Triple Extra Grande',
                             ];
                             foreach ($tallasCamisaLabels as $talla => $etiqueta): ?>
                             <option value="<?= $talla ?>" <?= $alumno['camisa_talla'] === $talla ? 'selected' : '' ?>><?= $etiqueta ?></option>

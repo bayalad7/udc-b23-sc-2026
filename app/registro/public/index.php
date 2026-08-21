@@ -140,6 +140,7 @@ $mensajeError = $errores[$codigoError] ?? null;
                             <option value="L">Grande</option>
                             <option value="XL">Extra Grande</option>
                             <option value="2XL">Doble Extra Grande</option>
+                            <option value="3XL">Triple Extra Grande</option>
                         </select>
                     </div>
                 </div>
