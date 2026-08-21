@@ -149,14 +149,6 @@ $mensajeError = $errores[$codigoError] ?? null;
 
         <p id="mensaje-validacion" class="hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"></p>
 
-        <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <strong>Notas importantes.</strong>
-            <br/><br/>
-            1. Solo puedes realizar el registro <strong>una única vez</strong> por número de cuenta.
-            <br/><br/>
-            2. Verifica que toda tu información sea correcta antes de continuar: <strong>no podrás editarla después de registrarte.</strong>
-        </div>
-        
         <button type="submit"
                 class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white active:bg-slate-700">
             <?= icono('enviar', 'h-4 w-4 shrink-0') ?>
@@ -170,7 +162,7 @@ $mensajeError = $errores[$codigoError] ?? null;
 
     <a href="<?= BASE_URL ?>/registro/public/recuperar.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
         <?= icono('buscar', 'h-3.5 w-3.5 shrink-0') ?>
-        ¿Ya te registraste? Recupera tu credencial
+        ¿Ya te registraste? Recupera tu credencial o Corrige tus datos
     </a>
 
     <a href="<?= BASE_URL ?>/inscripciones/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">

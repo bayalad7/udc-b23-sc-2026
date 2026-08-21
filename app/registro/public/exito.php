@@ -67,6 +67,12 @@ if (preg_match('/^[a-f0-9]{32}$/', $token)) {
                 Descargar credencial
             </a>
 
+            <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-4 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+                <?= icono('correo', 'h-3.5 w-3.5 shrink-0') ?>
+                Volver al registro
+            </a>
+
+
         <?php else: ?>
 
             <div class="mt-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">

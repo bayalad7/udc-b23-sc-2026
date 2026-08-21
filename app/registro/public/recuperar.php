@@ -71,7 +71,7 @@ $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
         <p class="text-center text-xs text-slate-500">¿Te equivocaste en algún dato o subiste la foto incorrecta? Usa este botón con tu número de cuenta y correo para corregirlo.</p>
     </form>
 
-    <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
+    <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-4 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
         <?= icono('correo', 'h-3.5 w-3.5 shrink-0') ?>
         Volver al registro
     </a>
