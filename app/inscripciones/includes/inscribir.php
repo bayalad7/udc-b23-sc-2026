@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/sesion.php';
+require_once __DIR__ . '/estado.php';
 iniciarSesionInscripciones();
 
 // Backend de inscripción a un evento individual (ponencia/taller), común al
@@ -53,6 +54,8 @@ if ($idEvento === false) {
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
+
+exigirInscripcionesLiberadas($pdo, BASE_URL . '/inscripciones/public/' . $diaSolicitado . '.php');
 
 $consultaEvento = $pdo->prepare('SELECT id, dia, hora_inicio, hora_fin, nombre FROM eventos WHERE id = :id');
 $consultaEvento->execute(['id' => $idEvento]);

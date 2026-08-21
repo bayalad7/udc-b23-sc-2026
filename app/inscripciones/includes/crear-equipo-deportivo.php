@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/sesion.php';
+require_once __DIR__ . '/estado.php';
 require __DIR__ . '/codigo-participante.php';
 require __DIR__ . '/colores-camisa.php';
 iniciarSesionInscripciones();
@@ -65,6 +66,8 @@ if (!in_array($colorCamisa, COLORES_CAMISA, true)) {
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
+
+exigirInscripcionesLiberadas($pdo, BASE_URL . '/inscripciones/public/deportivo.php');
 
 $consultaTorneo = $pdo->prepare("SELECT id, tam_equipo FROM competiciones WHERE id = :id AND dia = 'deportivo'");
 $consultaTorneo->execute(['id' => $idCompeticion]);

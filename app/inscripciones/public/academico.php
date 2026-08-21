@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
+require_once __DIR__ . '/../includes/estado.php';
 
 iniciarSesionInscripciones();
 
@@ -14,6 +15,8 @@ if ($idAlumno === null) {
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
+
+$inscripcionesAbiertas = inscripcionesLiberadas($pdo);
 
 $consultaAlumno = $pdo->prepare('SELECT nombre_completo, numero_cuenta FROM alumnos WHERE id = :id');
 $consultaAlumno->execute(['id' => $idAlumno]);
@@ -344,6 +347,7 @@ $errores = [
     'ya_tienes_equipo' => 'Ya formas parte de un equipo del Concurso del Conocimiento.',
     'equipo_limite_alcanzado' => 'El Concurso del Conocimiento ya alcanzó su límite de ' . $limiteEquipos . ' equipos.',
 ];
+$errores['inscripciones_cerradas'] = 'Las inscripciones todavía no están abiertas.';
 $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
 $mensajesExito = [
     'inscrito' => '¡Inscripción guardada!',
@@ -383,6 +387,13 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
         <span><?= htmlspecialchars($mensajeExito, ENT_QUOTES, 'UTF-8') ?></span>
     </div>
     <?php endif; ?>
+    <?php if (!$inscripcionesAbiertas): ?>
+    <div class="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <?= icono('alerta', 'mt-0.5 h-4 w-4 shrink-0') ?>
+        <span><strong>Las inscripciones todavía no están abiertas.</strong> Puedes consultar el catálogo, pero por ahora no se puede reservar lugar.</span>
+    </div>
+    <?php endif; ?>
+
     <?php if ($mensajeError): ?>
     <div class="mb-6 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
         <?= icono('alerta', 'mt-0.5 h-4 w-4 shrink-0') ?>

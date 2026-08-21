@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/sesion.php';
+require_once __DIR__ . '/estado.php';
 iniciarSesionInscripciones();
 
 // Autoservicio: cualquier persona puede identificarse con numero_cuenta +
@@ -42,6 +43,9 @@ if (!filter_var($correoInstitucional, FILTER_VALIDATE_EMAIL)) {
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
+
+// Sin inscripciones liberadas no se deja ni identificarse (ver estado.php).
+exigirInscripcionesLiberadas($pdo, $destino);
 
 $consulta = $pdo->prepare('SELECT id FROM alumnos WHERE numero_cuenta = :cuenta AND correo_institucional = :correo');
 $consulta->execute(['cuenta' => $numeroCuenta, 'correo' => $correoInstitucional]);

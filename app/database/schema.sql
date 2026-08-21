@@ -19,7 +19,8 @@ ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Configuración general de la app: las contraseñas compartidas (hasheadas)
 -- que piden app/asistencias (clave_acceso) y app/admin (clave_admin) antes de
--- dejar hacer nada — ver app/asistencias/public/evento.php y
+-- dejar hacer nada, más la bandera liberar_inscripciones (¿ya se abrieron las
+-- inscripciones al alumnado?) — ver app/asistencias/public/evento.php y
 -- app/admin/public/index.php. Una sola fila (id fijo en 1, forzado con el
 -- CHECK) para que sea trivial de leer/actualizar sin tener que buscar cuál es
 -- "la" fila. Ambas columnas son NULL hasta que alguien configura esa
@@ -34,6 +35,8 @@ CREATE TABLE IF NOT EXISTS sistema (
         COMMENT 'Hash (password_hash) de la contraseña de acceso a app/asistencias — NULL si aún no se configura, nunca texto plano',
     clave_admin   VARCHAR(255) NULL DEFAULT NULL
         COMMENT 'Hash (password_hash) de la contraseña de acceso a app/admin — NULL si aún no se configura, nunca texto plano',
+    liberar_inscripciones TINYINT(1) NOT NULL DEFAULT 0
+        COMMENT '1 = las inscripciones están abiertas al alumnado (app/inscripciones); 0 = cerradas. Arranca en 0: se abren desde app/admin cuando el staff lo decide',
     PRIMARY KEY (id),
     CONSTRAINT chk_sistema_id CHECK ( id = 1 )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -60,7 +63,7 @@ CREATE TABLE IF NOT EXISTS alumnos (
         COMMENT 'Ruta relativa dentro de app/registro/public/uploads/ — la foto no se guarda en la base de datos',
     camisa_corte            ENUM('Hombre','Mujer','Unisex') NOT NULL DEFAULT 'Unisex'
         COMMENT 'Corte de la camisa oficial del aniversario que se le encargará al alumno — único corte disponible (Unisex)',
-    camisa_talla            ENUM('XS','S','M','L','XL','2XL') NOT NULL
+    camisa_talla            ENUM('XS','S','M','L','XL','2XL','3XL') NOT NULL
         COMMENT 'Talla de la camisa oficial del aniversario que se le encargará al alumno',
     token_descarga          CHAR(32) NOT NULL
         COMMENT 'Identificador aleatorio (no el numero_cuenta) usado en la URL de exito.php/recuperar.php para volver a descargar la credencial',
@@ -336,7 +339,7 @@ CREATE TABLE IF NOT EXISTS trabajadores (
         COMMENT 'Nombre completo de la persona, como aparecerá en el listado de camisas',
     camisa_corte       ENUM('Hombre','Mujer','Unisex') NOT NULL DEFAULT 'Unisex'
         COMMENT 'Corte de la camisa oficial del aniversario — mismos valores que alumnos.camisa_corte (hoy solo se ofrece Unisex)',
-    camisa_talla       ENUM('XS','S','M','L','XL','2XL') NOT NULL
+    camisa_talla       ENUM('XS','S','M','L','XL','2XL','3XL') NOT NULL
         COMMENT 'Talla de la camisa oficial del aniversario — mismos valores que alumnos.camisa_talla',
     fecha_registro     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'Cuándo se completó el registro',

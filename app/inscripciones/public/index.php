@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
+require_once __DIR__ . '/../includes/estado.php';
 
 iniciarSesionInscripciones();
 
@@ -22,8 +23,11 @@ $errores = [
     'numero_cuenta_invalido' => 'Número de cuenta inválido — deben ser 8 caracteres.',
     'correo_invalido' => 'Ingresa un correo válido.',
     'no_encontrado' => 'No encontramos a nadie con ese número de cuenta y correo juntos. Verifica que ya hayas completado tu registro.',
+    'inscripciones_cerradas' => 'Las inscripciones todavía no están abiertas.',
 ];
 $mensajeError = $errores[$_GET['error'] ?? ''] ?? null;
+
+$inscripcionesAbiertas = inscripcionesLiberadas($pdo);
 
 $idAlumno = alumnoIdentificadoId();
 $alumno = null;
@@ -89,12 +93,21 @@ $dias = [
     </div>
     <?php endif; ?>
 
+    <?php if (!$inscripcionesAbiertas): ?>
+    <div class="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <?= icono('alerta', 'mt-0.5 h-4 w-4 shrink-0') ?>
+        <span><strong>Las inscripciones todavía no están abiertas.</strong> El staff las habilitará más adelante; mientras tanto no se puede reservar lugar en ponencias, talleres ni competiciones. Vuelve a revisar esta página más tarde.</span>
+    </div>
+    <?php endif; ?>
+
     <?php if ($idAlumno === null): ?>
 
         <div class="mb-4 flex items-start gap-2 rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             <?= icono('usuario', 'mt-0.5 h-4 w-4 shrink-0') ?>
             <span>Puedes consultar todo el catálogo libremente. Para inscribirte, identifícate primero con tu número de cuenta y correo institucional.</span>
         </div>
+
+        <?php if ($inscripcionesAbiertas): ?>
 
         <?php
         $destinosPorVolver = [
@@ -132,6 +145,8 @@ $dias = [
                 Identificarme
             </button>
         </form>
+
+        <?php endif; ?>
 
         <a href="<?= BASE_URL ?>/registro/public/index.php" class="mt-4 flex items-center justify-center gap-1.5 text-center text-sm font-medium text-slate-700 underline">
             <?= icono('credencial', 'h-3.5 w-3.5 shrink-0') ?>

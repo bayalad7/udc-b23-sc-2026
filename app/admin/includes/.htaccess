@@ -67,3 +67,7 @@ Require all denied
 <Files "resetear-alumnos.php">
     Require all granted
 </Files>
+
+<Files "guardar-inscripciones.php">
+    Require all granted
+</Files>

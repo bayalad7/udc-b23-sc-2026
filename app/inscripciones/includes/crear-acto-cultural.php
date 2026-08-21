@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/sesion.php';
+require_once __DIR__ . '/estado.php';
 require __DIR__ . '/codigo-participante.php';
 iniciarSesionInscripciones();
 
@@ -52,6 +53,8 @@ foreach ($numerosCuentaAcompanantes as $numeroCuenta) {
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
+
+exigirInscripcionesLiberadas($pdo, BASE_URL . '/inscripciones/public/cultural.php');
 
 $consultaCapitan = $pdo->prepare('SELECT id, nombre_completo, numero_cuenta FROM alumnos WHERE id = :id');
 $consultaCapitan->execute(['id' => $idCapitan]);

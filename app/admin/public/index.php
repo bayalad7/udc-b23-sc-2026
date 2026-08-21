@@ -62,14 +62,14 @@ if ($claveYaRegistrada && adminAutorizado()) {
     // --- 5. Tallas de camisa solicitadas (pedido al proveedor) ---------------
     $tallasCamisa = $pdo->query(
         "SELECT camisa_talla, COUNT(*) AS total FROM alumnos GROUP BY camisa_talla
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL')"
+         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL')"
     )->fetchAll();
 
     // Mismo desglose pero por grado y grupo, para pedir las camisas con más control.
     $tallasCamisaPorGradoGrupo = $pdo->query(
         "SELECT camisa_talla, grado, grupo, COUNT(*) AS total FROM alumnos
          GROUP BY camisa_talla, grado, grupo
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL'), grado, grupo"
+         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'), grado, grupo"
     )->fetchAll();
     $gruposCamisa = [];
     $tallasCamisaPivote = [];
@@ -111,6 +111,10 @@ if ($claveYaRegistrada && adminAutorizado()) {
             'entraron_evento' => (int) $filaAusentismo['entraron_evento'],
         ];
     }
+
+    // --- 7. Bandera de inscripciones abiertas/cerradas -----------------------
+    require_once __DIR__ . '/../../inscripciones/includes/estado.php';
+    $inscripcionesAbiertas = inscripcionesLiberadas($pdo);
 
     // --- Datos derivados para las gráficas y para resaltar KPIs de alerta ----
     $matrizGradoGrupo = [];
@@ -177,6 +181,13 @@ if ($claveYaRegistrada && adminAutorizado()) {
             number_format((int) ($_GET['archivos'] ?? 0))
         );
     }
+    if (($_GET['msg'] ?? '') === 'inscripciones_abiertas') {
+        $resetMensajeExito = 'Inscripciones abiertas: el alumnado ya puede identificarse e inscribirse.';
+    }
+    if (($_GET['msg'] ?? '') === 'inscripciones_cerradas') {
+        $resetMensajeExito = 'Inscripciones cerradas: el alumnado ya no puede identificarse ni reservar lugar.';
+    }
+
     $resetErrores = [
         'reset_clave' => 'Contraseña de administrador incorrecta — no se borró nada.',
         'reset_confirmacion' => 'La confirmación no coincide: escribe RESETEAR tal cual para continuar.',
@@ -381,6 +392,43 @@ if ($claveYaRegistrada && adminAutorizado()) {
         </section>
 
     </div>
+
+    <!-- Interruptor de inscripciones: la bandera sistema.liberar_inscripciones
+         que decide si el alumnado puede identificarse e inscribirse en
+         app/inscripciones. Va aquí y no en una página propia porque es un solo
+         valor y el staff necesita verlo de un vistazo al entrar, junto al resto
+         del estado del evento. -->
+    <section class="mt-6 rounded-xl bg-white p-5 shadow-sm">
+        <h2 class="mb-2 flex items-center gap-2 text-base font-semibold">
+            <?= icono('lista', 'h-4 w-4 text-slate-400') ?>
+            Inscripciones
+        </h2>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 text-sm text-slate-600">
+                <p class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $inscripcionesAbiertas ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700' ?>">
+                        <span class="h-1.5 w-1.5 rounded-full <?= $inscripcionesAbiertas ? 'bg-emerald-500' : 'bg-slate-500' ?>"></span>
+                        <?= $inscripcionesAbiertas ? 'Abiertas' : 'Cerradas' ?>
+                    </span>
+                </p>
+                <p class="mt-2">
+                    <?php if ($inscripcionesAbiertas): ?>
+                        El alumnado puede identificarse en <span class="font-mono text-xs">inscripciones/public/index.php</span> y reservar lugar en ponencias, talleres y competiciones.
+                    <?php else: ?>
+                        El alumnado puede consultar el catálogo, pero no puede identificarse ni reservar lugar. Las inscripciones que ya existen no se tocan.
+                    <?php endif; ?>
+                </p>
+            </div>
+            <form action="<?= BASE_URL ?>/admin/includes/guardar-inscripciones.php" method="post" class="shrink-0">
+                <input type="hidden" name="liberar" value="<?= $inscripcionesAbiertas ? '0' : '1' ?>">
+                <button type="submit"
+                        class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-white <?= $inscripcionesAbiertas ? 'bg-slate-700 hover:bg-slate-800' : 'bg-emerald-600 hover:bg-emerald-700' ?>">
+                    <?= icono($inscripcionesAbiertas ? 'candado' : 'verificado', 'h-4 w-4 shrink-0') ?>
+                    <?= $inscripcionesAbiertas ? 'Cerrar inscripciones' : 'Abrir inscripciones' ?>
+                </button>
+            </form>
+        </div>
+    </section>
 
     <!-- Zona de peligro: reseteo total del padrón. Vive en el dashboard y no
          en la sección de Alumnos porque no es parte del CRUD del día a día —

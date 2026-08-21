@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/sesion.php';
+require_once __DIR__ . '/estado.php';
 require __DIR__ . '/codigo-participante.php';
 iniciarSesionInscripciones();
 
@@ -42,6 +43,8 @@ if ($nombreEquipo === '' || mb_strlen($nombreEquipo) > 150) {
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
+
+exigirInscripcionesLiberadas($pdo, BASE_URL . '/inscripciones/public/academico.php');
 
 $competicion = $pdo->query(
     "SELECT id, hora_inicio, hora_fin, tam_equipo FROM competiciones WHERE dia = 'academico' AND tipo = 'concurso' LIMIT 1"
