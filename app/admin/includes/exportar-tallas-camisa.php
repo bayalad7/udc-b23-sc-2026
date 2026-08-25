@@ -19,43 +19,29 @@ $pdo = require __DIR__ . '/../../config/db.php';
 $vista = trim((string) ($_GET['vista'] ?? ''));
 $formato = trim((string) ($_GET['formato'] ?? ''));
 
-if (!in_array($vista, ['resumen', 'detalle'], true) || !in_array($formato, ['xlsx', 'pdf'], true)) {
+if (!in_array($vista, ['resumen', 'detalle', 'detalle_personal'], true) || !in_array($formato, ['xlsx', 'pdf'], true)) {
     http_response_code(400);
     exit('Parámetros inválidos.');
 }
 
 // --- Datos -------------------------------------------------------------
+// Salen del mismo include que la sección del dashboard (ver
+// includes/tallas-camisa.php): el pedido al proveedor se arma con estos
+// números y el archivo descargado tiene que decir exactamente lo mismo que
+// la pantalla.
+
+require_once __DIR__ . '/tallas-camisa.php';
 
 if ($vista === 'resumen') {
-    $tallasCamisa = $pdo->query(
-        "SELECT camisa_talla, COUNT(*) AS total FROM alumnos GROUP BY camisa_talla
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL')"
-    )->fetchAll();
-
-    $tallasCamisaPorGradoGrupo = $pdo->query(
-        "SELECT camisa_talla, grado, grupo, COUNT(*) AS total FROM alumnos
-         GROUP BY camisa_talla, grado, grupo
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'), grado, grupo"
-    )->fetchAll();
-    $gruposCamisa = [];
-    $tallasCamisaPivote = [];
-    foreach ($tallasCamisaPorGradoGrupo as $fila) {
-        $grupoEtiqueta = $fila['grado'] . '°' . $fila['grupo'];
-        $gruposCamisa[$grupoEtiqueta] = true;
-        $tallasCamisaPivote[$fila['camisa_talla']][$grupoEtiqueta] = (int) $fila['total'];
-    }
-    $gruposCamisa = array_keys($gruposCamisa);
-    sort($gruposCamisa);
+    $resumenCamisa = tallasCamisaResumen($pdo);
+    $tallasCamisa = $resumenCamisa['tallas'];
+    $columnasCamisa = $resumenCamisa['columnas'];
+    $tallasCamisaPivote = $resumenCamisa['pivote'];
+    $tallasCamisaTotales = $resumenCamisa['totales'];
+} elseif ($vista === 'detalle') {
+    $alumnosCamisaPorGrupo = tallasCamisaDetalleAlumnos($pdo);
 } else {
-    $alumnosCamisaDetalle = $pdo->query(
-        "SELECT numero_cuenta, nombre_completo, grado, grupo, camisa_corte, camisa_talla
-         FROM alumnos ORDER BY grado, grupo, nombre_completo"
-    )->fetchAll();
-    $alumnosCamisaPorGrupo = [];
-    foreach ($alumnosCamisaDetalle as $alumnoFila) {
-        $grupoEtiqueta = $alumnoFila['grado'] . '°' . $alumnoFila['grupo'];
-        $alumnosCamisaPorGrupo[$grupoEtiqueta][] = $alumnoFila;
-    }
+    $personalCamisaPorTipo = tallasCamisaDetallePersonal($pdo);
 }
 
 $nombreBase = 'tallas_camisa_' . $vista . '_' . date('Y-m-d_His');
@@ -68,22 +54,47 @@ if ($formato === 'xlsx') {
 
     if ($vista === 'resumen') {
         $activa->setTitle('Resumen por talla');
-        $encabezados = array_merge(['Talla'], $gruposCamisa, ['Total']);
+        $encabezados = array_merge(['Talla'], $columnasCamisa, ['Total']);
         $ultimaColumna = Coordinate::stringFromColumnIndex(count($encabezados));
         $activa->fromArray($encabezados, null, 'A1');
         $activa->getStyle('A1:' . $ultimaColumna . '1')->getFont()->setBold(true);
 
         $fila = 2;
         foreach ($tallasCamisa as $talla) {
-            $renglon = [$talla['camisa_talla']];
-            foreach ($gruposCamisa as $grupoEtiqueta) {
-                $renglon[] = $tallasCamisaPivote[$talla['camisa_talla']][$grupoEtiqueta] ?? 0;
+            $renglon = [$talla];
+            foreach ($columnasCamisa as $columna) {
+                $renglon[] = $tallasCamisaPivote[$talla][$columna] ?? 0;
             }
-            $renglon[] = (int) $talla['total'];
+            $renglon[] = $tallasCamisaTotales[$talla];
             $activa->fromArray($renglon, null, 'A' . $fila);
             $fila++;
         }
         foreach (range('A', $ultimaColumna) as $columna) {
+            $activa->getColumnDimension($columna)->setAutoSize(true);
+        }
+    } elseif ($vista === 'detalle_personal') {
+        $activa->setTitle('Detalle por trabajador');
+        $activa->fromArray(['#', 'No. trabajador', 'Nombre completo', 'Corte', 'Talla'], null, 'A1');
+        $activa->getStyle('A1:E1')->getFont()->setBold(true);
+
+        $fila = 2;
+        foreach ($personalCamisaPorTipo as $tipoEtiqueta => $personalDelTipo) {
+            $activa->setCellValue('A' . $fila, $tipoEtiqueta);
+            $activa->mergeCells('A' . $fila . ':E' . $fila);
+            $activa->getStyle('A' . $fila)->getFont()->setBold(true);
+            $fila++;
+            foreach ($personalDelTipo as $indice => $trabajadorFila) {
+                $activa->fromArray([
+                    $indice + 1,
+                    $trabajadorFila['numero_trabajador'],
+                    $trabajadorFila['nombre_completo'],
+                    $trabajadorFila['camisa_corte'],
+                    $trabajadorFila['camisa_talla'],
+                ], null, 'A' . $fila);
+                $fila++;
+            }
+        }
+        foreach (range('A', 'E') as $columna) {
             $activa->getColumnDimension($columna)->setAutoSize(true);
         }
     } else {
@@ -137,16 +148,33 @@ $estilos = '<style>
 
 if ($vista === 'resumen') {
     $html = $estilos . '<h1>Tallas de camisa solicitadas — Resumen por talla</h1><table><thead><tr><th>Talla</th>';
-    foreach ($gruposCamisa as $grupoEtiqueta) {
-        $html .= '<th>' . htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') . '</th>';
+    foreach ($columnasCamisa as $columna) {
+        $html .= '<th>' . htmlspecialchars($columna, ENT_QUOTES, 'UTF-8') . '</th>';
     }
     $html .= '<th>Total</th></tr></thead><tbody>';
     foreach ($tallasCamisa as $talla) {
-        $html .= '<tr><td class="centro">' . htmlspecialchars($talla['camisa_talla'], ENT_QUOTES, 'UTF-8') . '</td>';
-        foreach ($gruposCamisa as $grupoEtiqueta) {
-            $html .= '<td class="centro">' . ($tallasCamisaPivote[$talla['camisa_talla']][$grupoEtiqueta] ?? 0) . '</td>';
+        $html .= '<tr><td class="centro">' . htmlspecialchars($talla, ENT_QUOTES, 'UTF-8') . '</td>';
+        foreach ($columnasCamisa as $columna) {
+            $html .= '<td class="centro">' . ($tallasCamisaPivote[$talla][$columna] ?? 0) . '</td>';
         }
-        $html .= '<td class="centro"><strong>' . (int) $talla['total'] . '</strong></td></tr>';
+        $html .= '<td class="centro"><strong>' . $tallasCamisaTotales[$talla] . '</strong></td></tr>';
+    }
+    $html .= '</tbody></table>';
+} elseif ($vista === 'detalle_personal') {
+    $html = $estilos . '<h1>Tallas de camisa solicitadas — Detalle por trabajador</h1><table><thead><tr>'
+        . '<th class="centro">#</th><th>No. trabajador</th><th>Nombre completo</th><th class="centro">Corte</th><th class="centro">Talla</th>'
+        . '</tr></thead><tbody>';
+    foreach ($personalCamisaPorTipo as $tipoEtiqueta => $personalDelTipo) {
+        $html .= '<tr class="grupo"><td colspan="5">' . htmlspecialchars($tipoEtiqueta, ENT_QUOTES, 'UTF-8') . '</td></tr>';
+        foreach ($personalDelTipo as $indice => $trabajadorFila) {
+            $html .= '<tr>'
+                . '<td class="centro">' . ($indice + 1) . '</td>'
+                . '<td>' . htmlspecialchars($trabajadorFila['numero_trabajador'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars($trabajadorFila['nombre_completo'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td class="centro">' . htmlspecialchars($trabajadorFila['camisa_corte'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td class="centro">' . htmlspecialchars($trabajadorFila['camisa_talla'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '</tr>';
+        }
     }
     $html .= '</tbody></table>';
 } else {

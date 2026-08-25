@@ -60,37 +60,23 @@ if ($claveYaRegistrada && adminAutorizado()) {
     )->fetchAll();
 
     // --- 5. Tallas de camisa solicitadas (pedido al proveedor) ---------------
-    $tallasCamisa = $pdo->query(
-        "SELECT camisa_talla, COUNT(*) AS total FROM alumnos GROUP BY camisa_talla
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL')"
-    )->fetchAll();
+    // El pedido cubre alumnos Y personal: las dos poblaciones se suman por
+    // talla (ver includes/tallas-camisa.php, compartido con la exportación).
+    require_once __DIR__ . '/../includes/tallas-camisa.php';
 
-    // Mismo desglose pero por grado y grupo, para pedir las camisas con más control.
-    $tallasCamisaPorGradoGrupo = $pdo->query(
-        "SELECT camisa_talla, grado, grupo, COUNT(*) AS total FROM alumnos
-         GROUP BY camisa_talla, grado, grupo
-         ORDER BY FIELD(camisa_talla, 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'), grado, grupo"
-    )->fetchAll();
-    $gruposCamisa = [];
-    $tallasCamisaPivote = [];
-    foreach ($tallasCamisaPorGradoGrupo as $fila) {
-        $grupoEtiqueta = $fila['grado'] . '°' . $fila['grupo'];
-        $gruposCamisa[$grupoEtiqueta] = true;
-        $tallasCamisaPivote[$fila['camisa_talla']][$grupoEtiqueta] = (int) $fila['total'];
-    }
-    $gruposCamisa = array_keys($gruposCamisa);
-    sort($gruposCamisa);
+    $resumenCamisa = tallasCamisaResumen($pdo);
+    $tallasCamisa = $resumenCamisa['tallas'];
+    $columnasCamisa = $resumenCamisa['columnas'];
+    $tallasCamisaPivote = $resumenCamisa['pivote'];
+    $tallasCamisaTotales = $resumenCamisa['totales'];
 
-    // Detalle por alumno (para armar la lista de entrega), agrupado por grado y grupo.
-    $alumnosCamisaDetalle = $pdo->query(
-        "SELECT numero_cuenta, nombre_completo, grado, grupo, camisa_corte, camisa_talla
-         FROM alumnos ORDER BY grado, grupo, nombre_completo"
-    )->fetchAll();
-    $alumnosCamisaPorGrupo = [];
-    foreach ($alumnosCamisaDetalle as $alumnoFila) {
-        $grupoEtiqueta = $alumnoFila['grado'] . '°' . $alumnoFila['grupo'];
-        $alumnosCamisaPorGrupo[$grupoEtiqueta][] = $alumnoFila;
-    }
+    $alumnosCamisaPorGrupo = tallasCamisaDetalleAlumnos($pdo);
+    $personalCamisaPorTipo = tallasCamisaDetallePersonal($pdo);
+
+    // Series de la gráfica: una barra apilada por talla, para que la altura
+    // sea lo que hay que encargarle al proveedor.
+    $serieCamisaAlumnos = tallasCamisaSerie($pdo, 'alumnos', $tallasCamisa);
+    $serieCamisaPersonal = tallasCamisaSerie($pdo, 'trabajadores', $tallasCamisa);
 
     // --- 6. Ausentismo: asistencia general vs. asistencia al evento asignado -
     // (solo Día Académico y Día Cultural, que son los que tienen eventos
@@ -368,10 +354,10 @@ if ($claveYaRegistrada && adminAutorizado()) {
                 <?php endif; ?>
             </div>
             <?php if ($tallasCamisa === []): ?>
-            <p class="text-sm text-slate-500">Todavía no hay alumnos registrados.</p>
+            <p class="text-sm text-slate-500">Todavía no hay alumnos ni personal registrados.</p>
             <?php else: ?>
             <div class="h-64"><canvas id="grafica-tallas-camisa"></canvas></div>
-            <p class="mt-2 text-xs text-slate-400">Referencia para el pedido al proveedor.</p>
+            <p class="mt-2 text-xs text-slate-400">Referencia para el pedido al proveedor — incluye alumnos y personal.</p>
             <?php endif; ?>
         </section>
 
@@ -655,8 +641,8 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <thead class="sticky top-0 bg-slate-50">
                         <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
                             <th class="px-3 py-2 text-center">Talla</th>
-                            <?php foreach ($gruposCamisa as $grupoEtiqueta): ?>
-                            <th class="px-3 py-2 text-center"><?= htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') ?></th>
+                            <?php foreach ($columnasCamisa as $columna): ?>
+                            <th class="px-3 py-2 text-center <?= $columna === CAMISA_COLUMNA_PERSONAL ? 'border-l border-slate-300' : '' ?>"><?= htmlspecialchars($columna, ENT_QUOTES, 'UTF-8') ?></th>
                             <?php endforeach; ?>
                             <th class="px-3 py-2 text-center">Total</th>
                         </tr>
@@ -664,11 +650,11 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <tbody>
                         <?php foreach ($tallasCamisa as $talla): ?>
                         <tr class="border-b border-slate-100 last:border-0">
-                            <td class="px-3 py-2 text-center font-medium"><?= htmlspecialchars($talla['camisa_talla'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <?php foreach ($gruposCamisa as $grupoEtiqueta): ?>
-                            <td class="px-3 py-2 text-center text-slate-500"><?= number_format($tallasCamisaPivote[$talla['camisa_talla']][$grupoEtiqueta] ?? 0) ?></td>
+                            <td class="px-3 py-2 text-center font-medium"><?= htmlspecialchars($talla, ENT_QUOTES, 'UTF-8') ?></td>
+                            <?php foreach ($columnasCamisa as $columna): ?>
+                            <td class="px-3 py-2 text-center text-slate-500 <?= $columna === CAMISA_COLUMNA_PERSONAL ? 'border-l border-slate-300' : '' ?>"><?= number_format($tallasCamisaPivote[$talla][$columna] ?? 0) ?></td>
                             <?php endforeach; ?>
-                            <td class="px-3 py-2 text-center font-medium"><?= number_format((int) $talla['total']) ?></td>
+                            <td class="px-3 py-2 text-center font-medium"><?= number_format($tallasCamisaTotales[$talla]) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -717,6 +703,53 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     </tbody>
                 </table>
             </div>
+
+            <div class="mb-2 mt-8 flex items-center justify-between gap-2 pt-5">
+                <h4 class="text-sm font-semibold text-slate-700">Detalle por trabajador</h4>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=detalle_personal&amp;formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=detalle_personal&amp;formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+            </div>
+            <?php if ($personalCamisaPorTipo === []): ?>
+            <p class="rounded-lg border border-slate-200 px-3 py-4 text-center text-sm text-slate-500">Todavía no hay personal registrado.</p>
+            <?php else: ?>
+            <div class="max-h-72 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="px-3 py-2 text-center">#</th>
+                            <th class="px-3 py-2">No. trabajador</th>
+                            <th class="px-3 py-2">Nombre completo</th>
+                            <th class="px-3 py-2 text-center">Corte</th>
+                            <th class="px-3 py-2 text-center">Talla</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($personalCamisaPorTipo as $tipoEtiqueta => $personalDelTipo): ?>
+                        <tr class="border-b border-slate-200 bg-slate-100">
+                            <td colspan="5" class="px-3 py-1.5 text-xs font-semibold text-slate-600"><?= htmlspecialchars($tipoEtiqueta, ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                        <?php foreach ($personalDelTipo as $indice => $trabajadorFila): ?>
+                        <tr class="border-b border-slate-100 last:border-0">
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $indice + 1 ?></td>
+                            <td class="px-3 py-2 font-mono text-xs"><?= htmlspecialchars($trabajadorFila['numero_trabajador'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2"><?= htmlspecialchars($trabajadorFila['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center"><?= htmlspecialchars($trabajadorFila['camisa_corte'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center"><?= htmlspecialchars($trabajadorFila['camisa_talla'], ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
         </div>
     </dialog>
 
@@ -859,21 +892,41 @@ if ($claveYaRegistrada && adminAutorizado()) {
         <?php endif; ?>
 
         <?php if ($tallasCamisa !== []): ?>
+        // Barras apiladas: la altura total de cada talla es lo que hay que
+        // encargarle al proveedor (alumnos + personal), y cada segmento dice
+        // cuánto de eso va a cada población.
         new Chart(document.getElementById('grafica-tallas-camisa'), {
             type: 'bar',
             data: {
-                labels: <?= json_encode(array_map(fn($t) => $t['camisa_talla'], $tallasCamisa)) ?>,
-                datasets: [{
-                    label: 'Alumnos',
-                    data: <?= json_encode(array_map(fn($t) => (int) $t['total'], $tallasCamisa)) ?>,
-                    backgroundColor: '#0ea5e9',
-                    borderRadius: 4
-                }]
+                labels: <?= json_encode($tallasCamisa) ?>,
+                datasets: [
+                    {
+                        label: 'Alumnos',
+                        data: <?= json_encode($serieCamisaAlumnos) ?>,
+                        backgroundColor: '#0ea5e9',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Personal',
+                        data: <?= json_encode($serieCamisaPersonal) ?>,
+                        backgroundColor: '#6366f1',
+                        borderRadius: 4
+                    }
+                ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: COLOR_REJILLA } } },
-                plugins: { legend: { display: false } }
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: COLOR_REJILLA } }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { footer: function (elementos) {
+                        var total = elementos.reduce(function (suma, e) { return suma + e.parsed.y; }, 0);
+                        return 'Total: ' + total;
+                    } } }
+                }
             }
         });
         <?php endif; ?>
