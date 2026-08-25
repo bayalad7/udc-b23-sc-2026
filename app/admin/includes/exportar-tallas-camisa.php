@@ -39,12 +39,33 @@ if ($vista === 'resumen') {
     $tallasCamisaPivote = $resumenCamisa['pivote'];
     $tallasCamisaTotales = $resumenCamisa['totales'];
 } elseif ($vista === 'detalle') {
-    $alumnosCamisaPorGrupo = tallasCamisaDetalleAlumnos($pdo);
+    // Selección de grupos del selector del modal. Vacío = padrón completo, que
+    // se entrega como una sola lista corrida (el comportamiento de siempre);
+    // con grupos marcados, cada uno sale en su propia pestaña/página. Se
+    // filtran contra los grupos que existen de verdad, así que un código
+    // inventado en la URL simplemente se ignora en vez de romper la consulta.
+    $gruposValidos = camisaGruposValidos($pdo);
+    $gruposSolicitados = $_GET['grupos'] ?? [];
+    $gruposSeleccionados = is_array($gruposSolicitados)
+        ? array_values(array_intersect(array_keys($gruposValidos), array_map('strval', $gruposSolicitados)))
+        : [];
+
+    $alumnosCamisaPorGrupo = tallasCamisaDetalleAlumnos($pdo, $gruposSeleccionados);
+    $separarPorGrupo = $gruposSeleccionados !== [];
 } else {
     $personalCamisaPorTipo = tallasCamisaDetallePersonal($pdo);
 }
 
-$nombreBase = 'tallas_camisa_' . $vista . '_' . date('Y-m-d_His');
+$sufijoGrupos = '';
+if ($vista === 'detalle' && $gruposSeleccionados !== []) {
+    // Con pocos grupos se nombra el archivo con ellos (tallas_camisa_detalle_1A-3B);
+    // con muchos, el nombre se volvería ilegible y basta con decir cuántos son.
+    $sufijoGrupos = count($gruposSeleccionados) <= 3
+        ? '_' . implode('-', $gruposSeleccionados)
+        : '_' . count($gruposSeleccionados) . 'grupos';
+}
+
+$nombreBase = 'tallas_camisa_' . $vista . $sufijoGrupos . '_' . date('Y-m-d_His');
 
 // --- Excel ---------------------------------------------------------------
 
@@ -97,6 +118,33 @@ if ($formato === 'xlsx') {
         foreach (range('A', 'E') as $columna) {
             $activa->getColumnDimension($columna)->setAutoSize(true);
         }
+    } elseif ($separarPorGrupo) {
+        // Una pestaña por grupo: es lo que se reparte a cada maestro, así que
+        // cada hoja se vale por sí sola y lleva sus propios encabezados.
+        $primera = true;
+        foreach ($alumnosCamisaPorGrupo as $grupoEtiqueta => $alumnosDelGrupo) {
+            $pestana = $primera ? $activa : $hoja->createSheet();
+            $primera = false;
+            $pestana->setTitle($grupoEtiqueta);
+            $pestana->fromArray(['#', 'No. cuenta', 'Nombre completo', 'Corte', 'Talla'], null, 'A1');
+            $pestana->getStyle('A1:E1')->getFont()->setBold(true);
+
+            $fila = 2;
+            foreach ($alumnosDelGrupo as $indice => $alumnoFila) {
+                $pestana->fromArray([
+                    $indice + 1,
+                    $alumnoFila['numero_cuenta'],
+                    $alumnoFila['nombre_completo'],
+                    $alumnoFila['camisa_corte'],
+                    $alumnoFila['camisa_talla'],
+                ], null, 'A' . $fila);
+                $fila++;
+            }
+            foreach (range('A', 'E') as $columna) {
+                $pestana->getColumnDimension($columna)->setAutoSize(true);
+            }
+        }
+        $hoja->setActiveSheetIndex(0);
     } else {
         $activa->setTitle('Detalle por alumno');
         $encabezados = ['#', 'No. cuenta', 'Nombre completo', 'Corte', 'Talla'];
@@ -144,6 +192,8 @@ $estilos = '<style>
     th { background: #f1f5f9; text-align: center; }
     td.centro, th.centro { text-align: center; }
     tr.grupo td { background: #e2e8f0; font-weight: bold; }
+    div.hoja-grupo { page-break-before: always; }
+    div.hoja-grupo:first-of-type { page-break-before: avoid; }
 </style>';
 
 if ($vista === 'resumen') {
@@ -177,6 +227,27 @@ if ($vista === 'resumen') {
         }
     }
     $html .= '</tbody></table>';
+} elseif ($separarPorGrupo) {
+    // Cada grupo arranca en página nueva y repite encabezado: la hoja de un
+    // grupo se puede desprender y entregar sola.
+    $html = $estilos;
+    foreach ($alumnosCamisaPorGrupo as $grupoEtiqueta => $alumnosDelGrupo) {
+        $html .= '<div class="hoja-grupo">'
+            . '<h1>Tallas de camisa solicitadas — ' . htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') . '</h1>'
+            . '<table><thead><tr>'
+            . '<th class="centro">#</th><th>No. cuenta</th><th>Nombre completo</th><th class="centro">Corte</th><th class="centro">Talla</th>'
+            . '</tr></thead><tbody>';
+        foreach ($alumnosDelGrupo as $indice => $alumnoFila) {
+            $html .= '<tr>'
+                . '<td class="centro">' . ($indice + 1) . '</td>'
+                . '<td>' . htmlspecialchars($alumnoFila['numero_cuenta'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars($alumnoFila['nombre_completo'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td class="centro">' . htmlspecialchars($alumnoFila['camisa_corte'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td class="centro">' . htmlspecialchars($alumnoFila['camisa_talla'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '</tr>';
+        }
+        $html .= '</tbody></table></div>';
+    }
 } else {
     $html = $estilos . '<h1>Tallas de camisa solicitadas — Detalle por alumno</h1><table><thead><tr>'
         . '<th class="centro">#</th><th>No. cuenta</th><th>Nombre completo</th><th class="centro">Corte</th><th class="centro">Talla</th>'

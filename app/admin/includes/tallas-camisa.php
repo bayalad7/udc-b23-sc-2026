@@ -75,17 +75,76 @@ function tallasCamisaResumen(PDO $pdo): array
     return ['tallas' => $tallas, 'columnas' => $columnas, 'pivote' => $pivote, 'totales' => $totales];
 }
 
-/** Detalle de alumnos para la lista de entrega, agrupado por grado y grupo. */
-function tallasCamisaDetalleAlumnos(PDO $pdo): array
+/**
+ * Código corto y estable de un grado+grupo para viajar por la URL de la
+ * exportación: '1A' en vez de '1°A'. Evita tener que codificar el ° y deja
+ * la validación en algo trivial de comprobar (ver camisaGruposValidos).
+ */
+function camisaGrupoCodigo(string $grado, string $grupo): string
+{
+    return $grado . $grupo;
+}
+
+/** Etiqueta legible a partir del código: '1A' => '1°A'. */
+function camisaGrupoEtiqueta(string $codigo): string
+{
+    return substr($codigo, 0, 1) . '°' . substr($codigo, 1, 1);
+}
+
+/**
+ * Grupos que hoy tienen al menos un alumno registrado, como
+ * [codigo => etiqueta] y en orden de grado/grupo. Es la lista que se ofrece
+ * en el selector de la exportación y, a la vez, contra la que se validan los
+ * códigos que llegan por la URL.
+ */
+function camisaGruposValidos(PDO $pdo): array
 {
     $filas = $pdo->query(
-        'SELECT numero_cuenta, nombre_completo, grado, grupo, camisa_corte, camisa_talla
-         FROM alumnos ORDER BY grado, grupo, nombre_completo'
+        'SELECT DISTINCT grado, grupo FROM alumnos ORDER BY grado, grupo'
     )->fetchAll();
 
-    $porGrupo = [];
+    $grupos = [];
     foreach ($filas as $fila) {
-        $porGrupo[$fila['grado'] . '°' . $fila['grupo']][] = $fila;
+        $codigo = camisaGrupoCodigo($fila['grado'], $fila['grupo']);
+        $grupos[$codigo] = camisaGrupoEtiqueta($codigo);
+    }
+
+    return $grupos;
+}
+
+/**
+ * Detalle de alumnos para la lista de entrega, agrupado por grado y grupo.
+ *
+ * $codigosGrupo vacío = el padrón completo (lo que se descargaba siempre).
+ * Con códigos, se limita a esos grupos — se usa para bajar la lista de un
+ * grupo suelto o de varios, ver la exportación con vista=detalle.
+ */
+function tallasCamisaDetalleAlumnos(PDO $pdo, array $codigosGrupo = []): array
+{
+    $sql = 'SELECT numero_cuenta, nombre_completo, grado, grupo, camisa_corte, camisa_talla
+            FROM alumnos';
+    $parametros = [];
+
+    if ($codigosGrupo !== []) {
+        // Un par de placeholders por grupo (grado y grupo van por separado
+        // porque son dos columnas); nunca se concatena el valor a la consulta.
+        $condiciones = [];
+        foreach (array_values($codigosGrupo) as $i => $codigo) {
+            $condiciones[] = "(grado = :grado$i AND grupo = :grupo$i)";
+            $parametros["grado$i"] = substr($codigo, 0, 1);
+            $parametros["grupo$i"] = substr($codigo, 1, 1);
+        }
+        $sql .= ' WHERE ' . implode(' OR ', $condiciones);
+    }
+
+    $sql .= ' ORDER BY grado, grupo, nombre_completo';
+
+    $consulta = $pdo->prepare($sql);
+    $consulta->execute($parametros);
+
+    $porGrupo = [];
+    foreach ($consulta->fetchAll() as $fila) {
+        $porGrupo[camisaGrupoEtiqueta(camisaGrupoCodigo($fila['grado'], $fila['grupo']))][] = $fila;
     }
 
     return $porGrupo;

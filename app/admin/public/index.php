@@ -72,6 +72,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
 
     $alumnosCamisaPorGrupo = tallasCamisaDetalleAlumnos($pdo);
     $personalCamisaPorTipo = tallasCamisaDetallePersonal($pdo);
+    $gruposCamisaDescarga = camisaGruposValidos($pdo);
 
     // Series de la gráfica: una barra apilada por talla, para que la altura
     // sea lo que hay que encargarle al proveedor.
@@ -660,20 +661,52 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     </tbody>
                 </table>
             </div>
-            <br/>
-            <div class="mb-2 mt-8 flex items-center justify-between gap-2 pt-5">
+            <div class="mb-2 mt-8 flex items-center justify-between gap-2 pt-2">
                 <h4 class="text-sm font-semibold text-slate-700">Detalle por alumno</h4>
-                <div class="flex shrink-0 items-center gap-2">
-                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=xlsx"
-                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
-                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
-                    </a>
-                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=detalle&amp;formato=pdf"
-                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
-                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
-                    </a>
-                </div>
             </div>
+
+            <!-- Selector de grupos de la descarga. Es un form GET sin nada de
+                 JavaScript: los dos botones envían el mismo formulario y solo
+                 cambian el `formato`. Sin ninguna casilla marcada se descarga
+                 el padrón completo como lista corrida (lo de siempre); con
+                 grupos marcados, cada uno sale en su propia pestaña de Excel o
+                 en su propia página del PDF, para poder entregarle su hoja a
+                 cada maestro. -->
+            <form action="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php" method="get"
+                  class="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <input type="hidden" name="vista" value="detalle">
+
+                <p class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Grupos a descargar</p>
+
+                <!-- Rejilla en vez de un wrap suelto: los grupos quedan
+                     alineados en columnas y cada uno es un objetivo de clic
+                     grande, que en tablet (el uso real del panel) importa. -->
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                    <?php foreach ($gruposCamisaDescarga as $codigoGrupo => $etiquetaGrupo): ?>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 hover:border-slate-300 hover:bg-slate-50 has-[:checked]:border-slate-900 has-[:checked]:font-semibold has-[:checked]:text-slate-900">
+                        <input type="checkbox" name="grupos[]" value="<?= htmlspecialchars($codigoGrupo, ENT_QUOTES, 'UTF-8') ?>"
+                               class="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-slate-900">
+                        <?= htmlspecialchars($etiquetaGrupo, ENT_QUOTES, 'UTF-8') ?>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-xs leading-relaxed text-slate-500">
+                        Sin marcar nada se descarga la <span class="font-medium text-slate-700">lista completa</span> de corrido. Marcando grupos, cada uno va en su propia pestaña o página.
+                    </p>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <button type="submit" name="formato" value="xlsx"
+                                class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                            <?= icono('descargar', 'h-4 w-4 shrink-0') ?> Excel
+                        </button>
+                        <button type="submit" name="formato" value="pdf"
+                                class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                            <?= icono('descargar', 'h-4 w-4 shrink-0') ?> PDF
+                        </button>
+                    </div>
+                </div>
+            </form>
             <div class="max-h-72 overflow-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="sticky top-0 bg-slate-50">
