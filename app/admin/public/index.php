@@ -355,10 +355,13 @@ if ($claveYaRegistrada && adminAutorizado()) {
                 <?php endif; ?>
             </div>
             <?php if ($tallasCamisa === []): ?>
-            <p class="text-sm text-slate-500">Todavía no hay alumnos ni personal registrados.</p>
+            <p class="text-sm text-slate-500">Todavía nadie encarga camisa: ni alumnos (con camisa_pedir) ni personal.</p>
             <?php else: ?>
             <div class="h-64"><canvas id="grafica-tallas-camisa"></canvas></div>
-            <p class="mt-2 text-xs text-slate-400">Referencia para el pedido al proveedor — incluye alumnos y personal.</p>
+            <p class="mt-2 text-xs text-slate-400">
+                Referencia para el pedido al proveedor — incluye al personal y solo a los alumnos que sí encargan camisa.
+                Los pagos se llevan en <a href="<?= BASE_URL ?>/admin/public/camisas.php" class="underline hover:text-slate-600">Camisas</a>.
+            </p>
             <?php endif; ?>
         </section>
 

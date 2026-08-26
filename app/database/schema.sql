@@ -37,8 +37,11 @@ CREATE TABLE IF NOT EXISTS sistema (
         COMMENT 'Hash (password_hash) de la contraseña de acceso a app/admin — NULL si aún no se configura, nunca texto plano',
     liberar_inscripciones TINYINT(1) NOT NULL DEFAULT 0
         COMMENT '1 = las inscripciones están abiertas al alumnado (app/inscripciones); 0 = cerradas. Arranca en 0: se abren desde app/admin cuando el staff lo decide',
+    camisa_costo  DECIMAL(7,2) NOT NULL DEFAULT 150.00
+        COMMENT 'Costo unitario de la camisa oficial del aniversario — tope de alumnos.camisa_pago (ver trg_alumnos_camisa_pago_*)',
     PRIMARY KEY (id),
-    CONSTRAINT chk_sistema_id CHECK ( id = 1 )
+    CONSTRAINT chk_sistema_id CHECK ( id = 1 ),
+    CONSTRAINT chk_sistema_camisa_costo CHECK ( camisa_costo >= 0 )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Configuración general de la app: contraseñas de acceso a app/asistencias y app/admin. Una sola fila.';
 
@@ -65,6 +68,15 @@ CREATE TABLE IF NOT EXISTS alumnos (
         COMMENT 'Corte de la camisa oficial del aniversario que se le encargará al alumno — único corte disponible (Unisex)',
     camisa_talla            ENUM('XS','S','M','L','XL','2XL','3XL') NOT NULL
         COMMENT 'Talla de la camisa oficial del aniversario que se le encargará al alumno',
+    camisa_pedir            TINYINT(1) NOT NULL DEFAULT 1
+        COMMENT '1 = sí encarga camisa (cuenta en el pedido al proveedor y en los reportes de app/admin); 0 = no la quiere. Arranca en 1 porque el pre-registro ya obliga a elegir talla — el jefe de grupo la baja a 0 si el alumno se arrepiente',
+    camisa_pago             DECIMAL(7,2) NOT NULL DEFAULT 0.00
+        COMMENT 'Acumulado que lleva pagado de su camisa (no es un historial de abonos, es el total al día de hoy) — nunca mayor a sistema.camisa_costo, ver trg_alumnos_camisa_pago_*',
+    es_jefe                 TINYINT(1) NOT NULL DEFAULT 0
+        COMMENT '1 = jefe de grupo: el alumno que lleva el control de los pagos de camisa de SU grado+grupo desde app/camisas. Uno solo por grado+grupo (ver jefe_grupo)',
+    jefe_grupo              VARCHAR(2)
+        AS ( IF(es_jefe = 1, CONCAT(grado, grupo), NULL) ) PERSISTENT
+        COMMENT 'Derivada: "1A" si es jefe, NULL si no. Solo existe para poder poner el UNIQUE de abajo — ver nota',
     token_descarga          CHAR(32) NOT NULL
         COMMENT 'Identificador aleatorio (no el numero_cuenta) usado en la URL de exito.php/recuperar.php para volver a descargar la credencial',
     credencial_path         VARCHAR(255) NULL
@@ -76,9 +88,60 @@ CREATE TABLE IF NOT EXISTS alumnos (
     UNIQUE KEY uq_alumnos_numero_cuenta (numero_cuenta)
         COMMENT 'Un numero_cuenta no puede pre-registrarse dos veces',
     UNIQUE KEY uq_alumnos_token_descarga (token_descarga)
-        COMMENT 'Cada token_descarga debe ser único para no exponer la credencial de otro alumno'
+        COMMENT 'Cada token_descarga debe ser único para no exponer la credencial de otro alumno',
+    -- "Un solo jefe por grado+grupo" no se puede expresar con UNIQUE
+    -- (grado, grupo, es_jefe): eso prohibiría además que dos alumnos del mismo
+    -- grupo tengan es_jefe = 0, o sea todos menos uno. La columna generada
+    -- jefe_grupo vale NULL para quien no es jefe, y MariaDB permite NULLs
+    -- repetidos en un índice único — así el UNIQUE solo restringe a los jefes.
+    UNIQUE KEY uq_alumnos_jefe_grupo (jefe_grupo)
+        COMMENT 'Un único jefe de grupo por grado+grupo — quitarle el cargo al anterior antes de nombrar al nuevo',
+    CONSTRAINT chk_alumnos_camisa_pago CHECK ( camisa_pago >= 0 AND ( camisa_pedir = 1 OR camisa_pago = 0 ) )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Padrón de alumnos pre-registrados — base de la credencial digital con QR (numero_cuenta).';
+
+-- Tope del pago de la camisa: camisa_pago nunca puede pasarse de
+-- sistema.camisa_costo. No se modela como CHECK porque MariaDB no admite
+-- subconsultas ahí (el costo vive en otra tabla), así que va como trigger —
+-- mismo criterio que trg_equipos_limite_maximo más abajo: la regla se controla
+-- también en la base para que ninguna vía de escritura (la app, una carga
+-- manual, otro script) pueda rebasarla por accidente. La app valida antes para
+-- poder dar un mensaje decente; esto es la red de seguridad.
+--
+-- Si la fila de sistema todavía no existe (nace con la primera contraseña que
+-- se registra, ver app/admin/includes/registrar-clave.php), v_costo queda NULL
+-- y el trigger no bloquea nada: sin costo configurado no hay tope que aplicar.
+DELIMITER $$
+CREATE TRIGGER trg_alumnos_camisa_pago_insert
+BEFORE INSERT ON alumnos
+FOR EACH ROW
+BEGIN
+    DECLARE v_costo DECIMAL(7,2) DEFAULT NULL;
+
+    IF NEW.camisa_pago > 0 THEN
+        SELECT camisa_costo INTO v_costo FROM sistema WHERE id = 1;
+        IF v_costo IS NOT NULL AND NEW.camisa_pago > v_costo THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El pago de la camisa no puede exceder su costo.';
+        END IF;
+    END IF;
+END$$
+
+CREATE TRIGGER trg_alumnos_camisa_pago_update
+BEFORE UPDATE ON alumnos
+FOR EACH ROW
+BEGIN
+    DECLARE v_costo DECIMAL(7,2) DEFAULT NULL;
+
+    IF NEW.camisa_pago <> OLD.camisa_pago AND NEW.camisa_pago > 0 THEN
+        SELECT camisa_costo INTO v_costo FROM sistema WHERE id = 1;
+        IF v_costo IS NOT NULL AND NEW.camisa_pago > v_costo THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El pago de la camisa no puede exceder su costo.';
+        END IF;
+    END IF;
+END$$
+DELIMITER ;
 
 -- Catálogo de eventos individuales (a los que un alumno se inscribe uno por
 -- uno, sin equipo): ponencias y talleres del Día Académico o del Día

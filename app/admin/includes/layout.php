@@ -13,6 +13,7 @@ $ADMIN_NAV = [
     ['clave' => 'dashboard', 'icono' => 'dashboard', 'label' => 'Dashboard', 'href' => BASE_URL . '/admin/public/index.php'],
     ['clave' => 'alumnos', 'icono' => 'usuarios', 'label' => 'Alumnos', 'href' => BASE_URL . '/admin/public/alumnos.php'],
     ['clave' => 'trabajadores', 'icono' => 'maletin', 'label' => 'Personal', 'href' => BASE_URL . '/admin/public/trabajadores.php'],
+    ['clave' => 'camisas', 'icono' => 'camisa', 'label' => 'Camisas', 'href' => BASE_URL . '/admin/public/camisas.php'],
     ['clave' => 'eventos', 'icono' => 'lista', 'label' => 'Eventos', 'href' => BASE_URL . '/admin/public/eventos.php'],
     ['clave' => 'competiciones', 'icono' => 'trofeo', 'label' => 'Competiciones', 'href' => BASE_URL . '/admin/public/competiciones.php'],
     ['clave' => 'asistencias', 'icono' => 'qr', 'label' => 'Asistencias', 'href' => BASE_URL . '/admin/public/asistencias.php'],

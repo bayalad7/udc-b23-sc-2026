@@ -47,7 +47,7 @@ $pagina = min($pagina, $totalPaginas);
 $offset = ($pagina - 1) * $porPagina;
 
 $consulta = $pdo->prepare(
-    "SELECT id, numero_cuenta, nombre_completo, grado, grupo, correo_institucional, credencial_generada, foto_path
+    "SELECT id, numero_cuenta, nombre_completo, grado, grupo, correo_institucional, credencial_generada, foto_path, es_jefe
      FROM alumnos $whereSql ORDER BY nombre_completo LIMIT :limite OFFSET :offset"
 );
 foreach ($parametros as $clave => $valor) {
@@ -157,7 +157,13 @@ if ($mensajeError) {
                 <td class="px-4 py-3">
                     <?php fotoMiniatura($alumno['foto_path'], $alumno['nombre_completo']); ?>
                 </td>
-                <td class="px-4 py-3 font-medium"><?= htmlspecialchars($alumno['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
+                <td class="px-4 py-3 font-medium">
+                    <?= htmlspecialchars($alumno['nombre_completo'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php if ((int) $alumno['es_jefe'] === 1): ?>
+                    <span class="ml-1.5 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
+                          title="Lleva el control de camisas de su grado y grupo"><?= icono('camisa', 'h-3 w-3') ?> Jefe</span>
+                    <?php endif; ?>
+                </td>
                 <td class="px-4 py-3 text-center font-mono text-xs text-slate-500"><?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?></td>
                 <td class="px-4 py-3 text-center text-slate-500"><?= htmlspecialchars($alumno['grado'], ENT_QUOTES, 'UTF-8') ?>°<?= htmlspecialchars($alumno['grupo'], ENT_QUOTES, 'UTF-8') ?></td>
                 <td class="px-4 py-3 text-slate-500"><?= htmlspecialchars($alumno['correo_institucional'], ENT_QUOTES, 'UTF-8') ?></td>

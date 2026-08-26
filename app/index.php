@@ -16,6 +16,8 @@ $iconos = [
     'personal' => '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
     // lucide "list-checks"
     'lista' =>'<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
+    // lucide "shirt" (Camisas del grupo — jefes de grupo)
+    'camisa' => '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23"/>',
     // lucide "shield-check" (Panel de administración)
     'admin' => '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
 ];
@@ -55,6 +57,13 @@ $secciones = [
         'titulo' => 'Inscripciones a eventos',
         'descripcion' => 'Ponencias, talleres y concursos de la semana.',
         'href' => BASE_URL . '/inscripciones/public/index.php',
+        'disponible' => true,
+    ],
+    [
+        'icono' => 'camisa',
+        'titulo' => 'Camisas del grupo',
+        'descripcion' => 'Solo para el jefe de cada grado y grupo — control de quién encarga la camisa oficial y cuánto ha pagado.',
+        'href' => BASE_URL . '/camisas/public/index.php',
         'disponible' => true,
     ],
     [

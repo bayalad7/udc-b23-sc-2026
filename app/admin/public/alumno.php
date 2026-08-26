@@ -15,6 +15,9 @@ $pdo = require __DIR__ . '/../../config/db.php';
 $esNuevo = isset($_GET['nuevo']);
 $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
+require_once __DIR__ . '/../../camisas/includes/costo.php';
+$costoCamisa = camisaCosto($pdo);
+
 $alumno = [
     'id' => null,
     'numero_cuenta' => '',
@@ -24,6 +27,9 @@ $alumno = [
     'correo_institucional' => '',
     'camisa_corte' => '',
     'camisa_talla' => '',
+    'camisa_pedir' => 1,
+    'camisa_pago' => '0.00',
+    'es_jefe' => 0,
     'foto_path' => null,
     'credencial_generada' => 0,
     'fecha_registro' => null,
@@ -44,6 +50,19 @@ if (!$esNuevo) {
     $alumno = $fila;
 }
 
+// Quién lleva hoy el control de camisas de ese grado+grupo. Se muestra junto a
+// la casilla de jefe para que el staff no tenga que ir a buscarlo al listado
+// antes de reasignar el cargo (solo hay uno por grupo — ver uq_alumnos_jefe_grupo).
+$jefeDelGrupo = null;
+if ($alumno['grado'] !== '' && $alumno['grupo'] !== '') {
+    $consultaJefe = $pdo->prepare(
+        'SELECT id, nombre_completo FROM alumnos WHERE grado = :grado AND grupo = :grupo AND es_jefe = 1'
+    );
+    $consultaJefe->execute(['grado' => $alumno['grado'], 'grupo' => $alumno['grupo']]);
+    $filaJefe = $consultaJefe->fetch();
+    $jefeDelGrupo = $filaJefe === false ? null : $filaJefe;
+}
+
 require __DIR__ . '/../includes/layout.php';
 
 $mensajesExito = [
@@ -57,6 +76,10 @@ $mensajesError = [
     'numero_cuenta_invalido' => 'El número de cuenta debe tener 8 caracteres (letras/números).',
     'foto_invalida' => 'La fotografía es obligatoria y debe ser JPG o PNG de máximo 5 MB.',
     'cuenta_duplicada' => 'Ese número de cuenta ya está registrado por otro alumno.',
+    'jefe_duplicado' => 'Ese grado y grupo ya tiene jefe: ' . htmlspecialchars((string) ($_GET['detalle'] ?? 'otro alumno'), ENT_QUOTES, 'UTF-8') . '. Quítale el cargo antes de nombrar a alguien más.',
+    'monto_invalido' => 'El monto pagado no es válido: escribe una cantidad como 150 o 75.50.',
+    'pago_excede' => 'El pago no puede ser mayor al costo de la camisa (' . camisaMoneda($costoCamisa) . ').',
+    'pago_sin_pedido' => 'No se puede dejar un pago registrado a nombre de quien no encarga camisa: pon el pago en 0 o vuelve a marcar la casilla.',
     'error_servidor' => 'Ocurrió un error al guardar. Intenta de nuevo.',
     'tiene_dependientes' => 'No se puede eliminar: el alumno todavía tiene ' . htmlspecialchars((string) ($_GET['detalle'] ?? 'registros relacionados'), ENT_QUOTES, 'UTF-8') . '.',
 ];
@@ -226,6 +249,54 @@ if ($mensajeError) {
                             <option value="<?= $talla ?>" <?= $alumno['camisa_talla'] === $talla ? 'selected' : '' ?>><?= $etiqueta ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                </div>
+
+                <!-- Camisa del aniversario: el día a día de estos tres campos
+                     lo lleva el jefe de grupo desde app/camisas; aquí están
+                     para que el staff pueda corregir y para nombrar al jefe. -->
+                <div class="sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold">
+                        <?= icono('camisa', 'h-4 w-4 text-slate-400') ?>
+                        Camisa del aniversario
+                    </h3>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 has-[:checked]:border-slate-900 has-[:checked]:font-semibold has-[:checked]:text-slate-900">
+                            <input type="checkbox" name="camisa_pedir" value="1" <?= (int) $alumno['camisa_pedir'] === 1 ? 'checked' : '' ?>
+                                   class="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-slate-900">
+                            Encarga camisa
+                        </label>
+
+                        <div>
+                            <label for="camisa_pago" class="mb-1 block text-sm font-medium">Ha pagado</label>
+                            <div class="relative">
+                                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-sm text-slate-400">$</span>
+                                <input type="text" inputmode="decimal" id="camisa_pago" name="camisa_pago"
+                                       value="<?= number_format((float) $alumno['camisa_pago'], 2, '.', '') ?>"
+                                       class="w-full rounded-lg border border-slate-300 py-2 pl-6 pr-3 text-sm focus:border-slate-500 focus:outline-none">
+                            </div>
+                            <p class="mt-1 text-xs text-slate-500">Costo de la camisa: <?= camisaMoneda($costoCamisa) ?>.</p>
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 has-[:checked]:border-slate-900 has-[:checked]:font-semibold has-[:checked]:text-slate-900">
+                                <input type="checkbox" name="es_jefe" value="1" <?= (int) $alumno['es_jefe'] === 1 ? 'checked' : '' ?>
+                                       class="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-slate-900">
+                                Jefe de grupo
+                            </label>
+                            <p class="mt-1 text-xs text-slate-500">
+                                Podrá entrar a <span class="font-mono">camisas/public/index.php</span> con su número de cuenta y correo institucional,
+                                y llevar los pagos de su grado y grupo. Solo puede haber uno por grupo.
+                                <?php if ($jefeDelGrupo !== null && (int) $jefeDelGrupo['id'] !== (int) $alumno['id']): ?>
+                                <span class="mt-1 block text-amber-600">
+                                    Hoy el jefe de <?= htmlspecialchars((string) $alumno['grado'], ENT_QUOTES, 'UTF-8') ?>°<?= htmlspecialchars((string) $alumno['grupo'], ENT_QUOTES, 'UTF-8') ?>
+                                    es <a href="<?= BASE_URL ?>/admin/public/alumno.php?id=<?= (int) $jefeDelGrupo['id'] ?>" class="underline"><?= htmlspecialchars($jefeDelGrupo['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></a>;
+                                    quítale el cargo antes de nombrar a este alumno.
+                                </span>
+                                <?php endif; ?>
+                            </p>
+                        </div>
                     </div>
                 </div>
 

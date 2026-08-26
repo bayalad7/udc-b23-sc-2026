@@ -15,6 +15,13 @@ declare(strict_types=1);
 // grado/grupo y se cuenta como una columna más. Para el proveedor son la
 // misma camisa, así que el total de cada talla suma las dos.
 //
+// De `alumnos` cuentan SOLO los que tienen camisa_pedir = 1: el pre-registro
+// obliga a elegir talla, así que tener talla no significa que el alumno vaya a
+// encargar la camisa — eso lo confirma el jefe de su grupo desde app/camisas.
+// Sin este filtro se le encargarían al proveedor camisas de alumnos que nunca
+// la pidieron. El personal no tiene esa distinción: su registro en
+// app/trabajadores existe únicamente para pedir camisa.
+//
 // Incluir SIEMPRE con require_once: son constantes y funciones de archivo.
 
 /** Orden en que se muestran las tallas — el mismo del ENUM camisa_talla. */
@@ -37,6 +44,7 @@ function tallasCamisaResumen(PDO $pdo): array
 
     $porGradoGrupo = $pdo->query(
         'SELECT camisa_talla, grado, grupo, COUNT(*) AS total FROM alumnos
+         WHERE camisa_pedir = 1
          GROUP BY camisa_talla, grado, grupo'
     )->fetchAll();
     foreach ($porGradoGrupo as $fila) {
@@ -100,7 +108,7 @@ function camisaGrupoEtiqueta(string $codigo): string
 function camisaGruposValidos(PDO $pdo): array
 {
     $filas = $pdo->query(
-        'SELECT DISTINCT grado, grupo FROM alumnos ORDER BY grado, grupo'
+        'SELECT DISTINCT grado, grupo FROM alumnos WHERE camisa_pedir = 1 ORDER BY grado, grupo'
     )->fetchAll();
 
     $grupos = [];
@@ -122,19 +130,21 @@ function camisaGruposValidos(PDO $pdo): array
 function tallasCamisaDetalleAlumnos(PDO $pdo, array $codigosGrupo = []): array
 {
     $sql = 'SELECT numero_cuenta, nombre_completo, grado, grupo, camisa_corte, camisa_talla
-            FROM alumnos';
+            FROM alumnos WHERE camisa_pedir = 1';
     $parametros = [];
 
     if ($codigosGrupo !== []) {
         // Un par de placeholders por grupo (grado y grupo van por separado
         // porque son dos columnas); nunca se concatena el valor a la consulta.
+        // Los OR van entre paréntesis para que el filtro de camisa_pedir siga
+        // aplicando a todos los grupos y no solo al primero.
         $condiciones = [];
         foreach (array_values($codigosGrupo) as $i => $codigo) {
             $condiciones[] = "(grado = :grado$i AND grupo = :grupo$i)";
             $parametros["grado$i"] = substr($codigo, 0, 1);
             $parametros["grupo$i"] = substr($codigo, 1, 1);
         }
-        $sql .= ' WHERE ' . implode(' OR ', $condiciones);
+        $sql .= ' AND (' . implode(' OR ', $condiciones) . ')';
     }
 
     $sql .= ' ORDER BY grado, grupo, nombre_completo';
@@ -175,8 +185,12 @@ function tallasCamisaSerie(PDO $pdo, string $tabla, array $tallas): array
         throw new InvalidArgumentException('Tabla no permitida: ' . $tabla);
     }
 
+    // Solo `alumnos` tiene camisa_pedir: el personal de `trabajadores` se
+    // registra únicamente para pedir camisa, así que ahí cuentan todos.
+    $filtro = $tabla === 'alumnos' ? 'WHERE camisa_pedir = 1' : '';
+
     $conteo = [];
-    foreach ($pdo->query("SELECT camisa_talla, COUNT(*) AS total FROM $tabla GROUP BY camisa_talla")->fetchAll() as $fila) {
+    foreach ($pdo->query("SELECT camisa_talla, COUNT(*) AS total FROM $tabla $filtro GROUP BY camisa_talla")->fetchAll() as $fila) {
         $conteo[$fila['camisa_talla']] = (int) $fila['total'];
     }
 
