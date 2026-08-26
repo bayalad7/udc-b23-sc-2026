@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source not "./tailwind.css";
 
 /* Marca de agua institucional (logo del Aniversario #45) detrás del
    contenido de cada página. mix-blend-mode: multiply hace que el fondo

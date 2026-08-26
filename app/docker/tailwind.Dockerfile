@@ -22,4 +22,11 @@ ENTRYPOINT ["tailwindcss"]
 # --watch=always: sin esto, el CLI deja de vigilar en cuanto detecta que el
 # stdin está cerrado — que es siempre el caso en un contenedor en segundo
 # plano (docker compose up -d), así que salía casi de inmediato sin compilar.
-CMD ["-i", "/var/www/html/assets/css/input.css", "-o", "/var/www/html/assets/css/tailwind.css", "--watch=always"]
+#
+# --poll=1000: en un bind mount de Windows (Docker Desktop) los eventos de
+# inotify del host no llegan al contenedor, así que el watch se quedaba
+# "corriendo" sin recompilar nunca — se detectó con el CSS parado casi 4
+# horas mientras se editaban los .php. Sondear cada segundo cuesta muy poco
+# en un proyecto de este tamaño y es la diferencia entre que el CSS se
+# regenere solo o subir la página con clases sin generar.
+CMD ["-i", "/var/www/html/assets/css/input.css", "-o", "/var/www/html/assets/css/tailwind.css", "--watch=always", "--poll=1000"]
