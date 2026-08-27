@@ -15,17 +15,31 @@ declare(strict_types=1);
 // grado/grupo y se cuenta como una columna más. Para el proveedor son la
 // misma camisa, así que el total de cada talla suma las dos.
 //
-// De `alumnos` cuentan SOLO los que tienen camisa_pedir = 1: el pre-registro
-// obliga a elegir talla, así que tener talla no significa que el alumno vaya a
-// encargar la camisa — eso lo confirma el jefe de su grupo desde app/camisas.
-// Sin este filtro se le encargarían al proveedor camisas de alumnos que nunca
-// la pidieron. El personal no tiene esa distinción: su registro en
-// app/trabajadores existe únicamente para pedir camisa.
+// De `alumnos` cuentan SOLO los que encargaron camisa Y ya abonaron algo
+// (ver CAMISA_ALUMNOS_FILTRO): el pre-registro obliga a elegir talla, así que
+// tener talla no significa que el alumno vaya a encargar la camisa — eso lo
+// confirma el jefe de su grupo desde app/camisas, y el abono es lo que
+// respalda el pedido. Sin este filtro se le encargarían al proveedor camisas
+// de alumnos que nunca la pidieron o que no han pagado un peso. El personal no
+// tiene esa distinción: su registro en app/trabajadores existe únicamente para
+// pedir camisa.
 //
 // Incluir SIEMPRE con require_once: son constantes y funciones de archivo.
 
 /** Orden en que se muestran las tallas — el mismo del ENUM camisa_talla. */
 const CAMISA_TALLAS_ORDEN = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+
+/**
+ * Condición SQL que define qué alumno entra al pedido: la encargó y lleva
+ * pagado algo. Vive en una constante porque la usan las cuatro consultas de
+ * `alumnos` de este archivo (resumen, gráfica, detalle y selector de grupos);
+ * si cada una la escribiera por su cuenta, cambiar el criterio en una y no en
+ * las otras dejaría el resumen sin cuadrar con el detalle.
+ *
+ * `camisa_pago > 0` ya descarta el NULL en SQL (NULL > 0 no es verdadero),
+ * pero se deja el IS NOT NULL escrito para que la regla se lea completa.
+ */
+const CAMISA_ALUMNOS_FILTRO = 'camisa_pedir = 1 AND camisa_pago IS NOT NULL AND camisa_pago > 0';
 
 /** Etiqueta de la columna del personal en el resumen (no es un grupo escolar). */
 const CAMISA_COLUMNA_PERSONAL = 'Personal';
@@ -44,7 +58,7 @@ function tallasCamisaResumen(PDO $pdo): array
 
     $porGradoGrupo = $pdo->query(
         'SELECT camisa_talla, grado, grupo, COUNT(*) AS total FROM alumnos
-         WHERE camisa_pedir = 1
+         WHERE ' . CAMISA_ALUMNOS_FILTRO . '
          GROUP BY camisa_talla, grado, grupo'
     )->fetchAll();
     foreach ($porGradoGrupo as $fila) {
@@ -108,7 +122,7 @@ function camisaGrupoEtiqueta(string $codigo): string
 function camisaGruposValidos(PDO $pdo): array
 {
     $filas = $pdo->query(
-        'SELECT DISTINCT grado, grupo FROM alumnos WHERE camisa_pedir = 1 ORDER BY grado, grupo'
+        'SELECT DISTINCT grado, grupo FROM alumnos WHERE ' . CAMISA_ALUMNOS_FILTRO . ' ORDER BY grado, grupo'
     )->fetchAll();
 
     $grupos = [];
@@ -130,7 +144,7 @@ function camisaGruposValidos(PDO $pdo): array
 function tallasCamisaDetalleAlumnos(PDO $pdo, array $codigosGrupo = []): array
 {
     $sql = 'SELECT numero_cuenta, nombre_completo, grado, grupo, camisa_corte, camisa_talla
-            FROM alumnos WHERE camisa_pedir = 1';
+            FROM alumnos WHERE ' . CAMISA_ALUMNOS_FILTRO;
     $parametros = [];
 
     if ($codigosGrupo !== []) {
@@ -185,9 +199,10 @@ function tallasCamisaSerie(PDO $pdo, string $tabla, array $tallas): array
         throw new InvalidArgumentException('Tabla no permitida: ' . $tabla);
     }
 
-    // Solo `alumnos` tiene camisa_pedir: el personal de `trabajadores` se
-    // registra únicamente para pedir camisa, así que ahí cuentan todos.
-    $filtro = $tabla === 'alumnos' ? 'WHERE camisa_pedir = 1' : '';
+    // Solo `alumnos` tiene camisa_pedir/camisa_pago: el personal de
+    // `trabajadores` se registra únicamente para pedir camisa, así que ahí
+    // cuentan todos.
+    $filtro = $tabla === 'alumnos' ? 'WHERE ' . CAMISA_ALUMNOS_FILTRO : '';
 
     $conteo = [];
     foreach ($pdo->query("SELECT camisa_talla, COUNT(*) AS total FROM $tabla $filtro GROUP BY camisa_talla")->fetchAll() as $fila) {

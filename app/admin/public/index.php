@@ -62,6 +62,8 @@ if ($claveYaRegistrada && adminAutorizado()) {
     // --- 5. Tallas de camisa solicitadas (pedido al proveedor) ---------------
     // El pedido cubre alumnos Y personal: las dos poblaciones se suman por
     // talla (ver includes/tallas-camisa.php, compartido con la exportación).
+    // De los alumnos solo entran los que encargaron camisa y ya abonaron algo
+    // (CAMISA_ALUMNOS_FILTRO).
     require_once __DIR__ . '/../includes/tallas-camisa.php';
 
     $resumenCamisa = tallasCamisaResumen($pdo);
@@ -355,11 +357,11 @@ if ($claveYaRegistrada && adminAutorizado()) {
                 <?php endif; ?>
             </div>
             <?php if ($tallasCamisa === []): ?>
-            <p class="text-sm text-slate-500">Todavía nadie encarga camisa: ni alumnos (con camisa_pedir) ni personal.</p>
+            <p class="text-sm text-slate-500">Todavía nadie encarga camisa: ni alumnos (con camisa pedir y algún pago registrado) ni personal.</p>
             <?php else: ?>
             <div class="h-64"><canvas id="grafica-tallas-camisa"></canvas></div>
             <p class="mt-2 text-xs text-slate-400">
-                Referencia para el pedido al proveedor — incluye al personal y solo a los alumnos que sí encargan camisa.
+                Referencia para el pedido al proveedor — incluye al personal y solo a los alumnos que encargan camisa y ya llevan algún pago.
                 Los pagos se llevan en <a href="<?= BASE_URL ?>/admin/public/camisas.php" class="underline hover:text-slate-600">Camisas</a>.
             </p>
             <?php endif; ?>
