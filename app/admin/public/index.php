@@ -59,25 +59,25 @@ if ($claveYaRegistrada && adminAutorizado()) {
          ORDER BY c.dia, c.hora_inicio"
     )->fetchAll();
 
-    // --- 5. Tallas de camisa solicitadas (pedido al proveedor) ---------------
-    // El pedido cubre alumnos Y personal: las dos poblaciones se suman por
-    // talla (ver includes/tallas-camisa.php, compartido con la exportación).
-    // De los alumnos solo entran los que encargaron camisa y ya abonaron algo
-    // (CAMISA_ALUMNOS_FILTRO).
+    // --- 5. Tallas de camisa solicitadas (pedidos al proveedor) --------------
+    // Son DOS pedidos independientes que se cotizan y se encargan por separado
+    // —alumnos por un lado, personal por el otro—, así que cada uno tiene su
+    // propio resumen y en ningún lado se suman (ver includes/tallas-camisa.php,
+    // compartido con la exportación). De los alumnos solo entran los que
+    // encargaron camisa y ya abonaron algo (CAMISA_ALUMNOS_FILTRO).
     require_once __DIR__ . '/../includes/tallas-camisa.php';
 
-    $resumenCamisa = tallasCamisaResumen($pdo);
-    $tallasCamisa = $resumenCamisa['tallas'];
-    $columnasCamisa = $resumenCamisa['columnas'];
-    $tallasCamisaPivote = $resumenCamisa['pivote'];
-    $tallasCamisaTotales = $resumenCamisa['totales'];
+    $resumenCamisaAlumnos = tallasCamisaResumenAlumnos($pdo);
+    $resumenCamisaPersonal = tallasCamisaResumenPersonal($pdo);
 
     $alumnosCamisaPorGrupo = tallasCamisaDetalleAlumnos($pdo);
     $personalCamisaPorTipo = tallasCamisaDetallePersonal($pdo);
     $gruposCamisaDescarga = camisaGruposValidos($pdo);
 
-    // Series de la gráfica: una barra apilada por talla, para que la altura
-    // sea lo que hay que encargarle al proveedor.
+    // Series de la gráfica: una barra por población al lado de la otra (no
+    // apiladas — apilarlas dibujaría un total que nadie va a encargar), sobre
+    // el eje común de las tallas que aparecen en cualquiera de los dos pedidos.
+    $tallasCamisa = camisaTallasUnion($resumenCamisaAlumnos['tallas'], $resumenCamisaPersonal['tallas']);
     $serieCamisaAlumnos = tallasCamisaSerie($pdo, 'alumnos', $tallasCamisa);
     $serieCamisaPersonal = tallasCamisaSerie($pdo, 'trabajadores', $tallasCamisa);
 
@@ -361,7 +361,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
             <?php else: ?>
             <div class="h-64"><canvas id="grafica-tallas-camisa"></canvas></div>
             <p class="mt-2 text-xs text-slate-400">
-                Referencia para el pedido al proveedor — incluye al personal y solo a los alumnos que encargan camisa y ya llevan algún pago.
+                Son dos pedidos independientes: alumnos por un lado —solo los que encargan camisa y ya llevan algún pago— y personal por el otro. Los números no se suman entre sí.
                 Los pagos se llevan en <a href="<?= BASE_URL ?>/admin/public/camisas.php" class="underline hover:text-slate-600">Camisas</a>.
             </p>
             <?php endif; ?>
@@ -629,43 +629,71 @@ if ($claveYaRegistrada && adminAutorizado()) {
                 </button>
             </div>
 
-            <div class="mb-2 flex items-center justify-between gap-2">
-                <h4 class="text-sm font-semibold text-slate-700">Resumen por talla</h4>
+            <!-- Un resumen por población, cada uno con su descarga: son dos
+                 pedidos independientes y en ningún lado se suman entre sí. Los
+                 dos bloques se pintan con el mismo markup porque las dos
+                 funciones de resumen devuelven la misma estructura; escribir
+                 dos tablas a mano invitaría a que se fueran separando. -->
+            <?php foreach ([
+                [
+                    'titulo' => 'Resumen por talla — Alumnos',
+                    'vista' => 'resumen_alumnos',
+                    'datos' => $resumenCamisaAlumnos,
+                    'vacio' => 'Todavía ningún alumno encarga camisa con pago registrado.',
+                    'separacion' => '',
+                ],
+                [
+                    'titulo' => 'Resumen por talla — Personal',
+                    'vista' => 'resumen_personal',
+                    'datos' => $resumenCamisaPersonal,
+                    'vacio' => 'Todavía no hay personal registrado.',
+                    'separacion' => 'mt-8 pt-2',
+                ],
+            ] as $bloqueResumen): ?>
+            <div class="mb-2 flex items-center justify-between gap-2 <?= $bloqueResumen['separacion'] ?>">
+                <h4 class="text-sm font-semibold text-slate-700"><?= $bloqueResumen['titulo'] ?></h4>
+                <?php if ($bloqueResumen['datos']['tallas'] !== []): ?>
                 <div class="flex shrink-0 items-center gap-2">
-                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=xlsx"
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=<?= $bloqueResumen['vista'] ?>&amp;formato=xlsx"
                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
                         <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
                     </a>
-                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=resumen&amp;formato=pdf"
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-tallas-camisa.php?vista=<?= $bloqueResumen['vista'] ?>&amp;formato=pdf"
                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
                         <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
                     </a>
                 </div>
+                <?php endif; ?>
             </div>
+            <?php if ($bloqueResumen['datos']['tallas'] === []): ?>
+            <p class="rounded-lg border border-slate-200 px-3 py-4 text-center text-sm text-slate-500"><?= $bloqueResumen['vacio'] ?></p>
+            <?php else: ?>
             <div class="max-h-72 overflow-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="sticky top-0 bg-slate-50">
                         <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
                             <th class="px-3 py-2 text-center">Talla</th>
-                            <?php foreach ($columnasCamisa as $columna): ?>
-                            <th class="px-3 py-2 text-center <?= $columna === CAMISA_COLUMNA_PERSONAL ? 'border-l border-slate-300' : '' ?>"><?= htmlspecialchars($columna, ENT_QUOTES, 'UTF-8') ?></th>
+                            <?php foreach ($bloqueResumen['datos']['columnas'] as $columna): ?>
+                            <th class="px-3 py-2 text-center"><?= htmlspecialchars($columna, ENT_QUOTES, 'UTF-8') ?></th>
                             <?php endforeach; ?>
                             <th class="px-3 py-2 text-center">Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($tallasCamisa as $talla): ?>
+                        <?php foreach ($bloqueResumen['datos']['tallas'] as $talla): ?>
                         <tr class="border-b border-slate-100 last:border-0">
                             <td class="px-3 py-2 text-center font-medium"><?= htmlspecialchars($talla, ENT_QUOTES, 'UTF-8') ?></td>
-                            <?php foreach ($columnasCamisa as $columna): ?>
-                            <td class="px-3 py-2 text-center text-slate-500 <?= $columna === CAMISA_COLUMNA_PERSONAL ? 'border-l border-slate-300' : '' ?>"><?= number_format($tallasCamisaPivote[$talla][$columna] ?? 0) ?></td>
+                            <?php foreach ($bloqueResumen['datos']['columnas'] as $columna): ?>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= number_format($bloqueResumen['datos']['pivote'][$talla][$columna] ?? 0) ?></td>
                             <?php endforeach; ?>
-                            <td class="px-3 py-2 text-center font-medium"><?= number_format($tallasCamisaTotales[$talla]) ?></td>
+                            <td class="px-3 py-2 text-center font-medium"><?= number_format($bloqueResumen['datos']['totales'][$talla]) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
+            <?php endif; ?>
+            <?php endforeach; ?>
             <div class="mb-2 mt-8 flex items-center justify-between gap-2 pt-2">
                 <h4 class="text-sm font-semibold text-slate-700">Detalle por alumno</h4>
             </div>
@@ -930,9 +958,10 @@ if ($claveYaRegistrada && adminAutorizado()) {
         <?php endif; ?>
 
         <?php if ($tallasCamisa !== []): ?>
-        // Barras apiladas: la altura total de cada talla es lo que hay que
-        // encargarle al proveedor (alumnos + personal), y cada segmento dice
-        // cuánto de eso va a cada población.
+        // Barras agrupadas, una por población y NO apiladas: son dos pedidos
+        // independientes, así que la altura que hay que leer es la de cada
+        // barra por separado. Apilarlas dibujaría un total combinado que nadie
+        // va a encargar.
         new Chart(document.getElementById('grafica-tallas-camisa'), {
             type: 'bar',
             data: {
@@ -955,15 +984,11 @@ if ($claveYaRegistrada && adminAutorizado()) {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { stacked: true, grid: { display: false } },
-                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: COLOR_REJILLA } }
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: COLOR_REJILLA } }
                 },
                 plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { callbacks: { footer: function (elementos) {
-                        var total = elementos.reduce(function (suma, e) { return suma + e.parsed.y; }, 0);
-                        return 'Total: ' + total;
-                    } } }
+                    legend: { position: 'bottom' }
                 }
             }
         });

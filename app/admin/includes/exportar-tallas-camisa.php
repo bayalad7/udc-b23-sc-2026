@@ -19,7 +19,12 @@ $pdo = require __DIR__ . '/../../config/db.php';
 $vista = trim((string) ($_GET['vista'] ?? ''));
 $formato = trim((string) ($_GET['formato'] ?? ''));
 
-if (!in_array($vista, ['resumen', 'detalle', 'detalle_personal'], true) || !in_array($formato, ['xlsx', 'pdf'], true)) {
+// El resumen se descarga por población y no en un solo archivo: alumnos y
+// personal son pedidos independientes, y juntarlos en una descarga invitaría a
+// levantar un solo pedido con la suma de los dos.
+$vistasResumen = ['resumen_alumnos', 'resumen_personal'];
+
+if (!in_array($vista, [...$vistasResumen, 'detalle', 'detalle_personal'], true) || !in_array($formato, ['xlsx', 'pdf'], true)) {
     http_response_code(400);
     exit('Parámetros inválidos.');
 }
@@ -32,12 +37,16 @@ if (!in_array($vista, ['resumen', 'detalle', 'detalle_personal'], true) || !in_a
 
 require_once __DIR__ . '/tallas-camisa.php';
 
-if ($vista === 'resumen') {
-    $resumenCamisa = tallasCamisaResumen($pdo);
+if (in_array($vista, $vistasResumen, true)) {
+    $esResumenAlumnos = $vista === 'resumen_alumnos';
+    $resumenCamisa = $esResumenAlumnos
+        ? tallasCamisaResumenAlumnos($pdo)
+        : tallasCamisaResumenPersonal($pdo);
     $tallasCamisa = $resumenCamisa['tallas'];
     $columnasCamisa = $resumenCamisa['columnas'];
     $tallasCamisaPivote = $resumenCamisa['pivote'];
     $tallasCamisaTotales = $resumenCamisa['totales'];
+    $poblacionResumen = $esResumenAlumnos ? 'Alumnos' : 'Personal';
 } elseif ($vista === 'detalle') {
     // Selección de grupos del selector del modal. Vacío = padrón completo, que
     // se entrega como una sola lista corrida (el comportamiento de siempre);
@@ -73,8 +82,8 @@ if ($formato === 'xlsx') {
     $hoja = new Spreadsheet();
     $activa = $hoja->getActiveSheet();
 
-    if ($vista === 'resumen') {
-        $activa->setTitle('Resumen por talla');
+    if (in_array($vista, $vistasResumen, true)) {
+        $activa->setTitle('Resumen ' . $poblacionResumen);
         $encabezados = array_merge(['Talla'], $columnasCamisa, ['Total']);
         $ultimaColumna = Coordinate::stringFromColumnIndex(count($encabezados));
         $activa->fromArray($encabezados, null, 'A1');
@@ -196,8 +205,9 @@ $estilos = '<style>
     div.hoja-grupo:first-of-type { page-break-before: avoid; }
 </style>';
 
-if ($vista === 'resumen') {
-    $html = $estilos . '<h1>Tallas de camisa solicitadas — Resumen por talla</h1><table><thead><tr><th>Talla</th>';
+if (in_array($vista, $vistasResumen, true)) {
+    $html = $estilos . '<h1>Tallas de camisa solicitadas — Resumen por talla · ' . $poblacionResumen
+        . '</h1><table><thead><tr><th>Talla</th>';
     foreach ($columnasCamisa as $columna) {
         $html .= '<th>' . htmlspecialchars($columna, ENT_QUOTES, 'UTF-8') . '</th>';
     }
