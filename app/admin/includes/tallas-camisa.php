@@ -53,8 +53,17 @@ const CAMISA_ALUMNOS_FILTRO = 'camisa_pedir = 1 AND camisa_pago IS NOT NULL AND 
  * Recorrer CAMISA_TALLAS_ORDEN y no las llaves del pivote deja el orden fijo
  * en vez de depender de en qué momento se insertó cada fila.
  *
+ * Además de los totales por talla (una fila), devuelve los totales por columna
+ * —cuántas camisas lleva cada grado/grupo o cada tipo de personal, sumando
+ * todas sus tallas— y el total general de la población. Es lo que se le pide
+ * al proveedor de ese pedido, así que se calcula aquí y no en la vista: la
+ * tabla del dashboard y el archivo descargado tienen que dar el mismo número.
+ * El total general suma SOLO dentro de una población; los dos resúmenes nunca
+ * se suman entre sí (ver la nota de arriba).
+ *
  * Devuelve ['tallas' => string[], 'columnas' => string[], 'pivote' =>
- * array<string, array<string, int>>, 'totales' => array<string, int>].
+ * array<string, array<string, int>>, 'totales' => array<string, int>,
+ * 'totales_columna' => array<string, int>, 'total_general' => int].
  */
 function camisaResumenDesdePivote(array $pivote, array $columnas): array
 {
@@ -68,7 +77,24 @@ function camisaResumenDesdePivote(array $pivote, array $columnas): array
         $totales[$talla] = array_sum($pivote[$talla]);
     }
 
-    return ['tallas' => $tallas, 'columnas' => $columnas, 'pivote' => $pivote, 'totales' => $totales];
+    // Se arrancan en 0 recorriendo $columnas y no el pivote para que una
+    // columna sin ninguna camisa en la talla que sea igual salga con su 0 y no
+    // desaparezca del renglón de totales.
+    $totalesColumna = array_fill_keys($columnas, 0);
+    foreach ($tallas as $talla) {
+        foreach ($columnas as $columna) {
+            $totalesColumna[$columna] += $pivote[$talla][$columna] ?? 0;
+        }
+    }
+
+    return [
+        'tallas' => $tallas,
+        'columnas' => $columnas,
+        'pivote' => $pivote,
+        'totales' => $totales,
+        'totales_columna' => $totalesColumna,
+        'total_general' => array_sum($totales),
+    ];
 }
 
 /**

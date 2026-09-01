@@ -46,6 +46,8 @@ if (in_array($vista, $vistasResumen, true)) {
     $columnasCamisa = $resumenCamisa['columnas'];
     $tallasCamisaPivote = $resumenCamisa['pivote'];
     $tallasCamisaTotales = $resumenCamisa['totales'];
+    $tallasCamisaTotalesColumna = $resumenCamisa['totales_columna'];
+    $tallasCamisaTotalGeneral = $resumenCamisa['total_general'];
     $poblacionResumen = $esResumenAlumnos ? 'Alumnos' : 'Personal';
 } elseif ($vista === 'detalle') {
     // Selección de grupos del selector del modal. Vacío = padrón completo, que
@@ -99,6 +101,17 @@ if ($formato === 'xlsx') {
             $activa->fromArray($renglon, null, 'A' . $fila);
             $fila++;
         }
+
+        // Mismo renglón de totales que la tabla del dashboard: total de cada
+        // grado/grupo (o tipo) y total del pedido completo de esta población.
+        $renglonTotales = ['Total'];
+        foreach ($columnasCamisa as $columna) {
+            $renglonTotales[] = $tallasCamisaTotalesColumna[$columna];
+        }
+        $renglonTotales[] = $tallasCamisaTotalGeneral;
+        $activa->fromArray($renglonTotales, null, 'A' . $fila);
+        $activa->getStyle('A' . $fila . ':' . $ultimaColumna . $fila)->getFont()->setBold(true);
+
         foreach (range('A', $ultimaColumna) as $columna) {
             $activa->getColumnDimension($columna)->setAutoSize(true);
         }
@@ -201,6 +214,7 @@ $estilos = '<style>
     th { background: #f1f5f9; text-align: center; }
     td.centro, th.centro { text-align: center; }
     tr.grupo td { background: #e2e8f0; font-weight: bold; }
+    tr.totales td { background: #f1f5f9; }
     div.hoja-grupo { page-break-before: always; }
     div.hoja-grupo:first-of-type { page-break-before: avoid; }
 </style>';
@@ -219,7 +233,11 @@ if (in_array($vista, $vistasResumen, true)) {
         }
         $html .= '<td class="centro"><strong>' . $tallasCamisaTotales[$talla] . '</strong></td></tr>';
     }
-    $html .= '</tbody></table>';
+    $html .= '</tbody><tfoot><tr class="totales"><td class="centro"><strong>Total</strong></td>';
+    foreach ($columnasCamisa as $columna) {
+        $html .= '<td class="centro"><strong>' . $tallasCamisaTotalesColumna[$columna] . '</strong></td>';
+    }
+    $html .= '<td class="centro"><strong>' . $tallasCamisaTotalGeneral . '</strong></td></tr></tfoot></table>';
 } elseif ($vista === 'detalle_personal') {
     $html = $estilos . '<h1>Tallas de camisa solicitadas — Detalle por trabajador</h1><table><thead><tr>'
         . '<th class="centro">#</th><th>No. trabajador</th><th>Nombre completo</th><th class="centro">Corte</th><th class="centro">Talla</th>'

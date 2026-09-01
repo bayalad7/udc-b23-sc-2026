@@ -690,6 +690,20 @@ if ($claveYaRegistrada && adminAutorizado()) {
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
+                    <!-- Total de camisas de cada columna y de toda la
+                         población: es la cantidad que se le encarga al
+                         proveedor de ESTE pedido. Va pegado abajo (sticky)
+                         porque la tabla hace scroll y el número que más se
+                         consulta no debe quedar fuera de vista. -->
+                    <tfoot class="sticky bottom-0 bg-slate-50">
+                        <tr class="border-t border-slate-200 font-semibold">
+                            <td class="px-3 py-2 text-center">Total</td>
+                            <?php foreach ($bloqueResumen['datos']['columnas'] as $columna): ?>
+                            <td class="px-3 py-2 text-center"><?= number_format($bloqueResumen['datos']['totales_columna'][$columna]) ?></td>
+                            <?php endforeach; ?>
+                            <td class="px-3 py-2 text-center"><?= number_format($bloqueResumen['datos']['total_general']) ?></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
             <?php endif; ?>

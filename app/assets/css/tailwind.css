@@ -311,6 +311,9 @@
   .right-1 {
     right: var(--spacing);
   }
+  .bottom-0 {
+    bottom: 0px;
+  }
   .bottom-3 {
     bottom: calc(var(--spacing) * 3);
   }
@@ -832,10 +835,6 @@
   .border-b {
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
-  }
-  .border-l {
-    border-left-style: var(--tw-border-style);
-    border-left-width: 1px;
   }
   .border-l-4 {
     border-left-style: var(--tw-border-style);
