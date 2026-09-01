@@ -57,9 +57,11 @@ foreach ($pdo->query('SELECT id, nombre_completo, grado, grupo FROM alumnos WHER
 }
 
 $grupos = [];
-$totales = ['piden' => 0, 'abonan' => 0, 'liquidados' => 0, 'recaudado' => 0.0, 'esperado' => 0.0, 'pendiente' => 0.0, 'sin_jefe' => 0];
+$totales = ['piden' => 0, 'abonan' => 0, 'liquidados' => 0, 'confirman' => 0, 'recaudado' => 0.0, 'esperado' => 0.0, 'pendiente' => 0.0, 'sin_jefe' => 0];
 foreach ($filasGrupo as $fila) {
     $piden = (int) $fila['piden'];
+    $abonan = (int) $fila['abonan'];
+    $liquidados = (int) $fila['liquidados'];
     $recaudado = (float) $fila['recaudado'];
     $esperado = $piden * $costo;
     $clave = $fila['grado'] . $fila['grupo'];
@@ -69,16 +71,18 @@ foreach ($filasGrupo as $fila) {
         'jefe' => $jefesPorGrupo[$clave] ?? null,
         'total' => (int) $fila['total'],
         'piden' => $piden,
-        'abonan' => (int) $fila['abonan'],
-        'liquidados' => (int) $fila['liquidados'],
+        'abonan' => $abonan,
+        'liquidados' => $liquidados,
+        'confirman' => $abonan + $liquidados,
         'recaudado' => $recaudado,
         'esperado' => $esperado,
         'pendiente' => max(0.0, $esperado - $recaudado),
     ];
 
     $totales['piden'] += $piden;
-    $totales['abonan'] += (int) $fila['abonan'];
-    $totales['liquidados'] += (int) $fila['liquidados'];
+    $totales['abonan'] += $abonan;
+    $totales['liquidados'] += $liquidados;
+    $totales['confirman'] += $abonan + $liquidados;
     $totales['recaudado'] += $recaudado;
     $totales['esperado'] += $esperado;
     if (!isset($jefesPorGrupo[$clave])) {
@@ -219,13 +223,14 @@ if ($mensajeError) {
                     <th class="px-3 py-2 text-center">Encargan</th>
                     <th class="px-3 py-2 text-center">Abonan</th>
                     <th class="px-3 py-2 text-center">Liquidados</th>
+                    <th class="px-3 py-2 text-center">Confirman</th>
                     <th class="px-3 py-2 text-right">Recaudado</th>
                     <th class="px-3 py-2 text-right">Por cobrar</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if ($grupos === []): ?>
-                <tr><td colspan="7" class="px-3 py-8 text-center text-slate-500">Todavía no hay alumnos registrados.</td></tr>
+                <tr><td colspan="8" class="px-3 py-8 text-center text-slate-500">Todavía no hay alumnos registrados.</td></tr>
                 <?php endif; ?>
                 <?php foreach ($grupos as $g): ?>
                 <tr class="border-b border-slate-100 last:border-0">
@@ -242,6 +247,7 @@ if ($mensajeError) {
                     <td class="px-3 py-2 text-center text-slate-500"><?= $g['piden'] ?> <span class="text-xs text-slate-400">de <?= $g['total'] ?></span></td>
                     <td class="px-3 py-2 text-center text-slate-500"><?= $g['abonan'] ?></td>
                     <td class="px-3 py-2 text-center text-slate-500"><?= $g['liquidados'] ?></td>
+                    <td class="px-3 py-2 text-center font-medium text-slate-700"><?= $g['confirman'] ?></td>
                     <td class="px-3 py-2 text-right font-medium text-emerald-700"><?= camisaMoneda($g['recaudado']) ?></td>
                     <td class="px-3 py-2 text-right font-medium <?= $g['pendiente'] > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= camisaMoneda($g['pendiente']) ?></td>
                 </tr>
@@ -254,6 +260,7 @@ if ($mensajeError) {
                     <td class="px-3 py-2 text-center"><?= number_format($totales['piden']) ?></td>
                     <td class="px-3 py-2 text-center"><?= number_format($totales['abonan']) ?></td>
                     <td class="px-3 py-2 text-center"><?= number_format($totales['liquidados']) ?></td>
+                    <td class="px-3 py-2 text-center"><?= number_format($totales['confirman']) ?></td>
                     <td class="px-3 py-2 text-right text-emerald-700"><?= camisaMoneda($totales['recaudado']) ?></td>
                     <td class="px-3 py-2 text-right <?= $totales['pendiente'] > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= camisaMoneda($totales['pendiente']) ?></td>
                 </tr>
