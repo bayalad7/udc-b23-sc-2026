@@ -76,7 +76,16 @@ $puntoControl = (string) $_SESSION['punto_control'];
         <p>No se pudo acceder a la cámara. Revisa los permisos del navegador y que la página se abra por HTTPS (o http://localhost en desarrollo).</p>
     </div>
 
-    <div id="resultado" class="hidden mt-4 flex-col items-center gap-3 rounded-2xl p-5 text-center"></div>
+    <!-- El resultado sale en un modal y ya no debajo del recuadro de la
+         cámara: ahí quedaba fuera de la pantalla del celular y el operador
+         tenía que hacer scroll para ver si el alumno entró o salió, con el
+         siguiente alumno ya enfrente. El diálogo lo abre y lo cierra
+         assets/js/escaneo.js (se cierra solo al reanudar el escaneo). El
+         color de fondo lo pone el JS en #resultado, por eso el <dialog> va
+         transparente y sin padding. -->
+    <dialog id="resultado-modal" class="m-auto w-[90%] max-w-sm rounded-2xl border-0 bg-transparent p-0 text-white backdrop:bg-slate-950/80">
+        <div id="resultado" class="flex max-h-[85vh] flex-col items-center gap-3 overflow-auto rounded-2xl p-5 text-center"></div>
+    </dialog>
 
     <template id="plantilla-resultado">
         <div class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide" data-rol="etiqueta"></div>

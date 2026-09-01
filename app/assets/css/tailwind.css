@@ -1446,6 +1446,12 @@
       background-color: color-mix(in oklab, var(--color-slate-900) 70%, transparent);
     }
   }
+  .backdrop\:bg-slate-950\/80::backdrop {
+    background-color: color-mix(in srgb, oklch(12.9% 0.042 264.695) 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-slate-950) 80%, transparent);
+    }
+  }
   .last\:border-0:last-child {
     border-style: var(--tw-border-style);
     border-width: 0px;

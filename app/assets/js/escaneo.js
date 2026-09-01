@@ -21,6 +21,7 @@
     var estadoTexto = document.getElementById('estado-escaneo');
     var avisoSinCamara = document.getElementById('sin-camara');
     var contenedorResultado = document.getElementById('resultado');
+    var modalResultado = document.getElementById('resultado-modal');
     var plantillaResultado = document.getElementById('plantilla-resultado');
 
     var ESTILOS_RESULTADO = {
@@ -128,7 +129,7 @@
     }
 
     function mostrarResultado(datos) {
-        estadoTexto.textContent = 'Listo — revisa el resultado abajo';
+        estadoTexto.textContent = 'Listo — revisa el resultado';
 
         var clon = plantillaResultado.content.cloneNode(true);
         var elementoEtiqueta = clon.querySelector('[data-rol="etiqueta"]');
@@ -142,7 +143,7 @@
         var tipoResultado = datos.ok ? datos.tipo_resultado : 'error';
         var estilo = ESTILOS_RESULTADO[tipoResultado] || ESTILOS_RESULTADO.error;
 
-        contenedorResultado.className = 'mt-4 flex flex-col items-center gap-3 rounded-2xl p-5 text-center ' + estilo.fondo;
+        contenedorResultado.className = 'flex max-h-[85vh] flex-col items-center gap-3 overflow-auto rounded-2xl p-5 text-center ' + estilo.fondo;
 
         var etiquetas = {
             entrada: 'Entrada',
@@ -186,7 +187,9 @@
 
         contenedorResultado.innerHTML = '';
         contenedorResultado.appendChild(clon);
-        contenedorResultado.classList.remove('hidden');
+        if (!modalResultado.open) {
+            modalResultado.showModal();
+        }
 
         if (temporizadorReanudar) {
             clearTimeout(temporizadorReanudar);
@@ -194,17 +197,48 @@
         temporizadorReanudar = setTimeout(reanudarEscaneo, RETRASO_REANUDAR_MS);
     }
 
+    // Cerrar el modal es el único camino de vuelta al escaneo, venga de donde
+    // venga: del botón, del temporizador, de Escape o de un toque fuera de la
+    // tarjeta. Por eso esto solo cierra y es el evento 'close' el que reanuda
+    // — así ninguna de esas vías se queda con la cámara detenida.
     function reanudarEscaneo() {
         if (temporizadorReanudar) {
             clearTimeout(temporizadorReanudar);
             temporizadorReanudar = null;
         }
-        contenedorResultado.className = 'hidden mt-4 flex-col items-center gap-3 rounded-2xl p-5 text-center';
+        if (modalResultado.open) {
+            modalResultado.close();
+            return;
+        }
+        reanudarAhora();
+    }
+
+    function reanudarAhora() {
+        if (temporizadorReanudar) {
+            clearTimeout(temporizadorReanudar);
+            temporizadorReanudar = null;
+        }
+        // Sin esta guarda, cerrar el modal con el botón (que ya cierra) más el
+        // evento 'close' dejaría dos ciclos de escaneo corriendo a la vez.
+        if (escaneando) {
+            return;
+        }
         contenedorResultado.innerHTML = '';
         estadoTexto.textContent = 'Apunta la cámara al código QR';
         escaneando = true;
         requestAnimationFrame(cicloEscaneo);
     }
+
+    modalResultado.addEventListener('close', reanudarAhora);
+
+    // Toque en el fondo oscuro: el <dialog> no lo cierra por su cuenta, y solo
+    // cuenta como fuera de la tarjeta si el objetivo del clic es el diálogo
+    // mismo y no algo de adentro.
+    modalResultado.addEventListener('click', function (evento) {
+        if (evento.target === modalResultado) {
+            modalResultado.close();
+        }
+    });
 
     iniciarCamara();
 })();
