@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
+require_once __DIR__ . '/../../inscripciones/includes/convocatoria.php';
 iniciarSesionAdmin();
 if (!adminAutorizado()) {
     header('Location: ' . BASE_URL . '/admin/public/index.php');
@@ -17,7 +18,7 @@ $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 $competicion = [
     'id' => null, 'dia' => '', 'tipo' => '', 'hora_inicio' => '', 'hora_fin' => '',
-    'nombre' => '', 'fecha_limite' => '', 'max_equipos' => null, 'tam_equipo' => null,
+    'nombre' => '', 'fecha_limite' => '', 'max_equipos' => null, 'tam_equipo' => null, 'convocatoria' => null,
 ];
 $equipos = [];
 
@@ -62,6 +63,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
 $mensajesError = [
     'campos_incompletos' => 'Revisa que todos los campos estén completos y con formato válido.',
     'horario_invalido' => 'La hora de fin debe ser posterior a la hora de inicio.',
+    'convocatoria_invalida' => 'La convocatoria debe ser una imagen JPG o PNG de máximo 5 MB.',
     'tiene_dependientes' => 'No se puede eliminar: la competición todavía tiene equipos inscritos.',
 ];
 $mensajeError = $mensajesError[$_GET['error'] ?? ''] ?? null;
@@ -85,7 +87,7 @@ if ($mensajeError) {
     <div class="<?= $esNuevo ? '' : 'lg:col-span-1' ?>">
         <div class="rounded-xl bg-white p-5 shadow-sm">
             <h2 class="mb-4 text-base font-semibold"><?= $esNuevo ? 'Datos de la competición' : 'Editar competición' ?></h2>
-            <form action="<?= BASE_URL ?>/admin/includes/guardar-competicion.php" method="post" class="grid grid-cols-1 gap-4">
+            <form action="<?= BASE_URL ?>/admin/includes/guardar-competicion.php" method="post" enctype="multipart/form-data" class="grid grid-cols-1 gap-4">
                 <?php if (!$esNuevo): ?>
                 <input type="hidden" name="id" value="<?= (int) $competicion['id'] ?>">
                 <?php endif; ?>
@@ -172,6 +174,21 @@ if ($mensajeError) {
                                class="w-full rounded-lg border border-slate-300 py-2 px-3 text-sm focus:border-slate-500 focus:outline-none">
                         <p class="mt-1 text-xs text-slate-400">Integrantes por equipo, capitán incluido.</p>
                     </div>
+                </div>
+
+                <div>
+                    <label for="convocatoria" class="mb-1 block text-sm font-medium">Convocatoria (imagen)</label>
+                    <?php $urlConvocatoriaActual = convocatoriaUrl($competicion['convocatoria']); ?>
+                    <?php if ($urlConvocatoriaActual !== null): ?>
+                    <a href="<?= htmlspecialchars($urlConvocatoriaActual, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
+                       class="mb-2 flex items-center gap-1.5 text-xs font-medium text-slate-600 underline hover:text-slate-900">
+                        <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
+                        Ver convocatoria actual
+                    </a>
+                    <?php endif; ?>
+                    <input type="file" id="convocatoria" name="convocatoria" accept="image/jpeg,image/png"
+                           class="w-full rounded-lg border border-slate-300 py-2 px-3 text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium focus:border-slate-500 focus:outline-none">
+                    <p class="mt-1 text-xs text-slate-400">JPG o PNG, máximo 5&nbsp;MB. <?= $urlConvocatoriaActual !== null ? 'Sube una nueva para reemplazar la actual.' : 'Opcional — déjalo vacío si todavía no hay convocatoria.' ?></p>
                 </div>
 
                 <button type="submit" class="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white active:bg-slate-700">

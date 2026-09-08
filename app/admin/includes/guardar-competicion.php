@@ -63,34 +63,97 @@ if ($fechaLimiteSql === false) {
 }
 $fechaLimiteSql = $fechaLimiteSql->format('Y-m-d H:i:s');
 
+// --- Convocatoria (imagen), opcional — mismo patrón de subida que
+// guardar-alumno.php (foto), pero el archivo no es obligatorio: la
+// competición puede no tener convocatoria todavía.
+$directorioConvocatorias = __DIR__ . '/../../assets/img/convocatorias';
+$tiposPermitidosConvocatoria = ['image/jpeg' => 'jpg', 'image/png' => 'png'];
+$TAMANO_MAXIMO_CONVOCATORIA = 5 * 1024 * 1024;
+
+$convocatoriaNueva = isset($_FILES['convocatoria']) && $_FILES['convocatoria']['error'] !== UPLOAD_ERR_NO_FILE;
+$rutaConvocatoriaRelativa = null;
+$rutaConvocatoriaAbsoluta = null;
+
+if ($convocatoriaNueva) {
+    if ($_FILES['convocatoria']['error'] !== UPLOAD_ERR_OK || $_FILES['convocatoria']['size'] > $TAMANO_MAXIMO_CONVOCATORIA) {
+        volverConError($id, 'convocatoria_invalida');
+    }
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeReal = finfo_file($finfo, $_FILES['convocatoria']['tmp_name']);
+    finfo_close($finfo);
+    if (!isset($tiposPermitidosConvocatoria[$mimeReal])) {
+        volverConError($id, 'convocatoria_invalida');
+    }
+    $extension = $tiposPermitidosConvocatoria[$mimeReal];
+    $tokenConvocatoria = bin2hex(random_bytes(16));
+    if (!is_dir($directorioConvocatorias)) {
+        mkdir($directorioConvocatorias, 0755, true);
+    }
+    $rutaConvocatoriaRelativa = 'convocatorias/' . $tokenConvocatoria . '.' . $extension;
+    $rutaConvocatoriaAbsoluta = $directorioConvocatorias . '/' . $tokenConvocatoria . '.' . $extension;
+    if (!move_uploaded_file($_FILES['convocatoria']['tmp_name'], $rutaConvocatoriaAbsoluta)) {
+        volverConError($id, 'error_servidor');
+    }
+}
+
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
 
 if ($id === null) {
     $insertar = $pdo->prepare(
-        'INSERT INTO competiciones (dia, tipo, hora_inicio, hora_fin, nombre, fecha_limite, max_equipos, tam_equipo)
-         VALUES (:dia, :tipo, :hora_inicio, :hora_fin, :nombre, :fecha_limite, :max_equipos, :tam_equipo)'
+        'INSERT INTO competiciones (dia, tipo, hora_inicio, hora_fin, nombre, fecha_limite, max_equipos, tam_equipo, convocatoria)
+         VALUES (:dia, :tipo, :hora_inicio, :hora_fin, :nombre, :fecha_limite, :max_equipos, :tam_equipo, :convocatoria)'
     );
     $insertar->execute([
         'dia' => $dia, 'tipo' => $tipo, 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin,
         'nombre' => $nombre, 'fecha_limite' => $fechaLimiteSql,
         'max_equipos' => $maxEquipos, 'tam_equipo' => $tamEquipo,
+        'convocatoria' => $rutaConvocatoriaRelativa,
     ]);
     $idNuevo = (int) $pdo->lastInsertId();
     header('Location: ' . BASE_URL . '/admin/public/competicion.php?id=' . $idNuevo . '&msg=creado');
     exit;
 }
 
-$actualizar = $pdo->prepare(
-    'UPDATE competiciones SET dia = :dia, tipo = :tipo, hora_inicio = :hora_inicio, hora_fin = :hora_fin,
-        nombre = :nombre, fecha_limite = :fecha_limite, max_equipos = :max_equipos, tam_equipo = :tam_equipo
-     WHERE id = :id'
-);
-$actualizar->execute([
-    'dia' => $dia, 'tipo' => $tipo, 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin,
-    'nombre' => $nombre, 'fecha_limite' => $fechaLimiteSql, 'id' => $id,
-    'max_equipos' => $maxEquipos, 'tam_equipo' => $tamEquipo,
-]);
+if ($convocatoriaNueva) {
+    // Se necesita la ruta anterior ANTES del UPDATE para poder borrar el
+    // archivo viejo después — una vez actualizada la fila ya no hay forma de
+    // saber cuál era.
+    $anterior = $pdo->prepare('SELECT convocatoria FROM competiciones WHERE id = :id');
+    $anterior->execute(['id' => $id]);
+    $convocatoriaAnterior = $anterior->fetch()['convocatoria'] ?? null;
+
+    $actualizar = $pdo->prepare(
+        'UPDATE competiciones SET dia = :dia, tipo = :tipo, hora_inicio = :hora_inicio, hora_fin = :hora_fin,
+            nombre = :nombre, fecha_limite = :fecha_limite, max_equipos = :max_equipos, tam_equipo = :tam_equipo,
+            convocatoria = :convocatoria
+         WHERE id = :id'
+    );
+    $actualizar->execute([
+        'dia' => $dia, 'tipo' => $tipo, 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin,
+        'nombre' => $nombre, 'fecha_limite' => $fechaLimiteSql, 'id' => $id,
+        'max_equipos' => $maxEquipos, 'tam_equipo' => $tamEquipo,
+        'convocatoria' => $rutaConvocatoriaRelativa,
+    ]);
+
+    if ($convocatoriaAnterior) {
+        $rutaAnterior = $directorioConvocatorias . '/' . basename($convocatoriaAnterior);
+        if (is_file($rutaAnterior)) {
+            unlink($rutaAnterior);
+        }
+    }
+} else {
+    $actualizar = $pdo->prepare(
+        'UPDATE competiciones SET dia = :dia, tipo = :tipo, hora_inicio = :hora_inicio, hora_fin = :hora_fin,
+            nombre = :nombre, fecha_limite = :fecha_limite, max_equipos = :max_equipos, tam_equipo = :tam_equipo
+         WHERE id = :id'
+    );
+    $actualizar->execute([
+        'dia' => $dia, 'tipo' => $tipo, 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin,
+        'nombre' => $nombre, 'fecha_limite' => $fechaLimiteSql, 'id' => $id,
+        'max_equipos' => $maxEquipos, 'tam_equipo' => $tamEquipo,
+    ]);
+}
 
 header('Location: ' . BASE_URL . '/admin/public/competicion.php?id=' . $id . '&msg=actualizado');
 exit;

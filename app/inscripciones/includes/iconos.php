@@ -50,6 +50,8 @@ const ICONOS_SVG = [
     'buscar' => '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
     // lucide "type" (campos de texto libre: nombre de equipo/acto)
     'nombre' => '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
+    // lucide "image" (convocatoria de una competición)
+    'convocatoria' => '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
 ];
 
 /** Devuelve el markup de un ícono SVG inline (Lucide). $clase son clases Tailwind (tamaño/color). */

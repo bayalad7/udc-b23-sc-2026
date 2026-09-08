@@ -26,8 +26,19 @@ if ((int) $consulta->fetch()['n'] > 0) {
     exit;
 }
 
+$consultaConvocatoria = $pdo->prepare('SELECT convocatoria FROM competiciones WHERE id = :id');
+$consultaConvocatoria->execute(['id' => $id]);
+$convocatoria = $consultaConvocatoria->fetch()['convocatoria'] ?? null;
+
 $eliminar = $pdo->prepare('DELETE FROM competiciones WHERE id = :id');
 $eliminar->execute(['id' => $id]);
+
+if ($convocatoria) {
+    $ruta = __DIR__ . '/../../assets/img/convocatorias/' . basename($convocatoria);
+    if (is_file($ruta)) {
+        unlink($ruta);
+    }
+}
 
 header('Location: ' . BASE_URL . '/admin/public/competiciones.php?msg=eliminado');
 exit;

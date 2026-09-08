@@ -1422,6 +1422,9 @@
     border-style: var(--tw-border-style);
     border-width: 0px;
   }
+  .file\:bg-slate-100::file-selector-button {
+    background-color: var(--color-slate-100);
+  }
   .file\:bg-slate-800::file-selector-button {
     background-color: var(--color-slate-800);
   }
@@ -1430,6 +1433,14 @@
   }
   .file\:py-1\.5::file-selector-button {
     padding-block: calc(var(--spacing) * 1.5);
+  }
+  .file\:text-sm::file-selector-button {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+  }
+  .file\:font-medium::file-selector-button {
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
   }
   .file\:text-white::file-selector-button {
     color: var(--color-white);

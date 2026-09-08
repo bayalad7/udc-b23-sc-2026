@@ -246,6 +246,8 @@ CREATE TABLE IF NOT EXISTS competiciones (
         COMMENT 'Tope de equipos permitidos en esta competición (ver trg_equipos_limite_maximo); NULL = sin tope',
     tam_equipo        INT UNSIGNED NULL
         COMMENT 'Cantidad exacta de integrantes por equipo, capitán incluido (validado en la app, no aquí); NULL = sin regla de tamaño fijo',
+    convocatoria      VARCHAR(255) NULL DEFAULT NULL
+        COMMENT 'Ruta relativa a app/assets/img/ de la imagen de convocatoria (ej. "convocatorias/día-académico.png"), subida desde app/admin/public/competicion.php y mostrada al alumnado en app/inscripciones; NULL si esta competición todavía no tiene convocatoria publicada',
     fecha_registro    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'Cuándo se registró la competición',
     CONSTRAINT chk_competiciones_horario CHECK ( hora_fin > hora_inicio )

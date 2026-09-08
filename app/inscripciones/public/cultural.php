@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 require_once __DIR__ . '/../includes/estado.php';
+require_once __DIR__ . '/../includes/convocatoria.php';
 
 iniciarSesionInscripciones();
 
@@ -81,7 +82,7 @@ foreach ($talleres as $taller) {
 }
 
 $competicion = $pdo->query(
-    "SELECT id, nombre, hora_inicio, hora_fin FROM competiciones WHERE dia = 'cultural' AND tipo = 'concurso' LIMIT 1"
+    "SELECT id, nombre, hora_inicio, hora_fin, convocatoria FROM competiciones WHERE dia = 'cultural' AND tipo = 'concurso' LIMIT 1"
 )->fetch();
 
 // --- Todos los actos ya inscritos (modal "Ver participaciones") -----------
@@ -400,6 +401,14 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
             Puedes participar solo o en equipo, y puedes inscribirte a más de un acto.
         </p>
         <div class="flex flex-wrap gap-2">
+            <?php $urlConvocatoria = convocatoriaUrl($competicion['convocatoria']); ?>
+            <?php if ($urlConvocatoria !== null): ?>
+            <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
+               class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">
+                <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
+                Ver convocatoria
+            </a>
+            <?php endif; ?>
             <?php if ($actos !== []): ?>
             <button type="button" data-abrir-modal="participaciones-cultural"
                     class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium cursor-pointer text-slate-600">

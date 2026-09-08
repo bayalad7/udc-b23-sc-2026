@@ -5,6 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 require_once __DIR__ . '/../includes/estado.php';
 require __DIR__ . '/../includes/colores-camisa.php';
+require_once __DIR__ . '/../includes/convocatoria.php';
 
 iniciarSesionInscripciones();
 
@@ -28,7 +29,7 @@ if ($alumno === false) {
 }
 
 $torneos = $pdo->query(
-    "SELECT id, nombre, hora_inicio, hora_fin, max_equipos, tam_equipo FROM competiciones WHERE dia = 'deportivo' ORDER BY id"
+    "SELECT id, nombre, hora_inicio, hora_fin, max_equipos, tam_equipo, convocatoria FROM competiciones WHERE dia = 'deportivo' ORDER BY id"
 )->fetchAll();
 
 // --- Para cada torneo: equipos ya registrados (transparencia), colores ya
@@ -171,6 +172,14 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
             Equipos de <?= $tamEquipoTorneo ?> (alumnos y padres/madres de familia)<?= $maxEquiposTorneo !== null ? ' · ' . count($equipos) . '/' . $maxEquiposTorneo . ' equipos' : '' ?>.
         </p>
         <div class="flex flex-wrap items-center gap-2">
+            <?php $urlConvocatoria = convocatoriaUrl($torneo['convocatoria']); ?>
+            <?php if ($urlConvocatoria !== null): ?>
+            <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
+               class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">
+                <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
+                Ver convocatoria
+            </a>
+            <?php endif; ?>
             <?php if ($equipos !== []): ?>
             <button type="button" data-abrir-modal="equipos-torneo-<?= $idTorneo ?>"
                     class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium cursor-pointer text-slate-600">

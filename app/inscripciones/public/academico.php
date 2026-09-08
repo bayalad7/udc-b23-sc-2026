@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 require_once __DIR__ . '/../includes/estado.php';
+require_once __DIR__ . '/../includes/convocatoria.php';
 
 iniciarSesionInscripciones();
 
@@ -36,7 +37,7 @@ $eventos = $pdo->query(
 )->fetchAll();
 
 $competiciones = $pdo->query(
-    "SELECT id, tipo, hora_inicio, hora_fin, nombre FROM competiciones WHERE dia = 'academico' ORDER BY hora_inicio"
+    "SELECT id, tipo, hora_inicio, hora_fin, nombre, convocatoria FROM competiciones WHERE dia = 'academico' ORDER BY hora_inicio"
 )->fetchAll();
 
 // --- Quién ya está inscrito en cada evento (modal "Ver inscritos") --------
@@ -444,6 +445,14 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
                     </span>
                 </span>
                 <span class="flex shrink-0 flex-wrap items-center gap-2">
+                    <?php $urlConvocatoria = convocatoriaUrl($competicion['convocatoria']); ?>
+                    <?php if ($urlConvocatoria !== null): ?>
+                    <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
+                       class="flex items-center gap-1 rounded-lg border <?= $yaInscrito ? 'border-white/20' : 'border-slate-200' ?> px-3 py-2 text-xs font-medium">
+                        <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
+                        Ver convocatoria
+                    </a>
+                    <?php endif; ?>
                     <?php if ($equiposConocimiento !== []): ?>
                     <button type="button" data-abrir-modal="equipos-conocimiento"
                             class="flex items-center gap-1 rounded-lg border <?= $yaInscrito ? 'border-white/20' : 'border-slate-200' ?> px-3 py-2 text-xs font-medium cursor-pointer">
