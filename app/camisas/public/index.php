@@ -257,8 +257,36 @@ $filtrosActuales = array_filter(['buscar' => $buscar, 'estado' => $estado]);
                 $pago = (float) $alumno['camisa_pago'];
                 $estadoPago = camisaEstadoPago($alumno, $costo);
                 $liquidado = $pide && $pago >= $costo;
+                // Con cualquier pago registrado (abonó o liquidó) ya no se puede
+                // desmarcar "Pide camisa" — el servidor lo rechaza de todos modos
+                // (pago_sin_pedido) pero bloquear la casilla evita el viaje redondo.
+                $pagoBloqueaCasilla = $pago > 0;
             ?>
+            <?php if ($liquidado): ?>
+            <!-- Liquidada: sin acciones. Corregir un error de captura se hace
+                 desde app/admin (ficha del alumno), no desde este celular. -->
+            <div class="rounded-xl bg-white p-4 shadow-sm opacity-75 <?= $idResaltado === (int) $alumno['id'] ? 'ring-2 ring-emerald-400' : '' ?>">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <span class="block font-semibold leading-tight"><?= htmlspecialchars($alumno['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="mt-0.5 block text-xs text-slate-500">
+                            No. cuenta <?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?> ·
+                            talla <?= htmlspecialchars($alumno['camisa_talla'], ENT_QUOTES, 'UTF-8') ?> ·
+                            pagó <?= camisaMoneda($pago) ?>
+                        </span>
+                    </div>
+                    <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium <?= $estadoPago['clases'] ?>">
+                        <?= htmlspecialchars($estadoPago['etiqueta'], ENT_QUOTES, 'UTF-8') ?>
+                    </span>
+                </div>
+                <p class="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
+                    <?= icono('candado', 'h-3.5 w-3.5 shrink-0') ?>
+                    Ya liquidó — si hay un error, se corrige desde el panel de administración.
+                </p>
+            </div>
+            <?php else: ?>
             <form action="<?= BASE_URL ?>/camisas/includes/guardar-pago.php" method="post" novalidate
+                  data-confirmar-pago data-alumno-nombre="<?= htmlspecialchars($alumno['nombre_completo'], ENT_QUOTES, 'UTF-8') ?>"
                   class="rounded-xl bg-white p-4 shadow-sm <?= $idResaltado === (int) $alumno['id'] ? 'ring-2 ring-emerald-400' : '' ?>">
                 <input type="hidden" name="id_alumno" value="<?= (int) $alumno['id'] ?>">
                 <input type="hidden" name="buscar" value="<?= htmlspecialchars($buscar, ENT_QUOTES, 'UTF-8') ?>">
@@ -277,41 +305,78 @@ $filtrosActuales = array_filter(['buscar' => $buscar, 'estado' => $estado]);
                     </span>
                 </div>
 
-                <div class="flex flex-wrap items-end gap-3">
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 has-[:checked]:border-slate-900 has-[:checked]:font-semibold has-[:checked]:text-slate-900">
-                        <input type="checkbox" name="camisa_pedir" value="1" <?= $pide ? 'checked' : '' ?>
-                               class="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-slate-900">
-                        Pide camisa
-                    </label>
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <?php if ($pagoBloqueaCasilla): ?>
+                        <input type="hidden" name="camisa_pedir" value="1">
+                        <span class="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-500" title="Ya tiene un pago registrado — para no pedir camisa, primero pon su pago en 0.">
+                            <?= icono('candado', 'h-3.5 w-3.5 shrink-0') ?>
+                            Pide camisa
+                        </span>
+                        <?php else: ?>
+                        <label class="flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 has-[:checked]:border-slate-900 has-[:checked]:font-semibold has-[:checked]:text-slate-900">
+                            <input type="checkbox" name="camisa_pedir" value="1" <?= $pide ? 'checked' : '' ?>
+                                   class="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-slate-900">
+                            Pide camisa
+                        </label>
+                        <?php endif; ?>
 
-                    <div class="w-28">
-                        <label for="pago-<?= (int) $alumno['id'] ?>" class="mb-1 block text-xs font-medium text-slate-500">Ha pagado</label>
-                        <div class="relative">
-                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-sm text-slate-400">$</span>
-                            <input type="text" inputmode="decimal" id="pago-<?= (int) $alumno['id'] ?>" name="camisa_pago"
-                                   value="<?= number_format($pago, 2, '.', '') ?>"
-                                   class="w-full rounded-lg border border-slate-300 py-2 pl-6 pr-2 text-sm focus:border-slate-500 focus:outline-none">
+                        <div class="w-32">
+                            <label for="pago-<?= (int) $alumno['id'] ?>" class="mb-1 block text-xs font-medium text-slate-500">Ha pagado</label>
+                            <div class="relative">
+                                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-sm text-slate-400">$</span>
+                                <input type="text" inputmode="decimal" id="pago-<?= (int) $alumno['id'] ?>" name="camisa_pago"
+                                       value="<?= number_format($pago, 2, '.', '') ?>"
+                                       class="w-full rounded-lg border border-slate-300 py-2 pl-6 pr-2 text-sm focus:border-slate-500 focus:outline-none">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex flex-1 justify-end gap-2">
-                        <?php if (!$liquidado): ?>
-                        <button type="submit" name="accion" value="liquidar" title="Marcar como pagada completa (<?= camisaMoneda($costo) ?>)"
-                                class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 active:bg-emerald-100">
+                    <div class="flex gap-2">
+                        <button type="submit" name="accion" value="liquidar" data-monto-final="<?= camisaMoneda($costo) ?>"
+                                title="Marcar como pagada completa (<?= camisaMoneda($costo) ?>)"
+                                class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 active:bg-emerald-100">
                             <?= icono('exito', 'h-4 w-4 shrink-0') ?>
                             Pagó todo
                         </button>
-                        <?php endif; ?>
                         <button type="submit" name="accion" value="guardar"
-                                class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white active:bg-slate-700">
+                                class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white active:bg-slate-700">
                             <?= icono('guardar', 'h-4 w-4 shrink-0') ?>
                             Guardar
                         </button>
                     </div>
                 </div>
             </form>
+            <?php endif; ?>
             <?php endforeach; ?>
         </div>
+
+        <!-- Modal de confirmación compartido por todas las tarjetas de arriba
+             — se puebla por JS (assets/js/camisas.js) con los datos del
+             formulario que disparó el envío antes de reenviarlo de verdad. -->
+        <dialog id="confirmar-pago" class="m-auto w-[90%] max-w-sm rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+            <div class="p-5">
+                <h3 class="mb-1 flex items-center gap-2 text-base font-semibold">
+                    <?= icono('alerta', 'h-4 w-4 shrink-0 text-amber-500') ?>
+                    Confirmar
+                </h3>
+                <p class="text-sm text-slate-600">
+                    <span id="confirmar-pago-nombre" class="font-semibold text-slate-900"></span><br>
+                    <span id="confirmar-pago-detalle"></span>
+                </p>
+                <div class="mt-5 flex gap-2">
+                    <button type="button" data-cerrar-modal="confirmar-pago"
+                            class="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600">
+                        Cancelar
+                    </button>
+                    <button type="button" id="confirmar-pago-boton"
+                            class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white active:bg-slate-700">
+                        <?= icono('exito', 'h-4 w-4 shrink-0') ?>
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </dialog>
 
         <!-- Solo lectura: el jefe no registra cortes, eso lo hace el admin
              cuando recibe el efectivo en persona (ver app/admin). Aquí solo
@@ -355,5 +420,8 @@ $filtrosActuales = array_filter(['buscar' => $buscar, 'estado' => $estado]);
     <?php endif; ?>
 
 </div>
+<?php if ($jefe !== null): ?>
+<script src="<?= BASE_URL ?>/assets/js/camisas.js"></script>
+<?php endif; ?>
 </body>
 </html>
