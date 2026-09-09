@@ -171,7 +171,7 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
             <?= substr($torneo['hora_inicio'], 0, 5) ?> – <?= substr($torneo['hora_fin'], 0, 5) ?> ·
             Equipos de <?= $tamEquipoTorneo ?> (alumnos y padres/madres de familia)<?= $maxEquiposTorneo !== null ? ' · ' . count($equipos) . '/' . $maxEquiposTorneo . ' equipos' : '' ?>.
         </p>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
             <?php $urlConvocatoria = convocatoriaUrl($torneo['convocatoria']); ?>
             <?php if ($urlConvocatoria !== null): ?>
             <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"

@@ -419,61 +419,66 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
         $eventosResto = array_filter($bloque['eventos'] ?? [], static fn (array $e): bool => $e['espacio'] !== 'Auditorio Principal');
         ?>
 
-        <?php if (!empty($bloque['competiciones']) || $eventosDestacados !== []): ?>
-        <div class="mb-3 grid grid-cols-1 gap-3">
-            <?php foreach ($bloque['competiciones'] ?? [] as $competicion):
-                $idCompeticion = (int) $competicion['id'];
-                $yaInscrito = in_array($idCompeticion, $idsCompeticionesInscrito, true);
-                $bloqueado = !$yaInscrito && bloqueadoPorOtraInscripcion($rangosOcupados, $competicion['hora_inicio'], $competicion['hora_fin']);
-            ?>
-            <div class="flex flex-col gap-3 rounded-xl border-2 <?= $yaInscrito ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white/60 text-slate-500' ?> p-4 sm:flex-row sm:items-center sm:justify-between">
-                <span class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg <?= $yaInscrito ? 'bg-white/20' : 'bg-slate-200' ?>"><?= icono('trofeo', 'h-5 w-5 shrink-0') ?></span>
-                    <span>
-                        <span class="block font-semibold">Competición · <?= htmlspecialchars($competicion['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="block text-xs <?= $yaInscrito ? 'text-slate-300' : 'text-slate-400' ?>">
-                            <?php if ($yaInscrito): ?>
-                                Ya eres parte de un equipo
-                            <?php elseif ($bloqueado): ?>
-                                Ya elegiste un taller en este horario
-                            <?php elseif ($limiteEquiposAlcanzado): ?>
-                                Cupo de equipos completo (<?= $limiteEquipos ?>/<?= $limiteEquipos ?>)
-                            <?php else: ?>
-                                Equipos de <?= $tamEquipoConocimiento ?> alumnos — tú serías el capitán (<?= count($equiposConocimiento) ?>/<?= $limiteEquipos ?> equipos)
-                            <?php endif; ?>
-                        </span>
-                    </span>
+        <?php foreach ($bloque['competiciones'] ?? [] as $competicion):
+            $idCompeticion = (int) $competicion['id'];
+            $yaInscrito = in_array($idCompeticion, $idsCompeticionesInscrito, true);
+            $bloqueado = !$yaInscrito && bloqueadoPorOtraInscripcion($rangosOcupados, $competicion['hora_inicio'], $competicion['hora_fin']);
+        ?>
+        <!-- Mismo estilo de tarjeta blanca que cultural.php/deportivo.php
+             (icono + nombre, descripción, botones alineados a la derecha) en
+             vez de la tarjeta oscura-si-ya-inscrito que tenía antes esta
+             página — para que las 3 pantallas de inscripciones se vean
+             consistentes. -->
+        <section class="mb-6 rounded-xl bg-white p-5 shadow-sm">
+            <h2 class="mb-1 flex items-center gap-2 text-base font-semibold">
+                <?= icono('trofeo', 'h-4 w-4 shrink-0 text-slate-400') ?>
+                <?= htmlspecialchars($competicion['nombre'], ENT_QUOTES, 'UTF-8') ?>
+            </h2>
+            <p class="mb-4 text-xs text-slate-500">
+                <?php if ($yaInscrito): ?>
+                    Ya eres parte de un equipo.
+                <?php elseif ($bloqueado): ?>
+                    Ya elegiste un taller en este horario.
+                <?php elseif ($limiteEquiposAlcanzado): ?>
+                    Cupo de equipos completo (<?= $limiteEquipos ?>/<?= $limiteEquipos ?>).
+                <?php else: ?>
+                    Equipos de <?= $tamEquipoConocimiento ?> alumnos — tú serías el capitán (<?= count($equiposConocimiento) ?>/<?= $limiteEquipos ?> equipos).
+                <?php endif; ?>
+            </p>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <?php $urlConvocatoria = convocatoriaUrl($competicion['convocatoria']); ?>
+                <?php if ($urlConvocatoria !== null): ?>
+                <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
+                   class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">
+                    <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
+                    Ver convocatoria
+                </a>
+                <?php endif; ?>
+                <?php if ($equiposConocimiento !== []): ?>
+                <button type="button" data-abrir-modal="equipos-conocimiento"
+                        class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium cursor-pointer text-slate-600">
+                    <?= icono('cupo', 'h-3.5 w-3.5 shrink-0') ?>
+                    Ver equipos (<?= count($equiposConocimiento) ?>)
+                </button>
+                <?php endif; ?>
+                <?php if ($yaInscrito): ?>
+                <span class="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">
+                    <?= icono('verificado', 'h-4 w-4 shrink-0') ?> Ya eres parte de un equipo
                 </span>
-                <span class="flex shrink-0 flex-wrap items-center gap-2">
-                    <?php $urlConvocatoria = convocatoriaUrl($competicion['convocatoria']); ?>
-                    <?php if ($urlConvocatoria !== null): ?>
-                    <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
-                       class="flex items-center gap-1 rounded-lg border <?= $yaInscrito ? 'border-white/20' : 'border-slate-200' ?> px-3 py-2 text-xs font-medium">
-                        <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
-                        Ver convocatoria
-                    </a>
-                    <?php endif; ?>
-                    <?php if ($equiposConocimiento !== []): ?>
-                    <button type="button" data-abrir-modal="equipos-conocimiento"
-                            class="flex items-center gap-1 rounded-lg border <?= $yaInscrito ? 'border-white/20' : 'border-slate-200' ?> px-3 py-2 text-xs font-medium cursor-pointer">
-                        <?= icono('cupo', 'h-3.5 w-3.5 shrink-0') ?>
-                        Ver equipos (<?= count($equiposConocimiento) ?>)
-                    </button>
-                    <?php endif; ?>
-                    <?php if ($yaInscrito): ?>
-                    <?= icono('verificado', 'h-5 w-5 shrink-0') ?>
-                    <?php elseif ($bloqueado || $limiteEquiposAlcanzado): ?>
-                    <?= icono('candado', 'h-5 w-5 shrink-0 text-slate-300') ?>
-                    <?php else: ?>
-                    <button type="button" data-abrir-modal="formar-equipo-conocimiento"
-                            class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
-                        <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
-                        Formar equipo
-                    </button>
-                    <?php endif; ?>
+                <?php elseif ($bloqueado || $limiteEquiposAlcanzado): ?>
+                <span class="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-400">
+                    <?= icono('candado', 'h-3.5 w-3.5 shrink-0') ?> <?= $bloqueado ? 'Ya elegiste otro evento en este horario' : 'Cupo de equipos completo' ?>
                 </span>
+                <?php else: ?>
+                <button type="button" data-abrir-modal="formar-equipo-conocimiento"
+                        class="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white active:bg-slate-700 cursor-pointer">
+                    <?= icono('inscribir', 'h-4 w-4 shrink-0') ?>
+                    Formar equipo
+                </button>
+                <?php endif; ?>
             </div>
-            <?php endforeach; ?>
+        </section>
+        <?php endforeach; ?>
 
             <?php if ($equiposConocimiento !== []): ?>
             <dialog id="equipos-conocimiento" class="m-auto w-[90%] max-w-2xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
@@ -598,14 +603,16 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
             </dialog>
             <?php endif; ?>
 
-            <?php foreach ($eventosDestacados as $evento):
-                $idEvento = (int) $evento['id'];
-                $yaInscrito = in_array($idEvento, $idsEventosInscritos, true);
-                $bloqueado = !$yaInscrito && bloqueadoPorOtraInscripcion($rangosOcupados, $evento['hora_inicio'], $evento['hora_fin']);
-                renderTarjetaEvento($evento, $yaInscrito, $bloqueado, $inscritosPorEvento[$idEvento] ?? []);
-            endforeach; ?>
-        </div>
-        <?php endif; ?>
+            <?php if ($eventosDestacados !== []): ?>
+            <div class="mb-3 grid grid-cols-1 gap-3">
+                <?php foreach ($eventosDestacados as $evento):
+                    $idEvento = (int) $evento['id'];
+                    $yaInscrito = in_array($idEvento, $idsEventosInscritos, true);
+                    $bloqueado = !$yaInscrito && bloqueadoPorOtraInscripcion($rangosOcupados, $evento['hora_inicio'], $evento['hora_fin']);
+                    renderTarjetaEvento($evento, $yaInscrito, $bloqueado, $inscritosPorEvento[$idEvento] ?? []);
+                endforeach; ?>
+            </div>
+            <?php endif; ?>
 
         <?php if ($eventosResto !== []): ?>
         <?php if (!empty($bloque['competiciones']) || $eventosDestacados !== []): ?>

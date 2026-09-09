@@ -391,16 +391,20 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
     <p class="text-sm text-slate-500">La inscripción al show todavía no está disponible.</p>
     <?php else: ?>
 
+    <h2 class="mb-3 flex items-center gap-2 text-base font-semibold">
+        <?= icono('reloj', 'h-4 w-4 shrink-0 text-slate-400') ?>
+        Bloque 2 · Show
+        <span class="font-normal text-slate-500"><?= substr($competicion['hora_inicio'], 0, 5) ?> – <?= substr($competicion['hora_fin'], 0, 5) ?></span>
+    </h2>
     <section class="mb-6 rounded-xl bg-white p-5 shadow-sm">
         <h2 class="mb-1 flex items-center gap-2 text-base font-semibold">
             <?= icono('trofeo', 'h-4 w-4 shrink-0 text-slate-400') ?>
-            Bloque 2 · <?= htmlspecialchars($competicion['nombre'], ENT_QUOTES, 'UTF-8') ?>
+            <?= htmlspecialchars($competicion['nombre'], ENT_QUOTES, 'UTF-8') ?>
         </h2>
         <p class="mb-4 text-xs text-slate-500">
-            <?= substr($competicion['hora_inicio'], 0, 5) ?> – <?= substr($competicion['hora_fin'], 0, 5) ?> · Explanada.
-            Puedes participar solo o en equipo, y puedes inscribirte a más de un acto.
+            Explanada · Puedes participar solo o en equipo, y puedes inscribirte a más de un acto.
         </p>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
             <?php $urlConvocatoria = convocatoriaUrl($competicion['convocatoria']); ?>
             <?php if ($urlConvocatoria !== null): ?>
             <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
