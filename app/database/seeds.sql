@@ -66,8 +66,8 @@ INSERT INTO eventos (dia, tipo, hora_inicio, hora_fin, facilitador, nombre, desc
 -- app/assets/img/convocatorias/día-académico.png; el resto se queda en NULL
 -- hasta que se suba la suya desde app/admin/public/competicion.php.
 INSERT INTO competiciones (dia, tipo, hora_inicio, hora_fin, nombre, fecha_limite, max_equipos, tam_equipo, convocatoria) VALUES
-('academico', 'concurso', '10:30:00', '12:30:00', 'Concurso del Conocimiento',                  '2026-09-30 23:59:59', 30,   6,   'convocatorias/día-académico.png'),
-('cultural',  'concurso', '16:00:00', '17:20:00', 'Escenario de Talentos "Expresa tu esencia"', '2026-09-30 23:59:59', NULL, NULL, NULL),
+('academico', 'concurso', '10:30:00', '12:30:00', 'Concurso del Conocimiento',                  '2026-09-30 23:59:59', 30,   6,    'convocatorias/día-académico.png'),
+('cultural',  'concurso', '16:00:00', '17:20:00', 'Escenario de Talentos "Expresa tu esencia"', '2026-09-30 23:59:59', NULL, NULL, 'convocatorias/día-cultural.png'),
 ('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Fútbol Rápido',                    '2026-09-30 23:59:59', 16,   10,   NULL),
 ('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Voleibol',                         '2026-09-30 23:59:59', 16,   10,   NULL),
 ('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Quemados',                         '2026-09-30 23:59:59', 16,   10,   NULL);

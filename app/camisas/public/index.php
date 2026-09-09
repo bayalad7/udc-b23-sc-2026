@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 require_once __DIR__ . '/../includes/costo.php';
+require_once __DIR__ . '/../includes/cortes.php';
 
 iniciarSesionCamisas();
 
@@ -39,6 +40,8 @@ $idResaltado = isset($_GET['alumno']) ? (int) $_GET['alumno'] : 0;
 $alumnos = [];
 $resumen = null;
 $alumnosVisibles = [];
+$cortes = [];
+$encuadre = null;
 
 if ($jefe !== null) {
     // Se traen de una sola vez todos los alumnos del grupo (son pocas decenas)
@@ -54,6 +57,9 @@ if ($jefe !== null) {
     $alumnos = $consulta->fetchAll();
 
     $resumen = camisaResumen($alumnos, $costo);
+
+    $cortes = camisaCortesListar($pdo, $jefe['grado'], $jefe['grupo']);
+    $encuadre = camisaCortesEncuadre($resumen['recaudado'], $cortes);
 
     $alumnosVisibles = array_values(array_filter($alumnos, static function (array $a) use ($buscar, $estado, $costo): bool {
         if ($buscar !== ''
@@ -175,6 +181,36 @@ $filtrosActuales = array_filter(['buscar' => $buscar, 'estado' => $estado]);
             </div>
         </div>
 
+        <!-- Entregado a la administración y encuadre: lo que el admin ya
+             registró en cortes de caja contra lo que el sistema dice que se
+             recaudó — la diferencia es la señal de que algo se capturó mal. -->
+        <?php
+        $diferenciaJefe = $encuadre['diferencia'];
+        if (abs($diferenciaJefe) < 0.01) {
+            $claseEncuadreJefe = 'border-slate-300';
+            $textoEncuadreJefe = 'text-slate-500';
+            $etiquetaEncuadreJefe = 'Cuadra exacto';
+        } elseif ($diferenciaJefe > 0) {
+            $claseEncuadreJefe = 'border-amber-500';
+            $textoEncuadreJefe = 'text-amber-700';
+            $etiquetaEncuadreJefe = 'Aún te falta entregar';
+        } else {
+            $claseEncuadreJefe = 'border-red-500';
+            $textoEncuadreJefe = 'text-red-700';
+            $etiquetaEncuadreJefe = 'Entregaste de más — revisa tus capturas';
+        }
+        ?>
+        <div class="mb-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl border-l-4 border-slate-300 bg-white p-4 shadow-sm">
+                <span class="flex items-center gap-1.5 text-xs text-slate-500"><?= icono('exito', 'h-3.5 w-3.5') ?> Entregado a administración</span>
+                <span class="mt-1 block text-xl font-bold text-slate-900"><?= camisaMoneda($encuadre['entregado']) ?></span>
+            </div>
+            <div class="rounded-xl border-l-4 <?= $claseEncuadreJefe ?> bg-white p-4 shadow-sm">
+                <span class="flex items-center gap-1.5 text-xs text-slate-500"><?= icono('alerta', 'h-3.5 w-3.5') ?> <?= $etiquetaEncuadreJefe ?></span>
+                <span class="mt-1 block text-xl font-bold <?= $textoEncuadreJefe ?>"><?= camisaMoneda(abs($diferenciaJefe)) ?></span>
+            </div>
+        </div>
+
         <p class="mb-4 text-xs text-slate-500">
             <?= count($alumnos) ?> alumnos en <?= htmlspecialchars($jefe['grado'], ENT_QUOTES, 'UTF-8') ?>°<?= htmlspecialchars($jefe['grupo'], ENT_QUOTES, 'UTF-8') ?> ·
             <?= $resumen['piden'] ?> encargan camisa · <?= $resumen['no_piden'] ?> no la quieren
@@ -275,6 +311,40 @@ $filtrosActuales = array_filter(['buscar' => $buscar, 'estado' => $estado]);
                 </div>
             </form>
             <?php endforeach; ?>
+        </div>
+
+        <!-- Solo lectura: el jefe no registra cortes, eso lo hace el admin
+             cuando recibe el efectivo en persona (ver app/admin). Aquí solo
+             sirve para verificar contra lo que trae apuntado a mano. -->
+        <div class="mt-6 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="mb-3 flex items-center gap-1.5 text-sm font-semibold">
+                <?= icono('dinero', 'h-4 w-4 text-slate-400') ?>
+                Tus cortes entregados
+            </h2>
+            <?php if ($cortes === []): ?>
+            <p class="text-xs text-slate-500">Todavía no le has entregado ningún corte a la administración.</p>
+            <?php else: ?>
+            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50">
+                        <tr class="border-b border-slate-200 uppercase text-slate-500">
+                            <th class="px-3 py-2">Fecha</th>
+                            <th class="px-3 py-2 text-right">Monto</th>
+                            <th class="px-3 py-2">Recibió</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($cortes as $corte): ?>
+                        <tr class="border-b border-slate-100 last:border-0">
+                            <td class="px-3 py-2 text-slate-500"><?= htmlspecialchars($corte['fecha_movimiento'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-right font-medium"><?= camisaMoneda((float) $corte['monto']) ?></td>
+                            <td class="px-3 py-2 text-slate-500"><?= htmlspecialchars($corte['recibido_por'], ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
         </div>
 
         <a href="<?= BASE_URL ?>/camisas/includes/salir.php" class="mt-6 flex cursor-pointer items-center justify-center gap-1.5 text-center text-xs font-medium text-slate-500 underline">

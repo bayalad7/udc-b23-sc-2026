@@ -143,6 +143,45 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- Cortes (entregas de efectivo) de cada jefe de grupo al staff por lo
+-- cobrado de la camisa. Vive aparte de `alumnos` porque el corte es del
+-- GRADO+GRUPO, no de un alumno concreto: el cargo de jefe puede cambiar
+-- entre un corte y otro, o entregar alguien más en su nombre, y el corte
+-- debe poder registrarse aunque el grupo se quede momentáneamente sin jefe
+-- — por eso no hay FK a alumnos, solo los mismos ENUM de grado/grupo.
+--
+-- El monto es lo que el jefe entrega FÍSICAMENTE — a propósito NO se topa
+-- contra lo recaudado según alumnos.camisa_pago (ver camisaCortesEncuadre en
+-- app/camisas/includes/cortes.php): puede ser mayor o menor, y esa
+-- diferencia es justo la señal de que algún pago individual se capturó mal.
+--
+-- INMUTABLE a propósito: no hay UPDATE ni DELETE desde la UI
+-- (app/admin/public/corte-camisas.php) — un error de captura se corrige con
+-- un corte de ajuste nuevo, nunca editando uno existente, para que el
+-- histórico sea confiable como comprobante firmado.
+CREATE TABLE IF NOT EXISTS camisa_cortes (
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+        COMMENT 'Identificador interno — también el folio impreso en el recibo',
+    grado             ENUM('1','3','5') NOT NULL
+        COMMENT 'Grado del grupo que entrega — mismo dominio que alumnos.grado',
+    grupo             ENUM('A','B','C') NOT NULL
+        COMMENT 'Grupo que entrega — mismo dominio que alumnos.grupo',
+    monto             DECIMAL(7,2) NOT NULL
+        COMMENT 'Lo que el jefe entregó físicamente — no se topa contra lo recaudado según el sistema, ver nota de la tabla',
+    entregado_por     VARCHAR(150) NOT NULL
+        COMMENT 'Nombre de quien entrega el dinero (normalmente el jefe) — texto libre, mismo criterio que inscripciones.registrado_por',
+    recibido_por      VARCHAR(150) NOT NULL
+        COMMENT 'Nombre de quién del staff recibió el dinero — texto libre porque app/admin no tiene usuarios individuales (contraseña compartida)',
+    fecha_movimiento  DATE NOT NULL
+        COMMENT 'Fecha real de la entrega en efectivo, tecleada por el admin — puede no ser hoy',
+    fecha_registro    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        COMMENT 'Cuándo quedó capturado en el sistema (auditoría) — no confundir con fecha_movimiento',
+    CONSTRAINT chk_camisa_cortes_monto CHECK ( monto > 0 ),
+    KEY idx_camisa_cortes_grupo (grado, grupo, fecha_movimiento)
+        COMMENT 'La consulta más frecuente es el histórico de un grado+grupo ordenado por fecha'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Cortes (entregas de efectivo) de cada jefe de grupo al staff por lo cobrado de la camisa — inmutable, sin UPDATE/DELETE desde la UI.';
+
 -- Catálogo de eventos individuales (a los que un alumno se inscribe uno por
 -- uno, sin equipo): ponencias y talleres del Día Académico o del Día
 -- Cultural. Lo que se organiza POR EQUIPO (concursos, torneos) NO va aquí:

@@ -10,6 +10,7 @@ if (!adminAutorizado()) {
 }
 require __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../../camisas/includes/costo.php';
+require_once __DIR__ . '/../../camisas/includes/cortes.php';
 
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
@@ -33,6 +34,7 @@ $mensajesError = [
     'costo_menor_a_pagos' => 'No se puede bajar el costo a menos de lo que alguien ya pagó ('
         . htmlspecialchars((string) ($_GET['detalle'] ?? ''), ENT_QUOTES, 'UTF-8')
         . '). Ajusta primero esos pagos desde la ficha del alumno.',
+    'grupo_invalido' => 'Ese grado y grupo no son válidos.',
 ];
 $mensajeError = $mensajesError[$_GET['error'] ?? ''] ?? null;
 
@@ -56,8 +58,16 @@ foreach ($pdo->query('SELECT id, nombre_completo, grado, grupo FROM alumnos WHER
     $jefesPorGrupo[$jefe['grado'] . $jefe['grupo']] = $jefe;
 }
 
+// Entregado en cortes de caja (ver app/admin/public/corte-camisas.php) — se
+// mezcla por grado+grupo igual que $jefesPorGrupo. Sin JOIN contra la
+// consulta de arriba porque camisa_cortes no cuelga de alumnos.
+$entregadoPorGrupo = [];
+foreach ($pdo->query('SELECT grado, grupo, SUM(monto) AS entregado FROM camisa_cortes GROUP BY grado, grupo')->fetchAll() as $fila) {
+    $entregadoPorGrupo[$fila['grado'] . $fila['grupo']] = (float) $fila['entregado'];
+}
+
 $grupos = [];
-$totales = ['piden' => 0, 'abonan' => 0, 'liquidados' => 0, 'confirman' => 0, 'recaudado' => 0.0, 'esperado' => 0.0, 'pendiente' => 0.0, 'sin_jefe' => 0];
+$totales = ['piden' => 0, 'abonan' => 0, 'liquidados' => 0, 'confirman' => 0, 'recaudado' => 0.0, 'esperado' => 0.0, 'pendiente' => 0.0, 'sin_jefe' => 0, 'entregado' => 0.0];
 foreach ($filasGrupo as $fila) {
     $piden = (int) $fila['piden'];
     $abonan = (int) $fila['abonan'];
@@ -65,8 +75,11 @@ foreach ($filasGrupo as $fila) {
     $recaudado = (float) $fila['recaudado'];
     $esperado = $piden * $costo;
     $clave = $fila['grado'] . $fila['grupo'];
+    $entregado = $entregadoPorGrupo[$clave] ?? 0.0;
 
     $grupos[] = [
+        'grado' => $fila['grado'],
+        'grupo' => $fila['grupo'],
         'etiqueta' => $fila['grado'] . '°' . $fila['grupo'],
         'jefe' => $jefesPorGrupo[$clave] ?? null,
         'total' => (int) $fila['total'],
@@ -77,6 +90,7 @@ foreach ($filasGrupo as $fila) {
         'recaudado' => $recaudado,
         'esperado' => $esperado,
         'pendiente' => max(0.0, $esperado - $recaudado),
+        'entregado' => $entregado,
     ];
 
     $totales['piden'] += $piden;
@@ -85,6 +99,7 @@ foreach ($filasGrupo as $fila) {
     $totales['confirman'] += $abonan + $liquidados;
     $totales['recaudado'] += $recaudado;
     $totales['esperado'] += $esperado;
+    $totales['entregado'] += $entregado;
     if (!isset($jefesPorGrupo[$clave])) {
         $totales['sin_jefe']++;
     }
@@ -226,11 +241,12 @@ if ($mensajeError) {
                     <th class="px-3 py-2 text-center">Confirman</th>
                     <th class="px-3 py-2 text-right">Recaudado</th>
                     <th class="px-3 py-2 text-right">Por cobrar</th>
+                    <th class="px-3 py-2 text-right">Entregado</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if ($grupos === []): ?>
-                <tr><td colspan="8" class="px-3 py-8 text-center text-slate-500">Todavía no hay alumnos registrados.</td></tr>
+                <tr><td colspan="9" class="px-3 py-8 text-center text-slate-500">Todavía no hay alumnos registrados.</td></tr>
                 <?php endif; ?>
                 <?php foreach ($grupos as $g): ?>
                 <tr class="border-b border-slate-100 last:border-0">
@@ -250,6 +266,12 @@ if ($mensajeError) {
                     <td class="px-3 py-2 text-center font-medium text-slate-700"><?= $g['confirman'] ?></td>
                     <td class="px-3 py-2 text-right font-medium text-emerald-700"><?= camisaMoneda($g['recaudado']) ?></td>
                     <td class="px-3 py-2 text-right font-medium <?= $g['pendiente'] > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= camisaMoneda($g['pendiente']) ?></td>
+                    <td class="px-3 py-2 text-right">
+                        <a href="<?= BASE_URL ?>/admin/public/corte-camisas.php?grado=<?= htmlspecialchars($g['grado'], ENT_QUOTES, 'UTF-8') ?>&grupo=<?= htmlspecialchars($g['grupo'], ENT_QUOTES, 'UTF-8') ?>"
+                           title="Registrar o ver cortes de este grupo" class="font-medium text-slate-700 underline hover:text-slate-900">
+                            <?= $g['entregado'] > 0 ? camisaMoneda($g['entregado']) : 'Sin cortes' ?>
+                        </a>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -263,6 +285,7 @@ if ($mensajeError) {
                     <td class="px-3 py-2 text-center"><?= number_format($totales['confirman']) ?></td>
                     <td class="px-3 py-2 text-right text-emerald-700"><?= camisaMoneda($totales['recaudado']) ?></td>
                     <td class="px-3 py-2 text-right <?= $totales['pendiente'] > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= camisaMoneda($totales['pendiente']) ?></td>
+                    <td class="px-3 py-2 text-right"><?= camisaMoneda($totales['entregado']) ?></td>
                 </tr>
             </tfoot>
             <?php endif; ?>

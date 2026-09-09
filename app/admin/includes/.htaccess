@@ -71,3 +71,15 @@ Require all denied
 <Files "guardar-inscripciones.php">
     Require all granted
 </Files>
+
+<Files "guardar-camisa-costo.php">
+    Require all granted
+</Files>
+
+<Files "guardar-corte-camisas.php">
+    Require all granted
+</Files>
+
+<Files "exportar-corte-camisas.php">
+    Require all granted
+</Files>
