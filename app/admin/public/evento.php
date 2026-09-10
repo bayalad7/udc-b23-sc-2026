@@ -98,13 +98,21 @@ if ($mensajeError) {
                 </div>
 
                 <div>
-                    <label for="descripcion" class="mb-1 block text-sm font-medium">Descripción breve</label>
-                    <div class="relative">
-                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><?= icono('descripcion', 'h-4 w-4') ?></span>
-                        <input type="text" id="descripcion" name="descripcion" required maxlength="150"
-                               value="<?= htmlspecialchars((string) $evento['descripcion'], ENT_QUOTES, 'UTF-8') ?>"
-                               class="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-slate-500 focus:outline-none">
-                    </div>
+                    <!-- <textarea> y no <input type="text">: la descripción es la
+                         ficha completa del evento (eventos.descripcion es TEXT), la
+                         que el alumno lee en el modal "Ver detalles" de
+                         app/inscripciones. El ícono va en la etiqueta porque el
+                         prefijo absoluto de los demás campos queda centrado a media
+                         altura en un campo multilínea. -->
+                    <label for="descripcion" class="mb-1 flex items-center gap-1.5 text-sm font-medium">
+                        <?= icono('descripcion', 'h-4 w-4 text-slate-400') ?>
+                        Descripción
+                    </label>
+                    <textarea id="descripcion" name="descripcion" required rows="6" maxlength="2000"
+                              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"><?= htmlspecialchars((string) $evento['descripcion'], ENT_QUOTES, 'UTF-8') ?></textarea>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Se muestra recortada a dos líneas en la tarjeta de inscripciones y completa en el modal «Ver detalles». Máximo 2000 caracteres.
+                    </p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">

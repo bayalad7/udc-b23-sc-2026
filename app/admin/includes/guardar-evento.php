@@ -36,7 +36,11 @@ if (!in_array($dia, ['academico', 'cultural'], true) || !in_array($tipo, ['ponen
 if ($nombre === '' || $facilitador === '' || $espacio === '' || $responsable === '' || $descripcion === '') {
     volverConError($id, 'campos_incompletos');
 }
-if (mb_strlen($nombre) > 150 || mb_strlen($descripcion) > 150 || mb_strlen($facilitador) > 150
+// descripcion admite 2000 (la columna es TEXT, ver la migración
+// 2026-09-10-eventos-descripcion-larga.sql): es la ficha completa del evento,
+// no el resumen de una línea que era antes. El tope es el mismo maxlength del
+// <textarea> de public/evento.php, solo que aquí sí es de verdad.
+if (mb_strlen($nombre) > 150 || mb_strlen($descripcion) > 2000 || mb_strlen($facilitador) > 150
     || mb_strlen($espacio) > 100 || mb_strlen($responsable) > 150) {
     volverConError($id, 'campos_incompletos');
 }

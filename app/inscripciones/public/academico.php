@@ -5,6 +5,7 @@ require __DIR__ . '/../includes/sesion.php';
 require __DIR__ . '/../includes/iconos.php';
 require_once __DIR__ . '/../includes/estado.php';
 require_once __DIR__ . '/../includes/convocatoria.php';
+require_once __DIR__ . '/../includes/detalle-evento.php';
 
 iniciarSesionInscripciones();
 
@@ -184,7 +185,9 @@ function renderTarjetaEvento(array $evento, bool $yaInscrito, bool $bloqueado, a
             <span class="block font-semibold"><?= htmlspecialchars($evento['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
 
             <?php if (trim((string) $evento['descripcion']) !== ''): ?>
-            <span class="mt-1 block text-xs <?= $textoSecundario ?>"><?= htmlspecialchars($evento['descripcion'], ENT_QUOTES, 'UTF-8') ?></span>
+            <!-- Recortada a dos líneas: la descripción es TEXT y puede ser un
+                 párrafo entero — el texto completo va en el modal "Ver detalles". -->
+            <span class="mt-1 line-clamp-2 text-xs <?= $textoSecundario ?>"><?= htmlspecialchars($evento['descripcion'], ENT_QUOTES, 'UTF-8') ?></span>
             <?php endif; ?>
 
             <span class="mt-2 flex items-center gap-1 text-xs <?= $textoSecundario ?>">
@@ -204,15 +207,19 @@ function renderTarjetaEvento(array $evento, bool $yaInscrito, bool $bloqueado, a
                 </div>
             </div>
 
-            <?php if ($inscritos !== []): ?>
-            <button type="button" data-abrir-modal="inscritos-<?= $idEvento ?>"
-                    class="mt-2 flex items-center gap-1 rounded-lg border <?= $yaInscrito ? 'border-white/20' : 'border-slate-200' ?> px-3 py-2 text-xs font-medium cursor-pointer <?= $textoSecundario ?>">
-                <?= icono('cupo', 'h-3.5 w-3.5 shrink-0') ?>
-                Ver inscritos (<?= count($inscritos) ?>)
-            </button>
-            <?php else: ?>
-            <span class="mt-2 block text-xs <?= $textoSecundario ?>">Sin inscritos aún</span>
-            <?php endif; ?>
+            <div class="mt-2 flex flex-col gap-2">
+                <?php renderBotonDetallesEvento($evento, $textoSecundario, $yaInscrito ? 'border-white/20' : 'border-slate-200'); ?>
+
+                <?php if ($inscritos !== []): ?>
+                <button type="button" data-abrir-modal="inscritos-<?= $idEvento ?>"
+                        class="flex items-center gap-1 rounded-lg border <?= $yaInscrito ? 'border-white/20' : 'border-slate-200' ?> px-3 py-2 text-xs font-medium cursor-pointer <?= $textoSecundario ?>">
+                    <?= icono('cupo', 'h-3.5 w-3.5 shrink-0') ?>
+                    Ver inscritos (<?= count($inscritos) ?>)
+                </button>
+                <?php else: ?>
+                <span class="block text-xs <?= $textoSecundario ?>">Sin inscritos aún</span>
+                <?php endif; ?>
+            </div>
         </div>
 
         <?php if ($yaInscrito): ?>
@@ -235,6 +242,8 @@ function renderTarjetaEvento(array $evento, bool $yaInscrito, bool $bloqueado, a
         </button>
         <?php endif; ?>
     </div>
+
+    <?php renderDialogoDetallesEvento($evento); ?>
 
     <?php if ($inscritos !== []): ?>
     <dialog id="inscritos-<?= $idEvento ?>" class="m-auto w-[90%] max-w-2xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
