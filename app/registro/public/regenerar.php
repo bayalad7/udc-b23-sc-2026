@@ -106,7 +106,7 @@ if ($alumno !== null) {
                             class="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-base focus:border-slate-500 focus:outline-none">
                         <option value="" disabled>Elige...</option>
                         <?php foreach (['1' => '1°', '3' => '3°', '5' => '5°'] as $valor => $etiqueta): ?>
-                        <option value="<?= $valor ?>" <?= $alumno['grado'] === $valor ? 'selected' : '' ?>><?= $etiqueta ?></option>
+                        <option value="<?= $valor ?>" <?= $alumno['grado'] === (string) $valor ? 'selected' : '' ?>><?= $etiqueta ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
