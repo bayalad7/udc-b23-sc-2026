@@ -205,8 +205,8 @@ CREATE TABLE IF NOT EXISTS eventos (
         COMMENT 'Quién imparte la ponencia/taller',
     nombre            VARCHAR(150) NOT NULL
         COMMENT 'Nombre de la ponencia/taller tal como se muestra al alumno al elegir',
-    descripcion       VARCHAR(150) NOT NULL
-        COMMENT 'Descripción breve mostrada junto al nombre al elegir',
+    descripcion       TEXT NOT NULL
+        COMMENT 'Descripción completa del evento — la tarjeta de app/inscripciones la recorta a dos líneas y el texto íntegro se lee en el modal "Ver detalles". TEXT y no VARCHAR(150) porque las descripciones reales son párrafos, no una línea',
     espacio           VARCHAR(100) NOT NULL
         COMMENT 'Aula/salón donde ocurre — mismos nombres que espacios-y-capacidades.md',
     cupo_maximo       SMALLINT UNSIGNED NOT NULL
