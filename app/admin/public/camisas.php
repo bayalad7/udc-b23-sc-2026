@@ -91,6 +91,13 @@ foreach ($filasGrupo as $fila) {
         'esperado' => $esperado,
         'pendiente' => max(0.0, $esperado - $recaudado),
         'entregado' => $entregado,
+        // A diferencia de "pendiente" (que nunca es negativo, ver arriba),
+        // aquí SÍ importa el signo: positivo = todavía trae dinero sin
+        // entregar; negativo = entregó más de lo que el sistema dice que
+        // recaudó — señal de que algún pago individual se capturó mal (ver
+        // camisaCortesEncuadre() en app/camisas/includes/cortes.php, mismo
+        // criterio que usa el jefe en su propia pantalla).
+        'diferencia' => $recaudado - $entregado,
     ];
 
     $totales['piden'] += $piden;
@@ -105,6 +112,20 @@ foreach ($filasGrupo as $fila) {
     }
 }
 $totales['pendiente'] = max(0.0, $totales['esperado'] - $totales['recaudado']);
+$totales['diferencia'] = $totales['recaudado'] - $totales['entregado'];
+
+// --- Cifras "de verdad" para las tarjetas de resumen (no para la tabla de
+// abajo) ---------------------------------------------------------------
+// La tabla de cobranza sigue mostrando lo que cada jefe tiene CAPTURADO
+// (camisa_pago) — es lo que necesita para cuadrar contra su propio efectivo.
+// Mientras que arriba, "Recaudado" pasa a ser lo que la administración
+// realmente ya tiene en la mano (la suma de los cortes ya recibidos, ver
+// camisa_cortes) en vez de lo que los jefes dicen haber cobrado — y "Por
+// cobrar" se recalcula sobre esa misma base: lo que cuesta el pedido ya
+// confirmado (camisas con pago de por medio, mismo criterio que
+// "Camisas encargadas") menos lo que ya se entregó.
+$totales['esperado_confirmado'] = $totales['confirman'] * $costo;
+$totales['por_cobrar_real'] = max(0.0, $totales['esperado_confirmado'] - $totales['entregado']);
 
 // --- Listado de alumnos ------------------------------------------------------
 $grado = trim((string) ($_GET['grado'] ?? ''));
@@ -163,17 +184,17 @@ if ($mensajeError) {
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"><?= icono('dinero', 'h-5 w-5') ?></span>
         <div class="min-w-0">
             <span class="block truncate text-xs font-medium text-emerald-700">Recaudado</span>
-            <span class="block text-xl font-bold text-emerald-900"><?= camisaMoneda($totales['recaudado']) ?></span>
-            <span class="block truncate text-[11px] text-emerald-600">de <?= camisaMoneda($totales['esperado']) ?> esperados</span>
+            <span class="block text-xl font-bold text-emerald-900"><?= camisaMoneda($totales['entregado']) ?></span>
+            <span class="block truncate text-[11px] text-emerald-600">entregado en cortes, de <?= camisaMoneda($totales['esperado_confirmado']) ?> esperados</span>
         </div>
     </div>
 
-    <div class="flex items-center gap-3 rounded-lg border-l-4 p-3 shadow-sm <?= $totales['pendiente'] > 0 ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white' ?>">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full <?= $totales['pendiente'] > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500' ?>"><?= icono('alerta', 'h-5 w-5') ?></span>
+    <div class="flex items-center gap-3 rounded-lg border-l-4 p-3 shadow-sm <?= $totales['por_cobrar_real'] > 0 ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white' ?>">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full <?= $totales['por_cobrar_real'] > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500' ?>"><?= icono('alerta', 'h-5 w-5') ?></span>
         <div class="min-w-0">
-            <span class="block truncate text-xs font-medium <?= $totales['pendiente'] > 0 ? 'text-amber-700' : 'text-slate-500' ?>">Por cobrar</span>
-            <span class="block text-xl font-bold <?= $totales['pendiente'] > 0 ? 'text-amber-900' : 'text-slate-900' ?>"><?= camisaMoneda($totales['pendiente']) ?></span>
-            <span class="block truncate text-[11px] <?= $totales['pendiente'] > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= number_format($totales['liquidados']) ?> de <?= number_format($totales['piden']) ?> liquidaron</span>
+            <span class="block truncate text-xs font-medium <?= $totales['por_cobrar_real'] > 0 ? 'text-amber-700' : 'text-slate-500' ?>">Por cobrar</span>
+            <span class="block text-xl font-bold <?= $totales['por_cobrar_real'] > 0 ? 'text-amber-900' : 'text-slate-900' ?>"><?= camisaMoneda($totales['por_cobrar_real']) ?></span>
+            <span class="block truncate text-[11px] <?= $totales['por_cobrar_real'] > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= number_format($totales['liquidados']) ?> de <?= number_format($totales['piden']) ?> liquidaron</span>
         </div>
     </div>
 
@@ -181,8 +202,8 @@ if ($mensajeError) {
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500"><?= icono('camisa', 'h-5 w-5') ?></span>
         <div class="min-w-0">
             <span class="block truncate text-xs text-slate-500">Camisas encargadas</span>
-            <span class="block text-xl font-bold text-slate-900"><?= number_format($totales['piden']) ?></span>
-            <span class="block truncate text-[11px] text-slate-400">alumnos (el personal va aparte)</span>
+            <span class="block text-xl font-bold text-slate-900"><?= number_format($totales['confirman']) ?></span>
+            <span class="block truncate text-[11px] text-slate-400">de <?= number_format($totales['piden']) ?> marcados · con pago registrado</span>
         </div>
     </div>
 
@@ -242,13 +263,26 @@ if ($mensajeError) {
                     <th class="px-3 py-2 text-right">Recaudado</th>
                     <th class="px-3 py-2 text-right">Por cobrar</th>
                     <th class="px-3 py-2 text-right">Entregado</th>
+                    <th class="px-3 py-2 text-right">Diferencia</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if ($grupos === []): ?>
-                <tr><td colspan="9" class="px-3 py-8 text-center text-slate-500">Todavía no hay alumnos registrados.</td></tr>
+                <tr><td colspan="10" class="px-3 py-8 text-center text-slate-500">Todavía no hay alumnos registrados.</td></tr>
                 <?php endif; ?>
-                <?php foreach ($grupos as $g): ?>
+                <?php foreach ($grupos as $g):
+                    $diferenciaGrupo = $g['diferencia'];
+                    if (abs($diferenciaGrupo) < 0.01) {
+                        $claseDiferencia = 'text-slate-400';
+                        $textoDiferencia = 'Exacto';
+                    } elseif ($diferenciaGrupo > 0) {
+                        $claseDiferencia = 'text-amber-600';
+                        $textoDiferencia = 'Falta ' . camisaMoneda($diferenciaGrupo);
+                    } else {
+                        $claseDiferencia = 'text-red-600';
+                        $textoDiferencia = 'Sobra ' . camisaMoneda(abs($diferenciaGrupo));
+                    }
+                ?>
                 <tr class="border-b border-slate-100 last:border-0">
                     <td class="px-3 py-2 font-medium"><?= htmlspecialchars($g['etiqueta'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="px-3 py-2">
@@ -272,6 +306,7 @@ if ($mensajeError) {
                             <?= $g['entregado'] > 0 ? camisaMoneda($g['entregado']) : 'Sin cortes' ?>
                         </a>
                     </td>
+                    <td class="px-3 py-2 text-right font-medium <?= $claseDiferencia ?>"><?= $textoDiferencia ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -286,6 +321,20 @@ if ($mensajeError) {
                     <td class="px-3 py-2 text-right text-emerald-700"><?= camisaMoneda($totales['recaudado']) ?></td>
                     <td class="px-3 py-2 text-right <?= $totales['pendiente'] > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= camisaMoneda($totales['pendiente']) ?></td>
                     <td class="px-3 py-2 text-right"><?= camisaMoneda($totales['entregado']) ?></td>
+                    <?php
+                    $diferenciaTotal = $totales['diferencia'];
+                    if (abs($diferenciaTotal) < 0.01) {
+                        $claseDiferenciaTotal = 'text-slate-400';
+                        $textoDiferenciaTotal = 'Exacto';
+                    } elseif ($diferenciaTotal > 0) {
+                        $claseDiferenciaTotal = 'text-amber-600';
+                        $textoDiferenciaTotal = 'Falta ' . camisaMoneda($diferenciaTotal);
+                    } else {
+                        $claseDiferenciaTotal = 'text-red-600';
+                        $textoDiferenciaTotal = 'Sobra ' . camisaMoneda(abs($diferenciaTotal));
+                    }
+                    ?>
+                    <td class="px-3 py-2 text-right <?= $claseDiferenciaTotal ?>"><?= $textoDiferenciaTotal ?></td>
                 </tr>
             </tfoot>
             <?php endif; ?>
