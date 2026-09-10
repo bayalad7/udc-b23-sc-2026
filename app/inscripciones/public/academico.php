@@ -155,6 +155,22 @@ function horaBonita(string $hora): string
     return substr($hora, 0, 5);
 }
 
+// Encabezado de la grilla de eventos de un bloque. Se deriva del `tipo` real
+// de lo que hay en la grilla y no se escribe fijo: el bloque de las 09:00
+// mezcla ponencias con un taller, y el de las 10:30 es solo talleres.
+function tituloGrupoEventos(array $eventos): string
+{
+    $tipos = array_unique(array_column($eventos, 'tipo'));
+
+    if ($tipos === ['ponencia']) {
+        return 'Ponencias';
+    }
+    if ($tipos === ['taller']) {
+        return 'Talleres';
+    }
+    return 'Ponencias y talleres';
+}
+
 function claseTarjeta(bool $yaInscrito, bool $sinCupo, bool $bloqueado): string
 {
     if ($yaInscrito) {
@@ -625,7 +641,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
 
         <?php if ($eventosResto !== []): ?>
         <?php if (!empty($bloque['competiciones']) || $eventosDestacados !== []): ?>
-        <h3 class="mb-2 text-sm font-medium text-slate-500">Talleres</h3>
+        <h3 class="mb-2 text-sm font-medium text-slate-500"><?= tituloGrupoEventos($eventosResto) ?></h3>
         <?php endif; ?>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <?php foreach ($eventosResto as $evento):
