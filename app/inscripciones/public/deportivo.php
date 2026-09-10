@@ -32,6 +32,19 @@ $torneos = $pdo->query(
     "SELECT id, nombre, hora_inicio, hora_fin, max_equipos, tam_equipo, convocatoria FROM competiciones WHERE dia = 'deportivo' ORDER BY id"
 )->fetchAll();
 
+// Los 3 torneos comparten UNA sola convocatoria (a diferencia de
+// academico/cultural, donde cada competición trae la suya) — se sube una
+// vez desde app/admin/public/competicion.php a cualquiera de los 3 registros
+// y aquí se muestra un único link para los 3, en vez de repetirlo por
+// tarjeta. Se toma el primero que la tenga cargada.
+$urlConvocatoriaTorneos = null;
+foreach ($torneos as $torneoConvocatoria) {
+    $urlConvocatoriaTorneos = convocatoriaUrl($torneoConvocatoria['convocatoria']);
+    if ($urlConvocatoriaTorneos !== null) {
+        break;
+    }
+}
+
 // --- Para cada torneo: equipos ya registrados (transparencia), colores ya
 // tomados, y si el alumno identificado ya es integrante de alguno. ---------
 
@@ -151,6 +164,20 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
         torneo. Si te toca partido de dos torneos a la misma hora, tú decides en cuál participar.
     </p>
 
+    <?php if ($urlConvocatoriaTorneos !== null): ?>
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-4 shadow-sm">
+        <span class="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <?= icono('trofeo', 'h-4 w-4 shrink-0 text-slate-400') ?>
+            Convocatoria de los torneos deportivos
+        </span>
+        <a href="<?= htmlspecialchars($urlConvocatoriaTorneos, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
+           class="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">
+            <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
+            Ver convocatoria
+        </a>
+    </div>
+    <?php endif; ?>
+
     <?php foreach ($torneos as $torneo):
         $idTorneo = (int) $torneo['id'];
         $equipos = $equiposPorTorneo[$idTorneo];
@@ -172,14 +199,6 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
             Equipos de <?= $tamEquipoTorneo ?> (alumnos y padres/madres de familia)<?= $maxEquiposTorneo !== null ? ' · ' . count($equipos) . '/' . $maxEquiposTorneo . ' equipos' : '' ?>.
         </p>
         <div class="flex flex-wrap items-center justify-end gap-2">
-            <?php $urlConvocatoria = convocatoriaUrl($torneo['convocatoria']); ?>
-            <?php if ($urlConvocatoria !== null): ?>
-            <a href="<?= htmlspecialchars($urlConvocatoria, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"
-               class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">
-                <?= icono('convocatoria', 'h-3.5 w-3.5 shrink-0') ?>
-                Ver convocatoria
-            </a>
-            <?php endif; ?>
             <?php if ($equipos !== []): ?>
             <button type="button" data-abrir-modal="equipos-torneo-<?= $idTorneo ?>"
                     class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium cursor-pointer text-slate-600">

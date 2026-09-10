@@ -68,9 +68,9 @@ INSERT INTO eventos (dia, tipo, hora_inicio, hora_fin, facilitador, nombre, desc
 INSERT INTO competiciones (dia, tipo, hora_inicio, hora_fin, nombre, fecha_limite, max_equipos, tam_equipo, convocatoria) VALUES
 ('academico', 'concurso', '10:30:00', '12:30:00', 'Concurso del Conocimiento',                  '2026-09-30 23:59:59', 30,   6,    'convocatorias/día-académico.png'),
 ('cultural',  'concurso', '16:00:00', '17:20:00', 'Escenario de Talentos "Expresa tu esencia"', '2026-09-30 23:59:59', NULL, NULL, 'convocatorias/día-cultural.png'),
-('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Fútbol Rápido',                    '2026-09-30 23:59:59', 16,   10,   NULL),
-('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Voleibol',                         '2026-09-30 23:59:59', 16,   10,   NULL),
-('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Quemados',                         '2026-09-30 23:59:59', 16,   10,   NULL);
+('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Fútbol Rápido',                    '2026-09-30 23:59:59', 16,   10,   'convocatorias/día-deportivo.png'),
+('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Voleibol',                         '2026-09-30 23:59:59', 16,   10,   'convocatorias/día-deportivo.png'),
+('deportivo', 'torneo',   '07:30:00', '11:30:00', 'Torneo de Quemados',                         '2026-09-30 23:59:59', 16,   8,    'convocatorias/día-deportivo.png');
 
 -- ──────────────────────────────────────────────────────────────────────── ──
 -- ── Carga masiva de datos de prueba (350 alumnos + inscripciones/equipos) ──
