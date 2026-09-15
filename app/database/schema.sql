@@ -209,6 +209,8 @@ CREATE TABLE IF NOT EXISTS eventos (
         COMMENT 'Descripción completa del evento — la tarjeta de app/inscripciones la recorta a dos líneas y el texto íntegro se lee en el modal "Ver detalles". TEXT y no VARCHAR(150) porque las descripciones reales son párrafos, no una línea',
     etiquetas         VARCHAR(255) NULL DEFAULT NULL
         COMMENT 'Temas del evento como lista separada por comas (ej. "Inteligencia artificial, Tecnología, Divulgación") — se muestran como chips en el modal "Ver detalles" de app/inscripciones. NULL mientras el evento no tenga tema definido. Texto plano y no una tabla aparte porque solo se leen para mostrarse: no se filtra ni se agrupa por etiqueta',
+    requerimientos    TEXT NULL DEFAULT NULL
+        COMMENT 'Qué tiene que llevar el alumno a este evento, según lo que pida el ponente/tallerista: un requerimiento por línea (separador: salto de línea, NO comas — un requerimiento es prosa y lleva comas propias). Se muestra como lista en el modal "Ver detalles" de app/inscripciones. NULL = el evento no pide nada, o el ponente todavía no lo indica',
     espacio           VARCHAR(100) NOT NULL
         COMMENT 'Aula/salón donde ocurre — mismos nombres que espacios-y-capacidades.md',
     cupo_maximo       SMALLINT UNSIGNED NOT NULL
