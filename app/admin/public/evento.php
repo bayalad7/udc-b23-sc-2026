@@ -17,7 +17,7 @@ $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 $evento = [
     'id' => null, 'dia' => '', 'tipo' => '', 'hora_inicio' => '', 'hora_fin' => '',
-    'facilitador' => '', 'nombre' => '', 'descripcion' => '', 'etiquetas' => '', 'espacio' => '',
+    'facilitador' => '', 'nombre' => '', 'descripcion' => '', 'etiquetas' => '', 'requerimientos' => '', 'espacio' => '',
     'cupo_maximo' => 30, 'cupo_disponible' => 30, 'responsable' => '',
 ];
 $inscritos = [];
@@ -127,6 +127,21 @@ if ($mensajeError) {
                     <p class="mt-1 text-xs text-slate-500">
                         Temas del evento, separados por comas. Se muestran como chips en el modal «Ver detalles» de
                         inscripciones. Opcional: déjalo vacío si el tema todavía no está definido.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="requerimientos" class="mb-1 flex items-center gap-1.5 text-sm font-medium">
+                        <?= icono('mochila', 'h-4 w-4 text-slate-400') ?>
+                        Qué debe llevar el alumno
+                    </label>
+                    <textarea id="requerimientos" name="requerimientos" rows="4" maxlength="1000"
+                              placeholder="Un requerimiento por línea, por ejemplo:&#10;Laptop con Git instalado&#10;Cuenta de GitHub ya creada"
+                              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"><?= htmlspecialchars((string) $evento['requerimientos'], ENT_QUOTES, 'UTF-8') ?></textarea>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Lo que el ponente o tallerista pide que el alumno lleve. <strong>Uno por línea</strong>, no separados por
+                        comas: un requerimiento puede llevar comas propias. Se muestra como lista en el modal «Ver detalles».
+                        Déjalo vacío si el evento no pide nada.
                     </p>
                 </div>
 

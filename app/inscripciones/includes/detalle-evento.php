@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/etiquetas.php';
+require_once __DIR__ . '/requerimientos.php';
 
 // Ficha completa de una ponencia/taller, en un <dialog> — mismo markup para
 // academico.php y cultural.php (las dos páginas que listan filas de `eventos`).
@@ -91,6 +92,24 @@ function renderDialogoDetallesEvento(array $evento): void
             <p class="mt-4 border-t border-slate-200 pt-4 text-sm leading-relaxed text-slate-600">
                 <?= nl2br(htmlspecialchars($evento['descripcion'], ENT_QUOTES, 'UTF-8')) ?>
             </p>
+            <?php endif; ?>
+
+            <?php $requerimientos = requerimientosLista($evento['requerimientos'] ?? null); ?>
+            <?php if ($requerimientos !== []): ?>
+            <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <span class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                    <?= icono('mochila', 'h-4 w-4 shrink-0 text-slate-400') ?>
+                    Qué debes llevar
+                </span>
+                <ul class="mt-2 flex flex-col gap-1">
+                    <?php foreach ($requerimientos as $requerimiento): ?>
+                    <li class="flex items-start gap-1.5 text-xs text-slate-600">
+                        <span class="mt-1 h-1 w-1 shrink-0 rounded-full bg-slate-400"></span>
+                        <?= htmlspecialchars($requerimiento, ENT_QUOTES, 'UTF-8') ?>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
             <?php endif; ?>
 
             <form method="dialog" class="mt-4">

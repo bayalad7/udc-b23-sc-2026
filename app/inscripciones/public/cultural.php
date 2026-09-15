@@ -33,7 +33,7 @@ if ($alumno === false) {
 // — un alumno solo puede estar inscrito a UN taller de este bloque. -------
 
 $talleres = $pdo->query(
-    "SELECT id, tipo, hora_inicio, hora_fin, facilitador, nombre, descripcion, etiquetas, espacio, cupo_maximo, cupo_disponible
+    "SELECT id, tipo, hora_inicio, hora_fin, facilitador, nombre, descripcion, etiquetas, requerimientos, espacio, cupo_maximo, cupo_disponible
      FROM eventos WHERE dia = 'cultural' AND tipo = 'taller' ORDER BY hora_inicio, id"
 )->fetchAll();
 
