@@ -33,7 +33,7 @@ if ($alumno === false) {
 // (ver regla 1 del módulo: todo debe poder consultarse, esté o no disponible).
 
 $eventos = $pdo->query(
-    "SELECT id, tipo, hora_inicio, hora_fin, facilitador, nombre, descripcion, espacio, cupo_maximo, cupo_disponible
+    "SELECT id, tipo, hora_inicio, hora_fin, facilitador, nombre, descripcion, etiquetas, espacio, cupo_maximo, cupo_disponible
      FROM eventos WHERE dia = 'academico' ORDER BY hora_inicio, id"
 )->fetchAll();
 

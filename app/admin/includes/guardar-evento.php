@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/sesion.php';
+require_once __DIR__ . '/../../inscripciones/includes/etiquetas.php';
 iniciarSesionAdmin();
 exigirAdmin();
 
@@ -26,6 +27,10 @@ $horaFin = trim((string) ($_POST['hora_fin'] ?? ''));
 $facilitador = trim((string) ($_POST['facilitador'] ?? ''));
 $nombre = trim((string) ($_POST['nombre'] ?? ''));
 $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
+// Se guarda en forma canonica (sin duplicados, separadas por ", ", recortada
+// al tope de la columna) y no tal cual se escribio: asi el chip del modal se
+// ve igual sin importar como lo haya tecleado el staff. Vacio => NULL.
+$etiquetas = etiquetasNormalizar((string) ($_POST['etiquetas'] ?? ''));
 $espacio = trim((string) ($_POST['espacio'] ?? ''));
 $cupoMaximo = (int) ($_POST['cupo_maximo'] ?? 0);
 $responsable = trim((string) ($_POST['responsable'] ?? ''));
@@ -64,12 +69,12 @@ if ($id === null) {
     // cupo_disponible necesita su propio marcador aunque valga lo mismo que
     // cupo_maximo al crear el evento.
     $insertar = $pdo->prepare(
-        'INSERT INTO eventos (dia, tipo, hora_inicio, hora_fin, facilitador, nombre, descripcion, espacio, cupo_maximo, cupo_disponible, responsable)
-         VALUES (:dia, :tipo, :hora_inicio, :hora_fin, :facilitador, :nombre, :descripcion, :espacio, :cupo_maximo, :cupo_disponible, :responsable)'
+        'INSERT INTO eventos (dia, tipo, hora_inicio, hora_fin, facilitador, nombre, descripcion, etiquetas, espacio, cupo_maximo, cupo_disponible, responsable)
+         VALUES (:dia, :tipo, :hora_inicio, :hora_fin, :facilitador, :nombre, :descripcion, :etiquetas, :espacio, :cupo_maximo, :cupo_disponible, :responsable)'
     );
     $insertar->execute([
         'dia' => $dia, 'tipo' => $tipo, 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin,
-        'facilitador' => $facilitador, 'nombre' => $nombre, 'descripcion' => $descripcion, 'espacio' => $espacio,
+        'facilitador' => $facilitador, 'nombre' => $nombre, 'descripcion' => $descripcion, 'etiquetas' => $etiquetas, 'espacio' => $espacio,
         'cupo_maximo' => $cupoMaximo, 'cupo_disponible' => $cupoMaximo, 'responsable' => $responsable,
     ]);
     $idNuevo = (int) $pdo->lastInsertId();
@@ -90,13 +95,13 @@ if ($cupoMaximo < $inscritos) {
 
 $actualizar = $pdo->prepare(
     'UPDATE eventos SET dia = :dia, tipo = :tipo, hora_inicio = :hora_inicio, hora_fin = :hora_fin,
-        facilitador = :facilitador, nombre = :nombre, descripcion = :descripcion, espacio = :espacio,
+        facilitador = :facilitador, nombre = :nombre, descripcion = :descripcion, etiquetas = :etiquetas, espacio = :espacio,
         cupo_maximo = :cupo_maximo, cupo_disponible = :cupo_disponible, responsable = :responsable
      WHERE id = :id'
 );
 $actualizar->execute([
     'dia' => $dia, 'tipo' => $tipo, 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin,
-    'facilitador' => $facilitador, 'nombre' => $nombre, 'descripcion' => $descripcion, 'espacio' => $espacio,
+    'facilitador' => $facilitador, 'nombre' => $nombre, 'descripcion' => $descripcion, 'etiquetas' => $etiquetas, 'espacio' => $espacio,
     'cupo_maximo' => $cupoMaximo, 'cupo_disponible' => $cupoMaximo - $inscritos, 'responsable' => $responsable,
     'id' => $id,
 ]);

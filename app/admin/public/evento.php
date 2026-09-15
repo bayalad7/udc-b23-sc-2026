@@ -17,7 +17,7 @@ $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 $evento = [
     'id' => null, 'dia' => '', 'tipo' => '', 'hora_inicio' => '', 'hora_fin' => '',
-    'facilitador' => '', 'nombre' => '', 'descripcion' => '', 'espacio' => '',
+    'facilitador' => '', 'nombre' => '', 'descripcion' => '', 'etiquetas' => '', 'espacio' => '',
     'cupo_maximo' => 30, 'cupo_disponible' => 30, 'responsable' => '',
 ];
 $inscritos = [];
@@ -112,6 +112,21 @@ if ($mensajeError) {
                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"><?= htmlspecialchars((string) $evento['descripcion'], ENT_QUOTES, 'UTF-8') ?></textarea>
                     <p class="mt-1 text-xs text-slate-500">
                         Se muestra recortada a dos líneas en la tarjeta de inscripciones y completa en el modal «Ver detalles». Máximo 2000 caracteres.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="etiquetas" class="mb-1 flex items-center gap-1.5 text-sm font-medium">
+                        <?= icono('etiqueta', 'h-4 w-4 text-slate-400') ?>
+                        Etiquetas
+                    </label>
+                    <input type="text" id="etiquetas" name="etiquetas" maxlength="255"
+                           placeholder="Inteligencia artificial, Tecnología, Divulgación"
+                           value="<?= htmlspecialchars((string) $evento['etiquetas'], ENT_QUOTES, 'UTF-8') ?>"
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none">
+                    <p class="mt-1 text-xs text-slate-500">
+                        Temas del evento, separados por comas. Se muestran como chips en el modal «Ver detalles» de
+                        inscripciones. Opcional: déjalo vacío si el tema todavía no está definido.
                     </p>
                 </div>
 
