@@ -57,8 +57,10 @@ El escaneo de **entrada** se concentra en el bloque 07:00–07:30 de la [matriz 
 ## Formato de llaves
 
 - Eliminación directa (single elimination) en los tres torneos.
-- Tope de **16 equipos por torneo** (configurable desde `app/admin` sin tocar código — ver `competiciones.max_equipos`), para que las rondas quepan en la ventana fija de 4 horas (07:30–11:30). El número real de equipos por deporte se conoce hasta el cierre de inscripciones (30 de septiembre) y puede ser menor a 16 — si no es una potencia de 2 (4, 8, 16...), algunos equipos necesitarán un "bye" (pase directo) en la primera ronda. Quien arme las llaves el 2 de octubre debe considerarlo.
-- Las llaves se publican el **2 de octubre**, un día antes del evento, para que los equipos sepan su primer rival y horario aproximado.
+- Tope de **16 equipos por torneo** (configurable desde `app/admin` sin tocar código — ver `competiciones.max_equipos`), para que las rondas quepan en la ventana fija de 4 horas (07:30–11:30). El número real de equipos por deporte se conoce hasta el cierre de inscripciones (30 de septiembre) y **puede ser menor a 16**: la llave se arma con los que haya, no con los que caben.
+- Si el número de equipos no es potencia de 2 (2, 4, 8, 16), los que sobran reciben un **"bye"** (pase directo) en la primera ronda. No hay que calcularlo a mano: el módulo de llaves de `app/admin` reparte los byes solo, entre mitades distintas del cuadro, al generar los enfrentamientos.
+- Las llaves se arman desde **`app/admin` → Llaves** (una por competición): el staff elige si los equipos entran por sorteo aleatorio o por orden de inscripción, y el sistema genera el cuadro completo. A cada partido se le captura hora, cancha, marcador y ganador; el ganador avanza solo a la ronda siguiente. Ver [app/PROMPTS-DESARROLLO.md](../app/PROMPTS-DESARROLLO.md) y la tabla `partidos` de `app/database/schema.sql`.
+- Las llaves se publican el **2 de octubre**, un día antes del evento, para que los equipos sepan su primer rival y horario aproximado. Desde `app/admin` se descargan como **PDF imprimible** (botón "Descargar la llave"): una hoja horizontal con el cuadro completo — en la esquina de cada partido dice a qué partido pasa el que gane, así que se puede seguir con el dedo el camino de un equipo hasta la final — y una segunda hoja con el calendario de todos los partidos (hora, cancha, rivales y ganador). Eso es lo que se pega en el Polideportivo y se comparte con los equipos. Una vista pública dentro de la app, para que cada quien la consulte en su celular, sigue pendiente.
 
 ## Reglas por deporte
 
@@ -84,7 +86,7 @@ La entrega de premios de 1° y 2° lugar de los 3 torneos es a cargo del **Direc
 - [ ] Proporción mínima de padres por equipo (regla de "mezcla" concreta) — afecta la validación del formulario de inscripción ([app/PROMPTS-DESARROLLO.md](../app/PROMPTS-DESARROLLO.md), Prompt 13).
 - [ ] Puntos por set y desempate en Voleibol.
 - [ ] Forma de determinar ganador en Quemados (mejor de 3 rondas vs. puntaje acumulado).
-- [ ] Qué pasa con equipos "bye" si el número de inscritos no es potencia de 2.
+- [ ] Si además del PDF hace falta una vista pública de la llave dentro de la app (para consultarla desde el celular el día del torneo, sin depender de la hoja impresa) — ver [Formato de llaves](#formato-de-llaves).
 - [ ] Presupuesto y proveedor de medallas/trofeos.
 - [ ] Confirmar catálogo de colores de camisa disponibles.
 
