@@ -92,6 +92,10 @@ const ICONOS_SVG = [
     'espacio' => '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
     // lucide "image" (convocatoria de una competición)
     'convocatoria' => '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    // lucide "workflow" (Llaves — los enfrentamientos de eliminación directa)
+    'llaves' => '<rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/>',
+    // lucide "dices" (sorteo del orden de los equipos en la llave)
+    'sorteo' => '<rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/>',
 ];
 
 /** Devuelve el markup de un ícono SVG inline (Lucide). $clase son clases Tailwind (tamaño/color). */

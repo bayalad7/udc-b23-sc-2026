@@ -7,7 +7,8 @@ exigirAdmin();
 
 // Reseteo total del padrón de alumnos (ver "Zona de peligro" en
 // app/admin/public/index.php): borra alumnos y TODO lo que cuelga de ellos
-// (inscripciones, asistencias generales, equipos e integrantes) y además los
+// (inscripciones, asistencias generales, equipos, integrantes y las llaves
+// de enfrentamientos) y además los
 // archivos físicos de fotos y credenciales, para dejar el sistema como recién
 // instalado sin tener que tocar la base a mano.
 //
@@ -62,6 +63,10 @@ try {
 
     // Orden obligatorio: ninguna FK del esquema usa ON DELETE CASCADE (ver
     // schema.sql), así que hay que ir de las tablas hijas hacia alumnos.
+    // `partidos` va antes que `equipos` porque las llaves apuntan a los
+    // equipos que se enfrentan (ver app/admin/public/llave.php) — borrar el
+    // padrón deja sin sentido cualquier llave ya armada.
+    $pdo->exec('DELETE FROM partidos');
     $pdo->exec('DELETE FROM integrantes');
     $pdo->exec('DELETE FROM equipos');
     $pdo->exec('DELETE FROM inscripciones');

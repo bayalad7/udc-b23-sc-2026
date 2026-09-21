@@ -536,3 +536,4 @@ simple que el Prompt 11 del Día Académico.
 - [ ] Prompt 16 — Envío de credenciales del equipo por correo
 - [x] Prompt 17 — Fusionado con el Prompt 7 revisado (ya no es un prompt aparte)
 - [ ] Prompt 18 — Reporte de asistencia por equipo (opcional)
+- [x] Llaves de eliminación directa (`app/admin` → Llaves) — fuera del roadmap original, igual que el panel `app/admin` y `app/camisas`. Arma el cuadro de enfrentamientos de una competición con los equipos que tenga inscritos (sorteo aleatorio u orden de inscripción), reparte solo los "byes" cuando los equipos no son potencia de 2, y avanza a los ganadores ronda por ronda. Tabla `partidos` (ver `app/database/migraciones/2026-09-21-partidos-llaves.sql`) y lógica compartida en `app/admin/includes/llaves.php`. La llave se descarga en PDF imprimible (`exportar-llave.php`): cuadro en horizontal + calendario de partidos, para publicarla el 2 de octubre.

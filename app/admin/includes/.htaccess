@@ -83,3 +83,19 @@ Require all denied
 <Files "exportar-corte-camisas.php">
     Require all granted
 </Files>
+
+<Files "generar-llaves.php">
+    Require all granted
+</Files>
+
+<Files "guardar-partido.php">
+    Require all granted
+</Files>
+
+<Files "eliminar-llaves.php">
+    Require all granted
+</Files>
+
+<Files "exportar-llave.php">
+    Require all granted
+</Files>

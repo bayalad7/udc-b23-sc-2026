@@ -65,6 +65,7 @@ $mensajesError = [
     'horario_invalido' => 'La hora de fin debe ser posterior a la hora de inicio.',
     'convocatoria_invalida' => 'La convocatoria debe ser una imagen JPG o PNG de máximo 5 MB.',
     'tiene_dependientes' => 'No se puede eliminar: la competición todavía tiene equipos inscritos.',
+    'tiene_llave' => 'No se puede eliminar: la competición todavía tiene una llave de enfrentamientos armada. Bórrala primero desde la sección Llaves.',
 ];
 $mensajeError = $mensajesError[$_GET['error'] ?? ''] ?? null;
 
@@ -229,6 +230,11 @@ if ($mensajeError) {
                 Todavía no hay equipos inscritos.
             </p>
             <?php else: ?>
+            <a href="<?= BASE_URL ?>/admin/public/llave.php?id=<?= (int) $competicion['id'] ?>"
+               class="mb-3 flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                <?= icono('llaves', 'h-3.5 w-3.5 shrink-0') ?>
+                Armar / ver la llave de enfrentamientos
+            </a>
             <div class="space-y-2">
                 <?php foreach ($equipos as $equipo): ?>
                 <details class="rounded-lg border border-slate-200 p-3">

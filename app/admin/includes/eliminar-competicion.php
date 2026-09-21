@@ -26,6 +26,16 @@ if ((int) $consulta->fetch()['n'] > 0) {
     exit;
 }
 
+// Misma lógica para la llave de enfrentamientos: ninguna FK del esquema usa
+// ON DELETE CASCADE, y además borrar en silencio una llave ya armada (con sus
+// resultados) sería una sorpresa desagradable. Se borra desde llave.php.
+$consultaLlave = $pdo->prepare('SELECT COUNT(*) AS n FROM partidos WHERE id_competicion = :id');
+$consultaLlave->execute(['id' => $id]);
+if ((int) $consultaLlave->fetch()['n'] > 0) {
+    header('Location: ' . BASE_URL . '/admin/public/competicion.php?id=' . $id . '&error=tiene_llave');
+    exit;
+}
+
 $consultaConvocatoria = $pdo->prepare('SELECT convocatoria FROM competiciones WHERE id = :id');
 $consultaConvocatoria->execute(['id' => $id]);
 $convocatoria = $consultaConvocatoria->fetch()['convocatoria'] ?? null;
