@@ -523,6 +523,7 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
 
                 <div data-equipo-builder
                      data-contexto="talentos"
+                     data-endpoint="<?= BASE_URL ?>/inscripciones/includes/buscar-alumno.php"
                      data-max-integrantes="9"
                      data-requiere-exactos="false"
                      data-capitan-cuenta="<?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?>">

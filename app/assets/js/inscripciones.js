@@ -84,6 +84,13 @@ function crearSpanTexto(texto, clase) {
 
 function inicializarConstructorEquipo(builder) {
     var contexto = builder.dataset.contexto;
+    // La URL del buscador la fija la pagina con BASE_URL (ver data-endpoint en
+    // academico.php/cultural.php/deportivo.php), igual que escaneo.js. Escribir
+    // aqui "/inscripciones/includes/..." solo funciona si la app quedo
+    // publicada en la raiz del dominio: en un VPS que la sirve desde una
+    // subcarpeta ese fetch da 404, y como la respuesta no es JSON, el .catch()
+    // de abajo lo muestra como "Error al buscar. Intenta de nuevo.".
+    var endpointBusqueda = builder.dataset.endpoint;
     var idCompeticion = builder.dataset.idCompeticion || '';
     var maximo = parseInt(builder.dataset.maxIntegrantes || '9', 10);
     var requiereExactos = builder.dataset.requiereExactos === 'true';
@@ -445,7 +452,7 @@ function inicializarConstructorEquipo(builder) {
         panelResultado.className = 'mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500';
         panelResultado.textContent = 'Buscando…';
 
-        var url = '/inscripciones/includes/buscar-alumno.php?numero_cuenta=' + encodeURIComponent(cuenta) +
+        var url = endpointBusqueda + '?numero_cuenta=' + encodeURIComponent(cuenta) +
             '&contexto=' + encodeURIComponent(contexto) +
             (idCompeticion ? '&id_competicion=' + encodeURIComponent(idCompeticion) : '');
 

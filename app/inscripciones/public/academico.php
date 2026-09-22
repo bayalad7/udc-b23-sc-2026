@@ -574,6 +574,7 @@ $mensajeExito = $mensajesExito[$_GET['msg'] ?? ''] ?? null;
 
                         <div data-equipo-builder
                              data-contexto="conocimiento"
+                             data-endpoint="<?= BASE_URL ?>/inscripciones/includes/buscar-alumno.php"
                              data-max-integrantes="<?= $acompanantesEsperadosConocimiento ?>"
                              data-requiere-exactos="true"
                              data-capitan-cuenta="<?= htmlspecialchars($alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?>">

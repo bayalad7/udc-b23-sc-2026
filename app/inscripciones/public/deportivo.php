@@ -320,6 +320,7 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
 
                 <div data-equipo-builder
                      data-contexto="deportivo"
+                     data-endpoint="<?= BASE_URL ?>/inscripciones/includes/buscar-alumno.php"
                      data-id-competicion="<?= $idTorneo ?>"
                      data-max-integrantes="<?= $acompanantesEsperadosTorneo ?>"
                      data-requiere-exactos="true"
