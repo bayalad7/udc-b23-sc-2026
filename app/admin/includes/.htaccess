@@ -99,3 +99,7 @@ Require all denied
 <Files "exportar-llave.php">
     Require all granted
 </Files>
+
+<Files "exportar-equipos.php">
+    Require all granted
+</Files>

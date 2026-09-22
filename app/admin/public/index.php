@@ -28,7 +28,10 @@ if ($claveYaRegistrada && adminAutorizado()) {
     )->fetchAll();
 
     // --- 2. Asistencia general en vivo por día ------------------------------
-    $diasLabel = ['academico' => 'Día Académico', 'cultural' => 'Día Cultural', 'deportivo' => 'Día Deportivo'];
+    // Las etiquetas de los 3 días viven en includes/dias.php porque también las
+    // usan los reportes que se descargan (ver cupo-eventos.php).
+    require_once __DIR__ . '/../includes/dias.php';
+    $diasLabel = DIAS_EVENTO_LABEL;
     $asistenciaPorDia = array_fill_keys(array_keys($diasLabel), ['total' => 0, 'sin_salida' => 0, 'con_salida' => 0]);
     $filasAsistencia = $pdo->query(
         "SELECT dia, COUNT(*) AS total,
@@ -45,49 +48,24 @@ if ($claveYaRegistrada && adminAutorizado()) {
     }
 
     // --- 3. Cupo ocupado por evento ------------------------------------------
-    $eventosCupo = $pdo->query(
-        'SELECT nombre, dia, tipo, espacio, cupo_maximo, cupo_disponible
-         FROM eventos ORDER BY dia, hora_inicio'
-    )->fetchAll();
+    // El cupo con su horario, su facilitador y quién está inscrito en cada
+    // ponencia/taller sale del mismo include que las descargas en Excel/PDF
+    // (ver includes/cupo-eventos.php), para que el archivo que se baja diga
+    // exactamente lo mismo que la tabla de detalle de la gráfica.
+    require_once __DIR__ . '/../includes/cupo-eventos.php';
+
+    $eventosCupo = eventosConCupo($pdo);
+    $inscritosPorEvento = inscritosDeEventos($pdo);
 
     // --- 4. Equipos inscritos por competición ---------------------------------
-    $equiposPorCompeticion = $pdo->query(
-        "SELECT c.id, c.nombre, c.dia, c.tipo, c.max_equipos, c.tam_equipo, COUNT(e.id) AS total_equipos
-         FROM competiciones c
-         LEFT JOIN equipos e ON e.id_competicion = c.id
-         GROUP BY c.id, c.nombre, c.dia, c.tipo, c.max_equipos, c.tam_equipo
-         ORDER BY c.dia, c.hora_inicio"
-    )->fetchAll();
+    // Quiénes son esos equipos (nombre, color, capitán, grado y grupo) y de
+    // quién se componen sale del mismo include que las descargas en Excel/PDF
+    // (ver includes/equipos-competicion.php), para que el archivo que se baja
+    // diga exactamente lo mismo que la tabla de detalle de la gráfica.
+    require_once __DIR__ . '/../includes/equipos-competicion.php';
 
-    // Quiénes son esos equipos (nombre, color, capitán) y de quién se componen,
-    // para la tabla de detalle de la gráfica. Son DOS consultas —todos los
-    // equipos y de golpe todos los integrantes— que se agrupan en PHP, no una
-    // consulta de integrantes por equipo dentro del foreach: con 5
-    // competiciones de hasta 16 equipos serían 80 idas a la base solo para
-    // pintar un modal (ver app/admin/public/competicion.php, que sí puede
-    // permitírselo porque ahí es una sola competición).
-    $equiposPorCompeticionDetalle = [];
-    $filasEquipos = $pdo->query(
-        'SELECT eq.id, eq.id_competicion, eq.nombre, eq.color_camisa,
-                a.nombre_completo AS capitan, a.numero_cuenta AS capitan_cuenta
-         FROM equipos eq
-         JOIN alumnos a ON a.id = eq.id_alumno_capitan
-         ORDER BY eq.id_competicion, eq.fecha_registro, eq.id'
-    )->fetchAll();
-    if ($filasEquipos !== []) {
-        $integrantesPorEquipo = [];
-        $filasIntegrantes = $pdo->query(
-            'SELECT id_equipo, tipo, nombre, codigo_participante, hora_entrada, hora_salida
-             FROM integrantes ORDER BY id_equipo, FIELD(tipo, "alumno", "padre", "madre"), nombre'
-        )->fetchAll();
-        foreach ($filasIntegrantes as $integrante) {
-            $integrantesPorEquipo[(int) $integrante['id_equipo']][] = $integrante;
-        }
-        foreach ($filasEquipos as $equipoFila) {
-            $equipoFila['integrantes'] = $integrantesPorEquipo[(int) $equipoFila['id']] ?? [];
-            $equiposPorCompeticionDetalle[(int) $equipoFila['id_competicion']][] = $equipoFila;
-        }
-    }
+    $equiposPorCompeticion = competicionesConEquipos($pdo);
+    $equiposPorCompeticionDetalle = equiposDeCompeticiones($pdo);
 
     // --- 5. Tallas de camisa solicitadas (pedidos al proveedor) --------------
     // Son DOS pedidos independientes que se cotizan y se encargan por separado
@@ -146,18 +124,9 @@ if ($claveYaRegistrada && adminAutorizado()) {
         $matrizGradoGrupo[$fila['grado']][$fila['grupo']] = (int) $fila['total'];
     }
 
-    $cupoEventosOrdenado = array_map(static function (array $evento): array {
-        $ocupados = (int) $evento['cupo_maximo'] - (int) $evento['cupo_disponible'];
-        $porcentaje = (int) $evento['cupo_maximo'] > 0 ? (int) round($ocupados / (int) $evento['cupo_maximo'] * 100) : 0;
-        return [
-            'nombre' => $evento['nombre'],
-            'dia' => $evento['dia'],
-            'espacio' => $evento['espacio'],
-            'ocupados' => $ocupados,
-            'cupo_maximo' => (int) $evento['cupo_maximo'],
-            'porcentaje' => $porcentaje,
-        ];
-    }, $eventosCupo);
+    // Copia ordenada de más lleno a menos lleno para la gráfica y la tabla de
+    // detalle; el include los entrega en el orden cronológico de cada día.
+    $cupoEventosOrdenado = $eventosCupo;
     usort($cupoEventosOrdenado, static fn(array $a, array $b): int => $b['porcentaje'] <=> $a['porcentaje']);
     $eventosCercaDeAgotarse = count(array_filter($cupoEventosOrdenado, static fn(array $e): bool => $e['porcentaje'] >= 80));
 
@@ -606,7 +575,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
         </div>
     </dialog>
 
-    <dialog id="detalle-cupo-eventos" class="m-auto w-[90%] max-w-2xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+    <dialog id="detalle-cupo-eventos" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
         <div class="p-5">
             <div class="mb-3 flex items-center justify-between">
                 <h3 class="text-base font-semibold">Cupo ocupado por evento</h3>
@@ -614,21 +583,36 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <?= icono('cerrar', 'h-4 w-4') ?>
                 </button>
             </div>
-            <p class="mb-3 text-xs text-slate-500">Agrupado por día y, dentro de cada uno, de más lleno a menos lleno.</p>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p class="text-xs text-slate-500">Agrupado por día y, dentro de cada uno, de más lleno a menos lleno.</p>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-inscripciones.php?formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-inscripciones.php?formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+            </div>
             <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="sticky top-0 bg-slate-50">
                         <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
                             <th class="px-3 py-2">Evento</th>
+                            <th class="px-3 py-2">Horario</th>
                             <th class="px-3 py-2">Espacio</th>
                             <th class="px-3 py-2 text-center">Cupo</th>
+                            <th class="px-3 py-2 text-center">Libres</th>
                             <th class="px-3 py-2 text-center">% ocupado</th>
+                            <th class="px-3 py-2"><span class="sr-only">Inscritos y descargas</span></th>
                         </tr>
                     </thead>
                     <?php foreach ($cupoEventosPorDia as $diaClave => $eventosDelDia): ?>
                     <tbody>
                         <tr class="border-b border-slate-200 bg-slate-50">
-                            <th colspan="4" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th colspan="7" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 <span class="flex items-center gap-1.5">
                                     <?= icono($diaClave, 'h-3.5 w-3.5 text-slate-400') ?>
                                     <?= $diasLabel[$diaClave] ?>
@@ -637,10 +621,37 @@ if ($claveYaRegistrada && adminAutorizado()) {
                         </tr>
                         <?php foreach ($eventosDelDia as $evento): ?>
                         <tr class="border-b border-slate-100">
-                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($evento['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2">
+                                <span class="block font-medium"><?= htmlspecialchars($evento['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="block text-xs text-slate-400">
+                                    <span class="capitalize"><?= htmlspecialchars($evento['tipo'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    · <?= htmlspecialchars($evento['facilitador'], ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap text-slate-500"><?= htmlspecialchars($evento['horario'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="px-3 py-2 text-slate-500"><?= htmlspecialchars($evento['espacio'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="px-3 py-2 text-center text-slate-500"><?= $evento['ocupados'] ?>/<?= $evento['cupo_maximo'] ?></td>
+                            <td class="px-3 py-2 text-center <?= $evento['cupo_disponible'] === 0 ? 'font-medium text-red-600' : 'text-slate-500' ?>"><?= $evento['cupo_disponible'] ?></td>
                             <td class="px-3 py-2 text-center font-medium <?= $evento['porcentaje'] >= 100 ? 'text-red-600' : ($evento['porcentaje'] >= 80 ? 'text-amber-600' : 'text-emerald-600') ?>"><?= $evento['porcentaje'] ?>%</td>
+                            <td class="px-3 py-2">
+                                <span class="flex items-center justify-end gap-1.5">
+                                    <button type="button" data-abrir-modal="inscritos-evento-<?= $evento['id'] ?>" title="Ver inscritos"
+                                            class="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                                        <?= icono('ver', 'h-3.5 w-3.5 shrink-0') ?>
+                                        Ver inscritos
+                                    </button>
+                                    <a href="<?= BASE_URL ?>/admin/includes/exportar-inscripciones.php?id=<?= $evento['id'] ?>&amp;formato=xlsx"
+                                       title="Descargar los inscritos de este evento en Excel"
+                                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-1.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                                        <?= icono('descargar', 'h-3 w-3') ?> Excel
+                                    </a>
+                                    <a href="<?= BASE_URL ?>/admin/includes/exportar-inscripciones.php?id=<?= $evento['id'] ?>&amp;formato=pdf"
+                                       title="Descargar los inscritos de este evento en PDF"
+                                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-1.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                                        <?= icono('descargar', 'h-3 w-3') ?> PDF
+                                    </a>
+                                </span>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -650,6 +661,106 @@ if ($claveYaRegistrada && adminAutorizado()) {
         </div>
     </dialog>
 
+    <?php
+    // Un modal por evento con sus inscritos, abierto desde el modal anterior
+    // (los <dialog> nativos se apilan: cerrar el de arriba regresa al listado),
+    // mismo patrón que los modales de equipo de más abajo. Los ids de `eventos`
+    // son únicos en toda la tabla, así que no necesitan prefijo por día.
+    ?>
+    <?php foreach ($cupoEventosPorDia as $diaClave => $eventosDelDia): ?>
+    <?php foreach ($eventosDelDia as $evento): $inscritosDelEvento = $inscritosPorEvento[$evento['id']] ?? []; ?>
+    <dialog id="inscritos-evento-<?= $evento['id'] ?>" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+        <div class="p-5">
+            <div class="mb-1 flex items-center justify-between gap-3">
+                <h3 class="text-base font-semibold"><?= htmlspecialchars($evento['nombre'], ENT_QUOTES, 'UTF-8') ?></h3>
+                <button type="button" data-cerrar-modal="inscritos-evento-<?= $evento['id'] ?>" title="Cerrar" class="cursor-pointer rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <?= icono('cerrar', 'h-4 w-4') ?>
+                </button>
+            </div>
+            <p class="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span class="flex items-center gap-1.5">
+                    <?= icono($diaClave, 'h-3.5 w-3.5 text-slate-400') ?>
+                    <?= $diasLabel[$diaClave] ?>
+                </span>
+                <span>· <span class="capitalize"><?= htmlspecialchars($evento['tipo'], ENT_QUOTES, 'UTF-8') ?></span></span>
+                <span>· <?= htmlspecialchars($evento['horario'], ENT_QUOTES, 'UTF-8') ?></span>
+                <span>· <?= htmlspecialchars($evento['espacio'], ENT_QUOTES, 'UTF-8') ?></span>
+                <span>· Facilitador: <?= htmlspecialchars($evento['facilitador'], ENT_QUOTES, 'UTF-8') ?></span>
+                <span>· Responsable: <?= htmlspecialchars($evento['responsable'], ENT_QUOTES, 'UTF-8') ?></span>
+                <span>· <?= $evento['ocupados'] ?>/<?= $evento['cupo_maximo'] ?> de cupo (<?= $evento['porcentaje'] ?>%)</span>
+            </p>
+            <?php if ($inscritosDelEvento === []): ?>
+            <p class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-4 text-sm text-slate-500">
+                <?= icono('usuarios', 'h-4 w-4 text-slate-300') ?>
+                Todavía no hay nadie inscrito en este evento.
+            </p>
+            <?php else: ?>
+            <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="px-3 py-2">Alumno</th>
+                            <th class="px-3 py-2 text-center">No. cuenta</th>
+                            <th class="px-3 py-2 text-center">Grado y grupo</th>
+                            <th class="px-3 py-2 text-center">Origen</th>
+                            <th class="px-3 py-2 text-center">Estado</th>
+                            <th class="px-3 py-2 text-center">Entrada</th>
+                            <th class="px-3 py-2 text-center">Salida</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($inscritosDelEvento as $inscrito):
+                            // Misma lectura que las insignias de app/admin/public/asistencias.php:
+                            // la fila existe desde que el alumno se inscribió, así que "sin
+                            // llegar" no es lo mismo que "no inscrito".
+                            $claseEstadoInscrito = match ($inscrito['estado']) {
+                                'Sin llegar' => 'bg-red-50 text-red-700',
+                                'Presente' => 'bg-emerald-50 text-emerald-700',
+                                default => 'bg-slate-100 text-slate-600',
+                            };
+                        ?>
+                        <tr class="border-b border-slate-100 last:border-0">
+                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($inscrito['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center font-mono text-xs text-slate-500"><?= htmlspecialchars($inscrito['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= htmlspecialchars($inscrito['grado_grupo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= htmlspecialchars($inscrito['origen_label'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center">
+                                <span class="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium <?= $claseEstadoInscrito ?>"><?= $inscrito['estado'] ?></span>
+                            </td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $inscrito['hora_entrada'] ? htmlspecialchars((string) $inscrito['hora_entrada'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $inscrito['hora_salida'] ? htmlspecialchars((string) $inscrito['hora_salida'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+            <div class="mt-4 flex flex-wrap justify-end gap-2">
+                <a href="<?= BASE_URL ?>/admin/includes/exportar-inscripciones.php?id=<?= $evento['id'] ?>&amp;formato=xlsx"
+                   class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <?= icono('descargar', 'h-3.5 w-3.5 shrink-0') ?>
+                    Excel
+                </a>
+                <a href="<?= BASE_URL ?>/admin/includes/exportar-inscripciones.php?id=<?= $evento['id'] ?>&amp;formato=pdf"
+                   class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <?= icono('descargar', 'h-3.5 w-3.5 shrink-0') ?>
+                    PDF
+                </a>
+                <a href="<?= BASE_URL ?>/admin/public/evento.php?id=<?= $evento['id'] ?>"
+                   class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <?= icono('editar', 'h-3.5 w-3.5 shrink-0') ?>
+                    Ir al evento
+                </a>
+                <button type="button" data-cerrar-modal="inscritos-evento-<?= $evento['id'] ?>"
+                        class="cursor-pointer rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </dialog>
+    <?php endforeach; ?>
+    <?php endforeach; ?>
+
     <dialog id="detalle-equipos-competicion" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
         <div class="p-5">
             <div class="mb-3 flex items-center justify-between">
@@ -658,7 +769,21 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <?= icono('cerrar', 'h-4 w-4') ?>
                 </button>
             </div>
-            <p class="mb-3 text-xs text-slate-500">Competiciones de más a menos equipos inscritos; dentro de cada una, los equipos en orden de inscripción.</p>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p class="text-xs text-slate-500">Competiciones de más a menos equipos inscritos; dentro de cada una, los equipos en orden de inscripción.</p>
+                <?php if ($equiposPorCompeticionDetalle !== []): ?>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-equipos.php?formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-equipos.php?formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+                <?php endif; ?>
+            </div>
             <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="sticky top-0 bg-slate-50">
@@ -666,6 +791,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                             <th class="px-3 py-2">Equipo</th>
                             <th class="px-3 py-2">Color</th>
                             <th class="px-3 py-2">Capitán</th>
+                            <th class="px-3 py-2 text-center">Grado y grupo</th>
                             <th class="px-3 py-2 text-center">Integrantes</th>
                             <th class="px-3 py-2"><span class="sr-only">Detalle del equipo</span></th>
                         </tr>
@@ -683,7 +809,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     ?>
                     <tbody>
                         <tr class="border-b border-slate-200 bg-slate-50">
-                            <th colspan="5" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th colspan="6" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 <span class="flex flex-wrap items-center gap-2">
                                     <?= icono($c['dia'], 'h-3.5 w-3.5 text-slate-400') ?>
                                     <span><?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
@@ -691,12 +817,24 @@ if ($claveYaRegistrada && adminAutorizado()) {
                                     <?php if ($c['max_equipos'] !== null): ?>
                                     <span class="font-normal normal-case <?= $estadoClase ?>"><?= $estadoTexto ?></span>
                                     <?php endif; ?>
+                                    <?php if ($equiposDeLaCompeticion !== []): ?>
+                                    <a href="<?= BASE_URL ?>/admin/includes/exportar-equipos.php?competicion=<?= $c['id'] ?>&amp;formato=xlsx"
+                                       title="Descargar los equipos de esta competición en Excel"
+                                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 font-normal normal-case text-slate-500 hover:bg-slate-50">
+                                        <?= icono('descargar', 'h-3 w-3') ?> Excel
+                                    </a>
+                                    <a href="<?= BASE_URL ?>/admin/includes/exportar-equipos.php?competicion=<?= $c['id'] ?>&amp;formato=pdf"
+                                       title="Descargar los equipos de esta competición en PDF"
+                                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 font-normal normal-case text-slate-500 hover:bg-slate-50">
+                                        <?= icono('descargar', 'h-3 w-3') ?> PDF
+                                    </a>
+                                    <?php endif; ?>
                                 </span>
                             </th>
                         </tr>
                         <?php if ($equiposDeLaCompeticion === []): ?>
                         <tr class="border-b border-slate-100">
-                            <td colspan="5" class="px-3 py-2 text-slate-400">Todavía no hay equipos inscritos.</td>
+                            <td colspan="6" class="px-3 py-2 text-slate-400">Todavía no hay equipos inscritos.</td>
                         </tr>
                         <?php else: ?>
                         <?php foreach ($equiposDeLaCompeticion as $equipo): ?>
@@ -707,6 +845,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                                 <?= htmlspecialchars($equipo['capitan'], ENT_QUOTES, 'UTF-8') ?>
                                 <span class="font-mono text-xs text-slate-400">(<?= htmlspecialchars($equipo['capitan_cuenta'], ENT_QUOTES, 'UTF-8') ?>)</span>
                             </td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= equiposGradoGrupo($equipo['capitan_grado'], $equipo['capitan_grupo']) ?? '—' ?></td>
                             <td class="px-3 py-2 text-center text-slate-500"><?= count($equipo['integrantes']) ?><?= $c['tam_equipo'] !== null ? '/' . $c['tam_equipo'] : '' ?></td>
                             <td class="px-3 py-2 text-right">
                                 <button type="button" data-abrir-modal="detalle-equipo-<?= (int) $equipo['id'] ?>" title="Ver integrantes"
@@ -767,6 +906,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                         <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
                             <th class="px-3 py-2">Nombre</th>
                             <th class="px-3 py-2 text-center">Tipo</th>
+                            <th class="px-3 py-2 text-center">Grado y grupo</th>
                             <th class="px-3 py-2 text-center">Código participante</th>
                             <th class="px-3 py-2 text-center">Entrada</th>
                             <th class="px-3 py-2 text-center">Salida</th>
@@ -777,6 +917,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                         <tr class="border-b border-slate-100 last:border-0">
                             <td class="px-3 py-2 font-medium"><?= htmlspecialchars($integrante['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="px-3 py-2 text-center capitalize text-slate-500"><?= htmlspecialchars($integrante['tipo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= equiposGradoGrupo($integrante['grado'], $integrante['grupo']) ?? '—' ?></td>
                             <td class="px-3 py-2 text-center font-mono text-xs text-slate-500"><?= htmlspecialchars($integrante['codigo_participante'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="px-3 py-2 text-center text-slate-500"><?= $integrante['hora_entrada'] ? htmlspecialchars((string) $integrante['hora_entrada'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
                             <td class="px-3 py-2 text-center text-slate-500"><?= $integrante['hora_salida'] ? htmlspecialchars((string) $integrante['hora_salida'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
