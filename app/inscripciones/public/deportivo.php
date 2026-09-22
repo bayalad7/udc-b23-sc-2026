@@ -119,7 +119,7 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Día Deportivo — Inscripciones B23</title>
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= assetVersionado('assets/css/tailwind.css') ?>">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8">
@@ -383,6 +383,6 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
     <?php endforeach; ?>
 
 </div>
-<script src="<?= BASE_URL ?>/assets/js/inscripciones.js"></script>
+<script src="<?= assetVersionado('assets/js/inscripciones.js') ?>"></script>
 </body>
 </html>

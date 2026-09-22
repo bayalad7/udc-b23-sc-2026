@@ -30,7 +30,7 @@ function layoutAdminAbrir(string $titulo, string $activa): void
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8') ?> — Panel de administración B23</title>
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= assetVersionado('assets/css/tailwind.css') ?>">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="flex min-h-screen">
@@ -90,8 +90,8 @@ function layoutAdminCerrar(): void
     </div>
 </dialog>
 
-<script src="<?= BASE_URL ?>/assets/js/chart.min.js"></script>
-<script src="<?= BASE_URL ?>/assets/js/admin.js"></script>
+<script src="<?= assetVersionado('assets/js/chart.min.js') ?>"></script>
+<script src="<?= assetVersionado('assets/js/admin.js') ?>"></script>
 </body>
 </html>
     <?php

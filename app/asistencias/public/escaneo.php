@@ -27,7 +27,7 @@ $puntoControl = (string) $_SESSION['punto_control'];
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Escaneando — <?= htmlspecialchars($eventos[$evento], ENT_QUOTES, 'UTF-8') ?> — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= assetVersionado('assets/css/tailwind.css') ?>">
 </head>
 <body class="min-h-screen bg-slate-950 text-white">
 <div id="escaneo-app" data-evento="<?= htmlspecialchars($evento, ENT_QUOTES, 'UTF-8') ?>" data-endpoint="<?= BASE_URL ?>/asistencias/includes/registrar-escaneo.php" class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-5">
@@ -102,7 +102,7 @@ $puntoControl = (string) $_SESSION['punto_control'];
     </template>
 </div>
 
-<script src="<?= BASE_URL ?>/assets/js/lib/jsQR.js"></script>
-<script src="<?= BASE_URL ?>/assets/js/escaneo.js"></script>
+<script src="<?= assetVersionado('assets/js/lib/jsQR.js') ?>"></script>
+<script src="<?= assetVersionado('assets/js/escaneo.js') ?>"></script>
 </body>
 </html>

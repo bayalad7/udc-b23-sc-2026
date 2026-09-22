@@ -19,7 +19,7 @@ $mensajeError = $errores[$codigoError] ?? null;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Semana Acádemica, Cultural y Deportiva B23 — Registro de estudiantes</title>
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= assetVersionado('assets/css/tailwind.css') ?>">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
@@ -172,6 +172,6 @@ $mensajeError = $errores[$codigoError] ?? null;
     </a>
 </div>
 
-<script src="<?= BASE_URL ?>/assets/js/registro.js"></script>
+<script src="<?= assetVersionado('assets/js/registro.js') ?>"></script>
 </body>
 </html>

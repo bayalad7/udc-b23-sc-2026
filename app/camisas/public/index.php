@@ -89,7 +89,7 @@ $filtrosActuales = array_filter(['buscar' => $buscar, 'estado' => $estado]);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Camisas del grupo — Semana Acádemica, Cultural y Deportiva B23</title>
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= assetVersionado('assets/css/tailwind.css') ?>">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-8">
@@ -421,7 +421,7 @@ $filtrosActuales = array_filter(['buscar' => $buscar, 'estado' => $estado]);
 
 </div>
 <?php if ($jefe !== null): ?>
-<script src="<?= BASE_URL ?>/assets/js/camisas.js"></script>
+<script src="<?= assetVersionado('assets/js/camisas.js') ?>"></script>
 <?php endif; ?>
 </body>
 </html>

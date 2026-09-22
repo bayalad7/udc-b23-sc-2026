@@ -336,7 +336,7 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Día Cultural — Inscripciones B23</title>
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/tailwind.css">
+<link rel="stylesheet" href="<?= assetVersionado('assets/css/tailwind.css') ?>">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <div class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8">
@@ -580,6 +580,6 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
     <?php endif; ?>
 
 </div>
-<script src="<?= BASE_URL ?>/assets/js/inscripciones.js"></script>
+<script src="<?= assetVersionado('assets/js/inscripciones.js') ?>"></script>
 </body>
 </html>
