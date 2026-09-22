@@ -103,3 +103,7 @@ Require all denied
 <Files "exportar-equipos.php">
     Require all granted
 </Files>
+
+<Files "exportar-sin-inscripcion.php">
+    Require all granted
+</Files>

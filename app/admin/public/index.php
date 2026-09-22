@@ -109,7 +109,16 @@ if ($claveYaRegistrada && adminAutorizado()) {
         ];
     }
 
-    // --- 7. Bandera de inscripciones abiertas/cerradas -----------------------
+    // --- 7. Alumnos sin inscripción, bloque por bloque -----------------------
+    // Un bloque es una franja horaria con actividad (el Día Académico tiene
+    // dos; el Cultural y el Deportivo, una cada uno), y el Escenario de
+    // Talentos queda fuera del conteo a propósito — el porqué de las dos cosas
+    // está en includes/sin-inscripcion.php, compartido con la descarga.
+    require_once __DIR__ . '/../includes/sin-inscripcion.php';
+
+    $sinInscripcion = alumnosSinInscripcion($pdo);
+
+    // --- 8. Bandera de inscripciones abiertas/cerradas -----------------------
     require_once __DIR__ . '/../../inscripciones/includes/estado.php';
     $inscripcionesAbiertas = inscripcionesLiberadas($pdo);
 
@@ -393,6 +402,35 @@ if ($claveYaRegistrada && adminAutorizado()) {
             <p class="mt-2 text-xs text-slate-400">
                 Son dos pedidos independientes: alumnos por un lado —solo los que encargan camisa y ya llevan algún pago— y personal por el otro. Los números no se suman entre sí.
                 Los pagos se llevan en <a href="<?= BASE_URL ?>/admin/public/camisas.php" class="underline hover:text-slate-600">Camisas</a>.
+            </p>
+            <?php endif; ?>
+        </section>
+
+        <?php // --- Alumnos sin inscripción por bloque ----------------------
+              // La contraparte de la gráfica de cupo: esa dice qué tan llenos
+              // van los eventos, y esta, a cuánta gente le falta lugar en
+              // alguno. ?>
+        <section class="rounded-xl bg-white p-5 shadow-sm lg:col-span-2">
+            <div class="mb-4 flex items-center justify-between gap-2">
+                <h2 class="flex items-center gap-2 text-base font-semibold">
+                    <?= icono('grafica', 'h-4 w-4 text-slate-400') ?>
+                    Alumnos sin inscripción
+                </h2>
+                <?php if ($sinInscripcion['bloques'] !== []): ?>
+                <button type="button" data-abrir-modal="detalle-sin-inscripcion" title="Ver detalle en tabla"
+                        class="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                    <?= icono('tabla', 'h-3.5 w-3.5') ?>
+                    Ver tabla
+                </button>
+                <?php endif; ?>
+            </div>
+            <?php if ($sinInscripcion['bloques'] === []): ?>
+            <p class="text-sm text-slate-500">Todavía no hay actividades capturadas con las cuales comparar el padrón.</p>
+            <?php else: ?>
+            <div style="height: <?= max(140, count($sinInscripcion['bloques']) * 44) ?>px"><canvas id="grafica-sin-inscripcion"></canvas></div>
+            <p class="mt-2 text-xs text-slate-400">
+                Sobre un padrón de <?= $sinInscripcion['total_alumnos'] ?> alumnos. El Escenario de Talentos no cuenta:
+                no reparte cupo y un alumno puede tener varias participaciones.
             </p>
             <?php endif; ?>
         </section>
@@ -943,6 +981,206 @@ if ($claveYaRegistrada && adminAutorizado()) {
     <?php endforeach; ?>
     <?php endforeach; ?>
 
+    <dialog id="detalle-sin-inscripcion" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+        <div class="p-5">
+            <div class="mb-3 flex items-center justify-between">
+                <h3 class="text-base font-semibold">Alumnos sin inscripción</h3>
+                <button type="button" data-cerrar-modal="detalle-sin-inscripcion" title="Cerrar" class="cursor-pointer rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <?= icono('cerrar', 'h-4 w-4') ?>
+                </button>
+            </div>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p class="text-xs text-slate-500">
+                    Un renglón por bloque (franja horaria con actividad) y, al cerrar cada día, quienes no se
+                    inscribieron a nada de ese día. Sin contar el Escenario de Talentos.
+                </p>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+            </div>
+            <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="px-3 py-2">Bloque</th>
+                            <th class="px-3 py-2">Actividades</th>
+                            <th class="px-3 py-2 text-center">Sin inscripción</th>
+                            <th class="px-3 py-2 text-center">% del padrón</th>
+                            <th class="px-3 py-2"><span class="sr-only">Alumnos y descargas</span></th>
+                        </tr>
+                    </thead>
+                    <?php foreach ($sinInscripcion['dias'] as $diaSin): ?>
+                    <tbody>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th colspan="5" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <span class="flex items-center gap-1.5">
+                                    <?= icono($diaSin['dia'], 'h-3.5 w-3.5 text-slate-400') ?>
+                                    <?= htmlspecialchars($diaSin['dia_label'], ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            </th>
+                        </tr>
+                        <?php
+                        // Los bloques de este día, más el renglón de cierre "en
+                        // todo el día" — que NO es la suma de los bloques sino
+                        // la intersección (ver includes/sin-inscripcion.php).
+                        $renglones = array_values(array_filter(
+                            $sinInscripcion['bloques'],
+                            static fn(array $b): bool => $b['dia'] === $diaSin['dia']
+                        ));
+                        $renglones[] = [
+                            'clave' => null,
+                            'dia' => $diaSin['dia'],
+                            'horario' => 'En todo el día',
+                            'nombres' => 'No se inscribió a nada del día',
+                            'actividades' => null,
+                            'total' => $diaSin['total'],
+                        ];
+                        foreach ($renglones as $renglon):
+                            $esCierreDeDia = $renglon['clave'] === null;
+                            $parametro = $esCierreDeDia ? 'dia=' . $renglon['dia'] : 'bloque=' . $renglon['clave'];
+                            $idModal = 'sin-inscripcion-' . ($esCierreDeDia ? 'dia-' . $renglon['dia'] : $renglon['clave']);
+                            $porcentaje = $sinInscripcion['total_alumnos'] > 0
+                                ? (int) round($renglon['total'] / $sinInscripcion['total_alumnos'] * 100)
+                                : 0;
+                        ?>
+                        <tr class="border-b border-slate-100">
+                            <td class="px-3 py-2 whitespace-nowrap <?= $esCierreDeDia ? 'font-medium text-slate-600' : 'font-medium' ?>"><?= htmlspecialchars($renglon['horario'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-xs text-slate-400">
+                                <?php if ($renglon['actividades'] !== null): ?>
+                                <span class="block"><?= $renglon['actividades'] ?> actividad<?= $renglon['actividades'] === 1 ? '' : 'es' ?></span>
+                                <?php endif; ?>
+                                <span class="block truncate"><?= htmlspecialchars($renglon['nombres'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </td>
+                            <td class="px-3 py-2 text-center font-medium <?= $porcentaje >= 50 ? 'text-red-600' : ($porcentaje >= 20 ? 'text-amber-600' : 'text-emerald-600') ?>"><?= $renglon['total'] ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $porcentaje ?>%</td>
+                            <td class="px-3 py-2">
+                                <span class="flex items-center justify-end gap-1.5">
+                                    <?php if ($renglon['total'] > 0): ?>
+                                    <button type="button" data-abrir-modal="<?= $idModal ?>" title="Ver alumnos"
+                                            class="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                                        <?= icono('ver', 'h-3.5 w-3.5 shrink-0') ?>
+                                        Ver alumnos
+                                    </button>
+                                    <?php endif; ?>
+                                    <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?<?= $parametro ?>&amp;formato=xlsx"
+                                       title="Descargar este listado en Excel"
+                                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-1.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                                        <?= icono('descargar', 'h-3 w-3') ?> Excel
+                                    </a>
+                                    <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?<?= $parametro ?>&amp;formato=pdf"
+                                       title="Descargar este listado en PDF"
+                                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-1.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                                        <?= icono('descargar', 'h-3 w-3') ?> PDF
+                                    </a>
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+        </div>
+    </dialog>
+
+    <?php
+    // Un modal por bloque y uno por día con la lista nominal, agrupada por
+    // grado y grupo (que es como se le reparte a cada maestro), abierto desde
+    // el modal anterior — mismo patrón que los modales de equipo y de
+    // inscritos de más arriba.
+    $listadosSinInscripcion = [];
+    foreach ($sinInscripcion['bloques'] as $bloqueSin) {
+        $listadosSinInscripcion[] = [
+            'id' => 'sin-inscripcion-' . $bloqueSin['clave'],
+            'dia' => $bloqueSin['dia'],
+            'titulo' => $bloqueSin['dia_label'] . ' · ' . $bloqueSin['horario'],
+            'subtitulo' => $bloqueSin['nombres'],
+            'parametro' => 'bloque=' . $bloqueSin['clave'],
+            'alumnos' => $bloqueSin['alumnos'],
+        ];
+    }
+    foreach ($sinInscripcion['dias'] as $diaSin) {
+        $listadosSinInscripcion[] = [
+            'id' => 'sin-inscripcion-dia-' . $diaSin['dia'],
+            'dia' => $diaSin['dia'],
+            'titulo' => $diaSin['dia_label'] . ' · en todo el día',
+            'subtitulo' => 'No se inscribieron a ninguna actividad del día',
+            'parametro' => 'dia=' . $diaSin['dia'],
+            'alumnos' => $diaSin['alumnos'],
+        ];
+    }
+    ?>
+    <?php foreach ($listadosSinInscripcion as $listado): if ($listado['alumnos'] === []) { continue; } ?>
+    <dialog id="<?= $listado['id'] ?>" class="m-auto w-[90%] max-w-2xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+        <div class="p-5">
+            <div class="mb-1 flex items-center justify-between gap-3">
+                <h3 class="flex items-center gap-1.5 text-base font-semibold">
+                    <?= icono($listado['dia'], 'h-4 w-4 text-slate-400') ?>
+                    <?= htmlspecialchars($listado['titulo'], ENT_QUOTES, 'UTF-8') ?>
+                </h3>
+                <button type="button" data-cerrar-modal="<?= $listado['id'] ?>" title="Cerrar" class="cursor-pointer rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <?= icono('cerrar', 'h-4 w-4') ?>
+                </button>
+            </div>
+            <p class="mb-3 text-xs text-slate-500">
+                <?= count($listado['alumnos']) ?> de <?= $sinInscripcion['total_alumnos'] ?> alumnos sin inscripción ·
+                <?= htmlspecialchars($listado['subtitulo'], ENT_QUOTES, 'UTF-8') ?>
+            </p>
+            <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="px-3 py-2">Alumno</th>
+                            <th class="px-3 py-2 text-center">No. cuenta</th>
+                            <th class="px-3 py-2">Correo institucional</th>
+                        </tr>
+                    </thead>
+                    <?php foreach (sinInscripcionAgrupado($listado['alumnos']) as $grupoEtiqueta => $alumnosDelGrupo): ?>
+                    <tbody>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th colspan="3" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <?= htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') ?>
+                                <span class="font-normal normal-case text-slate-400">· <?= count($alumnosDelGrupo) ?></span>
+                            </th>
+                        </tr>
+                        <?php foreach ($alumnosDelGrupo as $alumnoSin): ?>
+                        <tr class="border-b border-slate-100">
+                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($alumnoSin['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center font-mono text-xs text-slate-500"><?= htmlspecialchars($alumnoSin['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-xs text-slate-500"><?= htmlspecialchars($alumnoSin['correo_institucional'], ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+            <div class="mt-4 flex flex-wrap justify-end gap-2">
+                <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?<?= $listado['parametro'] ?>&amp;formato=xlsx"
+                   class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <?= icono('descargar', 'h-3.5 w-3.5 shrink-0') ?>
+                    Excel
+                </a>
+                <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?<?= $listado['parametro'] ?>&amp;formato=pdf"
+                   class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <?= icono('descargar', 'h-3.5 w-3.5 shrink-0') ?>
+                    PDF
+                </a>
+                <button type="button" data-cerrar-modal="<?= $listado['id'] ?>"
+                        class="cursor-pointer rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </dialog>
+    <?php endforeach; ?>
+
     <dialog id="detalle-tallas-camisa" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
         <div class="p-5">
             <div class="mb-3 flex items-center justify-between">
@@ -1252,6 +1490,49 @@ if ($claveYaRegistrada && adminAutorizado()) {
             }
         });
         <?php endforeach; ?>
+
+        <?php if ($sinInscripcion['bloques'] !== []): ?>
+        <?php // Barras horizontales, como la de cupo: los nombres de bloque son
+              // largos ("Día Académico · 10:30 – 12:30") y en vertical no caben. ?>
+        new Chart(document.getElementById('grafica-sin-inscripcion'), {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode(array_map(fn($b) => $b['dia_label'] . ' · ' . $b['horario'], $sinInscripcion['bloques'])) ?>,
+                datasets: [{
+                    label: 'Alumnos sin inscripción',
+                    data: <?= json_encode(array_map(fn($b) => $b['total'], $sinInscripcion['bloques'])) ?>,
+                    backgroundColor: <?= json_encode(array_map(function ($b) use ($sinInscripcion) {
+                        $porcentaje = $sinInscripcion['total_alumnos'] > 0
+                            ? $b['total'] / $sinInscripcion['total_alumnos'] * 100
+                            : 0;
+                        return $porcentaje >= 50 ? '#ef4444' : ($porcentaje >= 20 ? '#f59e0b' : '#10b981');
+                    }, $sinInscripcion['bloques'])) ?>,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (contexto) {
+                                var total = <?= $sinInscripcion['total_alumnos'] ?>;
+                                var porcentaje = total > 0 ? Math.round(contexto.parsed.x / total * 100) : 0;
+                                return contexto.parsed.x + ' de ' + total + ' alumnos (' + porcentaje + '%)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { beginAtZero: true, max: <?= $sinInscripcion['total_alumnos'] ?>, ticks: { precision: 0 } },
+                    y: { ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+        <?php endif; ?>
 
         <?php if ($equiposCompeticionDatos !== []): ?>
         new Chart(document.getElementById('grafica-equipos-competicion'), {
