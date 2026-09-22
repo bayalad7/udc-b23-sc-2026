@@ -52,12 +52,42 @@ if ($claveYaRegistrada && adminAutorizado()) {
 
     // --- 4. Equipos inscritos por competición ---------------------------------
     $equiposPorCompeticion = $pdo->query(
-        "SELECT c.id, c.nombre, c.dia, c.tipo, c.max_equipos, COUNT(e.id) AS total_equipos
+        "SELECT c.id, c.nombre, c.dia, c.tipo, c.max_equipos, c.tam_equipo, COUNT(e.id) AS total_equipos
          FROM competiciones c
          LEFT JOIN equipos e ON e.id_competicion = c.id
-         GROUP BY c.id, c.nombre, c.dia, c.tipo, c.max_equipos
+         GROUP BY c.id, c.nombre, c.dia, c.tipo, c.max_equipos, c.tam_equipo
          ORDER BY c.dia, c.hora_inicio"
     )->fetchAll();
+
+    // Quiénes son esos equipos (nombre, color, capitán) y de quién se componen,
+    // para la tabla de detalle de la gráfica. Son DOS consultas —todos los
+    // equipos y de golpe todos los integrantes— que se agrupan en PHP, no una
+    // consulta de integrantes por equipo dentro del foreach: con 5
+    // competiciones de hasta 16 equipos serían 80 idas a la base solo para
+    // pintar un modal (ver app/admin/public/competicion.php, que sí puede
+    // permitírselo porque ahí es una sola competición).
+    $equiposPorCompeticionDetalle = [];
+    $filasEquipos = $pdo->query(
+        'SELECT eq.id, eq.id_competicion, eq.nombre, eq.color_camisa,
+                a.nombre_completo AS capitan, a.numero_cuenta AS capitan_cuenta
+         FROM equipos eq
+         JOIN alumnos a ON a.id = eq.id_alumno_capitan
+         ORDER BY eq.id_competicion, eq.fecha_registro, eq.id'
+    )->fetchAll();
+    if ($filasEquipos !== []) {
+        $integrantesPorEquipo = [];
+        $filasIntegrantes = $pdo->query(
+            'SELECT id_equipo, tipo, nombre, codigo_participante, hora_entrada, hora_salida
+             FROM integrantes ORDER BY id_equipo, FIELD(tipo, "alumno", "padre", "madre"), nombre'
+        )->fetchAll();
+        foreach ($filasIntegrantes as $integrante) {
+            $integrantesPorEquipo[(int) $integrante['id_equipo']][] = $integrante;
+        }
+        foreach ($filasEquipos as $equipoFila) {
+            $equipoFila['integrantes'] = $integrantesPorEquipo[(int) $equipoFila['id']] ?? [];
+            $equiposPorCompeticionDetalle[(int) $equipoFila['id_competicion']][] = $equipoFila;
+        }
+    }
 
     // --- 5. Tallas de camisa solicitadas (pedidos al proveedor) --------------
     // Son DOS pedidos independientes que se cotizan y se encargan por separado
@@ -151,9 +181,12 @@ if ($claveYaRegistrada && adminAutorizado()) {
 
     $equiposCompeticionDatos = array_map(static function (array $c): array {
         return [
+            'id' => (int) $c['id'],
             'nombre' => $c['nombre'],
+            'dia' => $c['dia'],
             'total' => (int) $c['total_equipos'],
             'max_equipos' => $c['max_equipos'] !== null ? (int) $c['max_equipos'] : null,
+            'tam_equipo' => $c['tam_equipo'] !== null ? (int) $c['tam_equipo'] : null,
             'es_conocimiento' => $c['dia'] === 'academico' && $c['tipo'] === 'concurso',
         ];
     }, $equiposPorCompeticion);
@@ -617,7 +650,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
         </div>
     </dialog>
 
-    <dialog id="detalle-equipos-competicion" class="m-auto w-[90%] max-w-lg rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+    <dialog id="detalle-equipos-competicion" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
         <div class="p-5">
             <div class="mb-3 flex items-center justify-between">
                 <h3 class="text-base font-semibold">Equipos por competición</h3>
@@ -625,38 +658,149 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <?= icono('cerrar', 'h-4 w-4') ?>
                 </button>
             </div>
-            <p class="mb-3 text-xs text-slate-500">Ordenado de más a menos equipos inscritos.</p>
+            <p class="mb-3 text-xs text-slate-500">Competiciones de más a menos equipos inscritos; dentro de cada una, los equipos en orden de inscripción.</p>
             <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="sticky top-0 bg-slate-50">
                         <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
-                            <th class="px-3 py-2">Competición</th>
-                            <th class="px-3 py-2 text-center">Equipos</th>
-                            <th class="px-3 py-2 text-center">Estado</th>
+                            <th class="px-3 py-2">Equipo</th>
+                            <th class="px-3 py-2">Color</th>
+                            <th class="px-3 py-2">Capitán</th>
+                            <th class="px-3 py-2 text-center">Integrantes</th>
+                            <th class="px-3 py-2"><span class="sr-only">Detalle del equipo</span></th>
+                        </tr>
+                    </thead>
+                    <?php foreach ($equiposCompeticionOrdenado as $c):
+                        $estadoTexto = '—';
+                        $estadoClase = 'text-slate-400';
+                        if ($c['max_equipos'] !== null) {
+                            $cercaUmbral = max(0, $c['max_equipos'] - 2);
+                            if ($c['total'] >= $c['max_equipos']) { $estadoTexto = 'Límite alcanzado'; $estadoClase = 'text-red-600 font-medium'; }
+                            elseif ($c['total'] >= $cercaUmbral) { $estadoTexto = 'Cerca del límite'; $estadoClase = 'text-amber-600 font-medium'; }
+                            else { $estadoTexto = 'Bajo el límite (' . $c['max_equipos'] . ')'; $estadoClase = 'text-emerald-600'; }
+                        }
+                        $equiposDeLaCompeticion = $equiposPorCompeticionDetalle[$c['id']] ?? [];
+                    ?>
+                    <tbody>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th colspan="5" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <span class="flex flex-wrap items-center gap-2">
+                                    <?= icono($c['dia'], 'h-3.5 w-3.5 text-slate-400') ?>
+                                    <span><?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="font-normal normal-case text-slate-400"><?= $c['total'] ?><?= $c['max_equipos'] !== null ? '/' . $c['max_equipos'] : '' ?> equipos</span>
+                                    <?php if ($c['max_equipos'] !== null): ?>
+                                    <span class="font-normal normal-case <?= $estadoClase ?>"><?= $estadoTexto ?></span>
+                                    <?php endif; ?>
+                                </span>
+                            </th>
+                        </tr>
+                        <?php if ($equiposDeLaCompeticion === []): ?>
+                        <tr class="border-b border-slate-100">
+                            <td colspan="5" class="px-3 py-2 text-slate-400">Todavía no hay equipos inscritos.</td>
+                        </tr>
+                        <?php else: ?>
+                        <?php foreach ($equiposDeLaCompeticion as $equipo): ?>
+                        <tr class="border-b border-slate-100">
+                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($equipo['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-slate-500"><?= $equipo['color_camisa'] ? htmlspecialchars($equipo['color_camisa'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="px-3 py-2 text-slate-500">
+                                <?= htmlspecialchars($equipo['capitan'], ENT_QUOTES, 'UTF-8') ?>
+                                <span class="font-mono text-xs text-slate-400">(<?= htmlspecialchars($equipo['capitan_cuenta'], ENT_QUOTES, 'UTF-8') ?>)</span>
+                            </td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= count($equipo['integrantes']) ?><?= $c['tam_equipo'] !== null ? '/' . $c['tam_equipo'] : '' ?></td>
+                            <td class="px-3 py-2 text-right">
+                                <button type="button" data-abrir-modal="detalle-equipo-<?= (int) $equipo['id'] ?>" title="Ver integrantes"
+                                        class="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                                    <?= icono('ver', 'h-3.5 w-3.5 shrink-0') ?>
+                                    Ver integrantes
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+        </div>
+    </dialog>
+
+    <?php
+    // Un modal por equipo con sus integrantes, abierto desde el modal anterior
+    // (los <dialog> nativos se apilan: cerrar el de arriba regresa al listado).
+    // Van aquí afuera y no anidados dentro del otro <dialog> para no depender
+    // de cómo trate cada navegador un modal dentro de otro. Los ids de
+    // `equipos` son únicos en toda la tabla, así que el id del <dialog> no
+    // necesita prefijo por competición (mismo criterio que el modal de
+    // detalles de evento en app/inscripciones/includes/detalle-evento.php).
+    ?>
+    <?php foreach ($equiposCompeticionOrdenado as $c): ?>
+    <?php foreach ($equiposPorCompeticionDetalle[$c['id']] ?? [] as $equipo): ?>
+    <dialog id="detalle-equipo-<?= (int) $equipo['id'] ?>" class="m-auto w-[90%] max-w-2xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+        <div class="p-5">
+            <div class="mb-1 flex items-center justify-between gap-3">
+                <h3 class="text-base font-semibold"><?= htmlspecialchars($equipo['nombre'], ENT_QUOTES, 'UTF-8') ?></h3>
+                <button type="button" data-cerrar-modal="detalle-equipo-<?= (int) $equipo['id'] ?>" title="Cerrar" class="cursor-pointer rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <?= icono('cerrar', 'h-4 w-4') ?>
+                </button>
+            </div>
+            <p class="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span class="flex items-center gap-1.5">
+                    <?= icono($c['dia'], 'h-3.5 w-3.5 text-slate-400') ?>
+                    <?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8') ?>
+                </span>
+                <span>· Capitán: <?= htmlspecialchars($equipo['capitan'], ENT_QUOTES, 'UTF-8') ?> <span class="font-mono text-slate-400">(<?= htmlspecialchars($equipo['capitan_cuenta'], ENT_QUOTES, 'UTF-8') ?>)</span></span>
+                <?php if ($equipo['color_camisa']): ?>
+                <span>· Color: <?= htmlspecialchars($equipo['color_camisa'], ENT_QUOTES, 'UTF-8') ?></span>
+                <?php endif; ?>
+                <span>· <?= count($equipo['integrantes']) ?><?= $c['tam_equipo'] !== null ? ' de ' . $c['tam_equipo'] : '' ?> <?= count($equipo['integrantes']) === 1 && $c['tam_equipo'] === null ? 'integrante' : 'integrantes' ?></span>
+            </p>
+            <?php if ($equipo['integrantes'] === []): ?>
+            <p class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-4 text-sm text-slate-500">
+                <?= icono('usuarios', 'h-4 w-4 text-slate-300') ?>
+                Este equipo todavía no tiene integrantes capturados.
+            </p>
+            <?php else: ?>
+            <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="px-3 py-2">Nombre</th>
+                            <th class="px-3 py-2 text-center">Tipo</th>
+                            <th class="px-3 py-2 text-center">Código participante</th>
+                            <th class="px-3 py-2 text-center">Entrada</th>
+                            <th class="px-3 py-2 text-center">Salida</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($equiposCompeticionOrdenado as $c):
-                            $estadoTexto = '—';
-                            $estadoClase = 'text-slate-400';
-                            if ($c['max_equipos'] !== null) {
-                                $cercaUmbral = max(0, $c['max_equipos'] - 2);
-                                if ($c['total'] >= $c['max_equipos']) { $estadoTexto = 'Límite alcanzado'; $estadoClase = 'text-red-600 font-medium'; }
-                                elseif ($c['total'] >= $cercaUmbral) { $estadoTexto = 'Cerca del límite'; $estadoClase = 'text-amber-600 font-medium'; }
-                                else { $estadoTexto = 'Bajo el límite (' . $c['max_equipos'] . ')'; $estadoClase = 'text-emerald-600'; }
-                            }
-                        ?>
+                        <?php foreach ($equipo['integrantes'] as $integrante): ?>
                         <tr class="border-b border-slate-100 last:border-0">
-                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td class="px-3 py-2 text-center text-slate-500"><?= $c['total'] ?><?= $c['max_equipos'] !== null ? '/' . $c['max_equipos'] : '' ?></td>
-                            <td class="px-3 py-2 text-center <?= $estadoClase ?>"><?= $estadoTexto ?></td>
+                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($integrante['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center capitalize text-slate-500"><?= htmlspecialchars($integrante['tipo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center font-mono text-xs text-slate-500"><?= htmlspecialchars($integrante['codigo_participante'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $integrante['hora_entrada'] ? htmlspecialchars((string) $integrante['hora_entrada'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= $integrante['hora_salida'] ? htmlspecialchars((string) $integrante['hora_salida'], ENT_QUOTES, 'UTF-8') : '—' ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
+            <?php endif; ?>
+            <div class="mt-4 flex justify-end gap-2">
+                <a href="<?= BASE_URL ?>/admin/public/competicion.php?id=<?= (int) $c['id'] ?>"
+                   class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <?= icono('trofeo', 'h-3.5 w-3.5 shrink-0') ?>
+                    Ir a la competición
+                </a>
+                <button type="button" data-cerrar-modal="detalle-equipo-<?= (int) $equipo['id'] ?>"
+                        class="cursor-pointer rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700">
+                    Cerrar
+                </button>
+            </div>
         </div>
     </dialog>
+    <?php endforeach; ?>
+    <?php endforeach; ?>
 
     <dialog id="detalle-tallas-camisa" class="m-auto w-[90%] max-w-3xl rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
         <div class="p-5">
