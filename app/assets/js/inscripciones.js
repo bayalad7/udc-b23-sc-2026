@@ -90,7 +90,12 @@ function inicializarConstructorEquipo(builder) {
     // publicada en la raiz del dominio: en un VPS que la sirve desde una
     // subcarpeta ese fetch da 404, y como la respuesta no es JSON, el .catch()
     // de abajo lo muestra como "Error al buscar. Intenta de nuevo.".
-    var endpointBusqueda = builder.dataset.endpoint;
+    // Respaldo relativo por si la pagina no trae data-endpoint: las 3 paginas
+    // que montan este constructor viven en inscripciones/public/, asi que
+    // "../includes/buscar-alumno.php" resuelve solo, sin importar en que
+    // subcarpeta este publicada la app. Existe para que subir el .js sin subir
+    // los .php no deje el buscador roto.
+    var endpointBusqueda = builder.dataset.endpoint || '../includes/buscar-alumno.php';
     var idCompeticion = builder.dataset.idCompeticion || '';
     var maximo = parseInt(builder.dataset.maxIntegrantes || '9', 10);
     var requiereExactos = builder.dataset.requiereExactos === 'true';
@@ -456,10 +461,30 @@ function inicializarConstructorEquipo(builder) {
             '&contexto=' + encodeURIComponent(contexto) +
             (idCompeticion ? '&id_competicion=' + encodeURIComponent(idCompeticion) : '');
 
+        // Se guarda el codigo HTTP antes de parsear: si el servidor devolvio una
+        // pagina de error (404 si la ruta no existe, 500 si PHP trono, 403 si
+        // Apache la bloqueo), el cuerpo es HTML y respuesta.json() revienta.
+        // Sin esto los tres casos se veian como un mismo "Error al buscar" que
+        // no dejaba ver cual era. El detalle completo va a la consola, para no
+        // ensenarle una URL cruda al alumno.
+        var estadoHttp = 0;
+
         fetch(url)
-            .then(function (respuesta) { return respuesta.json(); })
+            .then(function (respuesta) {
+                estadoHttp = respuesta.status;
+                return respuesta.json();
+            })
             .then(function (datos) { mostrarResultado(datos, cuenta); })
-            .catch(function () { mostrarErrorBusqueda('Error al buscar. Intenta de nuevo.'); });
+            .catch(function (error) {
+                if (window.console && window.console.error) {
+                    window.console.error('Fallo la busqueda de alumno:', {
+                        url: url, estado: estadoHttp, error: error
+                    });
+                }
+                mostrarErrorBusqueda(estadoHttp
+                    ? 'Error al buscar: el servidor respondio ' + estadoHttp + '. Avisa al staff.'
+                    : 'No se pudo contactar al servidor. Revisa tu conexion e intenta de nuevo.');
+            });
     }
 
     botonBuscar.addEventListener('click', ejecutarBusqueda);
