@@ -121,6 +121,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
         $porcentaje = (int) $evento['cupo_maximo'] > 0 ? (int) round($ocupados / (int) $evento['cupo_maximo'] * 100) : 0;
         return [
             'nombre' => $evento['nombre'],
+            'dia' => $evento['dia'],
             'espacio' => $evento['espacio'],
             'ocupados' => $ocupados,
             'cupo_maximo' => (int) $evento['cupo_maximo'],
@@ -129,6 +130,24 @@ if ($claveYaRegistrada && adminAutorizado()) {
     }, $eventosCupo);
     usort($cupoEventosOrdenado, static fn(array $a, array $b): int => $b['porcentaje'] <=> $a['porcentaje']);
     $eventosCercaDeAgotarse = count(array_filter($cupoEventosOrdenado, static fn(array $e): bool => $e['porcentaje'] >= 80));
+
+    // El cupo se lee por día y no en una sola lista: comparar el llenado de una
+    // ponencia del Día Académico contra un taller del Día Cultural no dice nada
+    // útil (son públicos y franjas distintas), y lo que el staff necesita saber
+    // es qué le falta por llenar de CADA día. Cada día conserva el orden de más
+    // lleno a menos lleno, que es como se detecta lo que está por agotarse.
+    //
+    // Solo aparecen los días que ya tienen eventos capturados; el Día Deportivo
+    // nunca sale porque se organiza todo por equipo y no tiene filas en
+    // `eventos` (ver el ENUM de eventos.dia en schema.sql).
+    $cupoEventosPorDia = [];
+    foreach ($cupoEventosOrdenado as $evento) {
+        $cupoEventosPorDia[$evento['dia']][] = $evento;
+    }
+    $cupoEventosPorDia = array_filter(
+        ['academico' => $cupoEventosPorDia['academico'] ?? [], 'cultural' => $cupoEventosPorDia['cultural'] ?? []],
+        static fn(array $eventos): bool => $eventos !== []
+    );
 
     $equiposCompeticionDatos = array_map(static function (array $c): array {
         return [
@@ -303,7 +322,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <?= icono('grafica', 'h-4 w-4 text-slate-400') ?>
                     Cupo ocupado por evento
                 </h2>
-                <?php if ($cupoEventosOrdenado !== []): ?>
+                <?php if ($cupoEventosPorDia !== []): ?>
                 <button type="button" data-abrir-modal="detalle-cupo-eventos" title="Ver detalle en tabla"
                         class="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
                     <?= icono('tabla', 'h-3.5 w-3.5') ?>
@@ -311,10 +330,19 @@ if ($claveYaRegistrada && adminAutorizado()) {
                 </button>
                 <?php endif; ?>
             </div>
-            <?php if ($cupoEventosOrdenado === []): ?>
+            <?php if ($cupoEventosPorDia === []): ?>
             <p class="text-sm text-slate-500">Todavía no hay eventos registrados.</p>
             <?php else: ?>
-            <div style="height: <?= max(220, count($cupoEventosOrdenado) * 34) ?>px"><canvas id="grafica-cupo-eventos"></canvas></div>
+            <?php foreach ($cupoEventosPorDia as $diaClave => $eventosDelDia): ?>
+            <div class="mb-5 last:mb-0">
+                <h3 class="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <?= icono($diaClave, 'h-3.5 w-3.5 text-slate-400') ?>
+                    <?= $diasLabel[$diaClave] ?>
+                    <span class="font-normal normal-case tracking-normal text-slate-400">· <?= count($eventosDelDia) ?> evento<?= count($eventosDelDia) === 1 ? '' : 's' ?></span>
+                </h3>
+                <div style="height: <?= max(140, count($eventosDelDia) * 34) ?>px"><canvas id="grafica-cupo-eventos-<?= $diaClave ?>"></canvas></div>
+            </div>
+            <?php endforeach; ?>
             <?php endif; ?>
         </section>
 
@@ -553,7 +581,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <?= icono('cerrar', 'h-4 w-4') ?>
                 </button>
             </div>
-            <p class="mb-3 text-xs text-slate-500">Ordenado de más lleno a menos lleno.</p>
+            <p class="mb-3 text-xs text-slate-500">Agrupado por día y, dentro de cada uno, de más lleno a menos lleno.</p>
             <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="sticky top-0 bg-slate-50">
@@ -564,9 +592,18 @@ if ($claveYaRegistrada && adminAutorizado()) {
                             <th class="px-3 py-2 text-center">% ocupado</th>
                         </tr>
                     </thead>
+                    <?php foreach ($cupoEventosPorDia as $diaClave => $eventosDelDia): ?>
                     <tbody>
-                        <?php foreach ($cupoEventosOrdenado as $evento): ?>
-                        <tr class="border-b border-slate-100 last:border-0">
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th colspan="4" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <span class="flex items-center gap-1.5">
+                                    <?= icono($diaClave, 'h-3.5 w-3.5 text-slate-400') ?>
+                                    <?= $diasLabel[$diaClave] ?>
+                                </span>
+                            </th>
+                        </tr>
+                        <?php foreach ($eventosDelDia as $evento): ?>
+                        <tr class="border-b border-slate-100">
                             <td class="px-3 py-2 font-medium"><?= htmlspecialchars($evento['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="px-3 py-2 text-slate-500"><?= htmlspecialchars($evento['espacio'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="px-3 py-2 text-center text-slate-500"><?= $evento['ocupados'] ?>/<?= $evento['cupo_maximo'] ?></td>
@@ -574,6 +611,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
+                    <?php endforeach; ?>
                 </table>
             </div>
         </div>
@@ -897,19 +935,21 @@ if ($claveYaRegistrada && adminAutorizado()) {
         });
         <?php endif; ?>
 
-        <?php if ($cupoEventosOrdenado !== []): ?>
-        new Chart(document.getElementById('grafica-cupo-eventos'), {
+        <?php // Una gráfica por día en vez de una sola con todo mezclado: el eje
+              // de porcentaje es comparable dentro de un día, no entre días. ?>
+        <?php foreach ($cupoEventosPorDia as $diaClave => $eventosDelDia): ?>
+        new Chart(document.getElementById('grafica-cupo-eventos-<?= $diaClave ?>'), {
             type: 'bar',
             data: {
-                labels: <?= json_encode(array_map(fn($e) => $e['nombre'], $cupoEventosOrdenado)) ?>,
+                labels: <?= json_encode(array_map(fn($e) => $e['nombre'], $eventosDelDia)) ?>,
                 datasets: [{
                     label: '% de cupo ocupado',
-                    data: <?= json_encode(array_map(fn($e) => $e['porcentaje'], $cupoEventosOrdenado)) ?>,
-                    ocupados: <?= json_encode(array_map(fn($e) => $e['ocupados'], $cupoEventosOrdenado)) ?>,
-                    cupoMaximo: <?= json_encode(array_map(fn($e) => $e['cupo_maximo'], $cupoEventosOrdenado)) ?>,
+                    data: <?= json_encode(array_map(fn($e) => $e['porcentaje'], $eventosDelDia)) ?>,
+                    ocupados: <?= json_encode(array_map(fn($e) => $e['ocupados'], $eventosDelDia)) ?>,
+                    cupoMaximo: <?= json_encode(array_map(fn($e) => $e['cupo_maximo'], $eventosDelDia)) ?>,
                     backgroundColor: <?= json_encode(array_map(
                         fn($e) => $e['porcentaje'] >= 100 ? '#ef4444' : ($e['porcentaje'] >= 80 ? '#f59e0b' : '#10b981'),
-                        $cupoEventosOrdenado
+                        $eventosDelDia
                     )) ?>,
                     borderRadius: 4
                 }]
@@ -926,7 +966,7 @@ if ($claveYaRegistrada && adminAutorizado()) {
                 }
             }
         });
-        <?php endif; ?>
+        <?php endforeach; ?>
 
         <?php if ($equiposCompeticionDatos !== []): ?>
         new Chart(document.getElementById('grafica-equipos-competicion'), {
