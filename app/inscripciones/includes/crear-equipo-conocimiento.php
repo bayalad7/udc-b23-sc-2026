@@ -114,6 +114,22 @@ $idsIntegrantes = array_keys($integrantes);
 $pdo->beginTransaction();
 
 try {
+    // --- 0. Un guardado a la vez por competición ---------------------------
+    // El chequeo de más abajo es una LECTURA y la inserción viene después.
+    // Sin bloquear nada en medio, dos capitanes que guardan al mismo tiempo
+    // leen cada uno su propia foto de la tabla —InnoDB, en REPEATABLE READ,
+    // no muestra lo que la otra transacción todavía no confirma—, los dos
+    // pasan el chequeo y los dos insertan: así es como un alumno terminó
+    // guardado en dos equipos del mismo torneo en producción.
+    //
+    // Bloquear el renglón de la competición deja pasar un guardado a la vez
+    // POR COMPETICIÓN (no frena a los demás torneos): el segundo espera al
+    // COMMIT del primero y recién entonces hace su chequeo, ya viendo el
+    // equipo que se acaba de crear. Es también lo que vuelve confiable al
+    // trigger trg_equipos_limite_maximo, que cuenta equipos y tiene el mismo
+    // problema de lecturas concurrentes.
+    $pdo->prepare('SELECT id FROM competiciones WHERE id = ? FOR UPDATE')->execute([$idCompeticion]);
+
     // --- 1. Nadie ya en otro equipo de esta misma competición -----------
 
     $marcadoresIds = implode(',', array_fill(0, count($idsIntegrantes), '?'));

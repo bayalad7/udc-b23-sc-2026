@@ -103,6 +103,15 @@ $idCompeticion = (int) $competicion['id'];
 $pdo->beginTransaction();
 
 try {
+    // Un guardado a la vez por competición: aquí no hay regla de unicidad de
+    // integrantes —un alumno puede participar en varios actos del Escenario
+    // de Talentos— pero el tope de actos (competiciones.max_equipos, hoy sin
+    // valor y configurable desde app/admin) lo cuenta el trigger
+    // trg_equipos_limite_maximo, que con dos guardados simultáneos vería cada
+    // uno su propia foto de la tabla. Mismo bloqueo que en los otros dos
+    // constructores de equipo.
+    $pdo->prepare('SELECT id FROM competiciones WHERE id = ? FOR UPDATE')->execute([$idCompeticion]);
+
     $insertarEquipo = $pdo->prepare(
         'INSERT INTO equipos (id_competicion, nombre, id_alumno_capitan) VALUES (:competicion, :nombre, :capitan)'
     );

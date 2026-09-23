@@ -110,6 +110,8 @@ function inicializarConstructorEquipo(builder) {
     var errorGeneral = builder.querySelector('[data-error-integrantes]');
     var formulario = builder.closest('form');
     var botonSubmit = formulario ? formulario.querySelector('[data-equipo-submit]') : null;
+    var etiquetaSubmit = botonSubmit ? botonSubmit.innerHTML : '';
+    var enviando = false;
 
     if (!inputBusqueda || !botonBuscar || !panelResultado || !grid) {
         return;
@@ -128,7 +130,7 @@ function inicializarConstructorEquipo(builder) {
         var lleno = agregados.length >= maximo;
         inputBusqueda.disabled = lleno;
         botonBuscar.disabled = lleno;
-        if (botonSubmit) {
+        if (botonSubmit && !enviando) {
             botonSubmit.disabled = requiereExactos && agregados.length !== maximo;
         }
     }
@@ -497,15 +499,46 @@ function inicializarConstructorEquipo(builder) {
 
     if (formulario) {
         formulario.addEventListener('submit', function (evento) {
+            // Freno al doble envío: guardar el equipo y sus integrantes tarda,
+            // y un segundo clic manda otro POST que en el servidor corre en
+            // paralelo al primero. El servidor ya no deja que eso duplique a
+            // nadie (ver el bloqueo por competición en
+            // app/inscripciones/includes/crear-equipo-deportivo.php), pero sí
+            // crearía un equipo de más; aquí se corta antes de salir.
+            if (enviando) {
+                evento.preventDefault();
+                return;
+            }
             if (requiereExactos && agregados.length !== maximo) {
                 evento.preventDefault();
                 if (errorGeneral) {
                     errorGeneral.textContent = 'Debes completar los ' + maximo + ' integrantes antes de guardar.';
                     errorGeneral.hidden = false;
                 }
-            } else if (errorGeneral) {
+                return;
+            }
+            if (errorGeneral) {
                 errorGeneral.hidden = true;
             }
+            enviando = true;
+            if (botonSubmit) {
+                botonSubmit.disabled = true;
+                botonSubmit.textContent = 'Guardando…';
+            }
+        });
+
+        // Volver con el botón "atrás" restaura la página tal como quedó (con
+        // el botón deshabilitado y diciendo "Guardando…"), así que hay que
+        // devolverla a su estado si el navegador la sacó de su caché.
+        window.addEventListener('pageshow', function (evento) {
+            if (!evento.persisted || !enviando) {
+                return;
+            }
+            enviando = false;
+            if (botonSubmit) {
+                botonSubmit.innerHTML = etiquetaSubmit;
+            }
+            actualizarEstado();
         });
     }
 
