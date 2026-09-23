@@ -9,6 +9,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -33,7 +34,26 @@ if ($bloqueSolicitado !== '' && $diaSolicitado !== '') {
     exit('Pide un bloque o un día, no los dos.');
 }
 
+// `vista=pivote` entrega la otra mitad del modal: el padrón completo con una
+// marca por actividad. Va aparte y no como una hoja más de la descarga general
+// porque es otra forma de leer lo mismo —y en PDF necesita hoja horizontal,
+// que Dompdf fija para todo el documento— así que mezclarlos obligaría a
+// imprimir el resumen acostado.
+$vista = trim((string) ($_GET['vista'] ?? ''));
+if (!in_array($vista, ['', 'pivote'], true)) {
+    http_response_code(400);
+    exit('Vista inválida.');
+}
+if ($vista === 'pivote' && ($bloqueSolicitado !== '' || $diaSolicitado !== '')) {
+    http_response_code(400);
+    exit('El pivote es siempre del padrón completo.');
+}
+
 $reporte = alumnosSinInscripcion($pdo);
+
+if ($vista === 'pivote') {
+    exportarPivoteSinInscripcion($reporte, $formato);
+}
 
 // Cada "listado" es un encabezado más su lista de alumnos; el archivo trae uno
 // (bloque o día) o todos, y de ahí en adelante Excel y PDF los recorren igual.
@@ -245,3 +265,132 @@ $dompdf->setPaper('letter', 'portrait');
 $dompdf->render();
 $dompdf->stream($nombreBase . '.pdf', ['Attachment' => true]);
 exit;
+
+/**
+ * Descarga del pivote: el padrón completo con una marca por actividad, que es
+ * la tabla "Detalle por grado y grupo" del modal del dashboard.
+ *
+ * En Excel las marcas van como "Sí"/"No" —texto que se filtra y se ordena en
+ * cualquier fuente— y en el PDF como ✔/✘, que ocupan una columna angosta. El
+ * ✔ y el ✘ no existen en las fuentes base del PDF (WinAnsi), así que esas
+ * celdas piden DejaVu Sans, la que Dompdf trae incluida; el resto de la hoja
+ * se queda en la fuente de siempre.
+ *
+ * @param array<string, mixed> $reporte
+ */
+function exportarPivoteSinInscripcion(array $reporte, string $formato): never
+{
+    $columnas = $reporte['pivote']['columnas'];
+    $grupos = $reporte['pivote']['grupos'];
+    $nombreBase = 'sin_inscripcion_pivote_' . date('Y-m-d_His');
+
+    if ($formato === 'xlsx') {
+        $hoja = new Spreadsheet();
+        $activa = $hoja->getActiveSheet();
+        $activa->setTitle('Pivote');
+
+        $encabezados = ['Grado y grupo', 'No. cuenta', 'Nombre completo', 'Correo institucional'];
+        foreach ($columnas as $columna) {
+            $encabezados[] = $columna['dia_label'] . ' · ' . $columna['etiqueta'];
+        }
+        $encabezados[] = 'Sin inscripción en';
+        $ultimaColumna = Coordinate::stringFromColumnIndex(count($encabezados));
+        $activa->fromArray($encabezados, null, 'A1');
+        $activa->getStyle('A1:' . $ultimaColumna . '1')->getFont()->setBold(true);
+
+        $fila = 2;
+        foreach ($grupos as $grupoEtiqueta => $alumnos) {
+            foreach ($alumnos as $alumno) {
+                $renglon = [
+                    $grupoEtiqueta,
+                    $alumno['numero_cuenta'],
+                    $alumno['nombre_completo'],
+                    $alumno['correo_institucional'],
+                ];
+                foreach ($columnas as $columna) {
+                    $renglon[] = $alumno['marcas'][$columna['clave']] ? 'Sí' : 'No';
+                }
+                $renglon[] = $alumno['faltantes'];
+                $activa->fromArray($renglon, null, 'A' . $fila);
+                $fila++;
+            }
+        }
+
+        foreach (range('A', $ultimaColumna) as $columnaLetra) {
+            $activa->getColumnDimension($columnaLetra)->setAutoSize(true);
+        }
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $nombreBase . '.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        (new Xlsx($hoja))->save('php://output');
+        exit;
+    }
+
+    $estilos = '<style>
+        body { font-family: sans-serif; font-size: 9px; color: #1e293b; }
+        h1 { font-size: 13px; margin-bottom: 2px; }
+        p.resumen { margin: 0 0 8px; color: #64748b; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #cbd5e1; padding: 3px 4px; }
+        th { background: #f1f5f9; text-align: center; font-size: 8px; }
+        th.izquierda { text-align: left; }
+        td.centro { text-align: center; }
+        /* El ✔ y el ✘ no existen en las fuentes base del PDF, así que las
+           celdas de marca (y la leyenda) piden DejaVu Sans, incluida con
+           Dompdf; el resto de la hoja se queda en la fuente de siempre. */
+        .marca { font-family: "DejaVu Sans", sans-serif; }
+        td.marca { text-align: center; font-size: 10px; }
+        .si { color: #047857; }
+        .no { color: #b91c1c; }
+        p.pie { margin-top: 8px; color: #64748b; font-size: 8px; }
+        div.hoja { page-break-before: always; }
+        div.hoja:first-of-type { page-break-before: avoid; }
+    </style>';
+
+    $html = $estilos;
+    foreach ($grupos as $grupoEtiqueta => $alumnos) {
+        $html .= '<div class="hoja">'
+            . '<h1>Alumnos sin inscripción — ' . htmlspecialchars((string) $grupoEtiqueta, ENT_QUOTES, 'UTF-8') . '</h1>'
+            . '<p class="resumen">' . count($alumnos) . ' alumnos · <span class="marca si">✔</span> inscrito'
+            . ' · <span class="marca no">✘</span> sin inscripción. '
+            . 'El Escenario de Talentos aparece como columna pero no cuenta como "sin inscripción".</p>'
+            . '<table><thead><tr>'
+            . '<th class="izquierda">No. cuenta</th><th class="izquierda">Alumno</th><th class="izquierda">Correo</th>';
+        foreach ($columnas as $columna) {
+            $html .= '<th>' . htmlspecialchars((string) $columna['dia_label'], ENT_QUOTES, 'UTF-8') . '<br>'
+                . htmlspecialchars((string) $columna['etiqueta'], ENT_QUOTES, 'UTF-8') . '<br>'
+                . htmlspecialchars((string) $columna['horario'], ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        $html .= '<th>Faltan</th></tr></thead><tbody>';
+
+        foreach ($alumnos as $alumno) {
+            $html .= '<tr>'
+                . '<td>' . htmlspecialchars((string) $alumno['numero_cuenta'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars((string) $alumno['nombre_completo'], ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . htmlspecialchars((string) $alumno['correo_institucional'], ENT_QUOTES, 'UTF-8') . '</td>';
+            foreach ($columnas as $columna) {
+                $inscrito = $alumno['marcas'][$columna['clave']];
+                $html .= '<td class="marca ' . ($inscrito ? 'si' : 'no') . '">' . ($inscrito ? '✔' : '✘') . '</td>';
+            }
+            $html .= '<td class="centro">' . $alumno['faltantes'] . '</td></tr>';
+        }
+
+        $html .= '</tbody></table>'
+            . '<p class="pie">Generado el ' . date('d/m/Y H:i') . ' desde el panel de administración. '
+            . 'Es una foto del momento: quien se inscriba después deja de aparecer con ✘.</p>'
+            . '</div>';
+    }
+
+    $opciones = new Options();
+    $opciones->set('isRemoteEnabled', false);
+
+    $dompdf = new Dompdf($opciones);
+    $dompdf->loadHtml($html, 'UTF-8');
+    // Horizontal: son 11 columnas y en vertical los nombres se parten.
+    $dompdf->setPaper('letter', 'landscape');
+    $dompdf->render();
+    $dompdf->stream($nombreBase . '.pdf', ['Attachment' => true]);
+    exit;
+}

@@ -1087,6 +1087,86 @@ if ($claveYaRegistrada && adminAutorizado()) {
                     <?php endforeach; ?>
                 </table>
             </div>
+
+            <?php // --- Pivote por grado y grupo -------------------------------
+                  // La tabla de arriba responde "cuántos se están quedando
+                  // fuera"; esta responde "quién de mi grupo está en qué", que
+                  // es lo que se le entrega al maestro. Salen TODOS los alumnos
+                  // del padrón, no solo los que faltan, porque la hoja sirve
+                  // para pasar lista, no solo para regañar. Las columnas y por
+                  // qué el Día Deportivo trae una por torneo están en
+                  // includes/sin-inscripcion.php. ?>
+            <?php $columnasPivote = $sinInscripcion['pivote']['columnas']; ?>
+            <?php if ($columnasPivote !== []): ?>
+            <div class="mt-6 mb-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-5">
+                <h4 class="text-sm font-semibold text-slate-700">Detalle por grado y grupo</h4>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?vista=pivote&amp;formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-sin-inscripcion.php?vista=pivote&amp;formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+                <p class="w-full text-xs text-slate-500">
+                    <span class="font-medium text-emerald-600">✔</span> inscrito ·
+                    <span class="font-medium text-red-500">✘</span> sin inscripción.
+                    El Escenario de Talentos aparece como columna, pero no cuenta en los totales de arriba.
+                </p>
+            </div>
+            <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th rowspan="2" class="px-3 py-2 align-bottom">No. cuenta</th>
+                            <th rowspan="2" class="px-3 py-2 align-bottom">Alumno</th>
+                            <th rowspan="2" class="px-3 py-2 align-bottom">Correo</th>
+                            <?php foreach ($sinInscripcion['pivote']['dias'] as $diaPivote): ?>
+                            <th colspan="<?= $diaPivote['columnas'] ?>" class="border-l border-slate-200 px-2 py-1.5 text-center">
+                                <span class="flex items-center justify-center gap-1.5">
+                                    <?= icono($diaPivote['dia'], 'h-3.5 w-3.5 text-slate-400') ?>
+                                    <?= htmlspecialchars($diaPivote['dia_label'], ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            </th>
+                            <?php endforeach; ?>
+                            <th rowspan="2" class="border-l border-slate-200 px-2 py-2 text-center align-bottom">Faltan</th>
+                        </tr>
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <?php foreach ($columnasPivote as $indiceColumna => $columnaPivote): ?>
+                            <th class="<?= $indiceColumna === 0 || $columnaPivote['dia'] !== $columnasPivote[$indiceColumna - 1]['dia'] ? 'border-l border-slate-200 ' : '' ?>px-2 py-1.5 text-center font-medium">
+                                <span class="block normal-case"><?= htmlspecialchars($columnaPivote['etiqueta'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="block font-normal normal-case text-slate-400"><?= htmlspecialchars($columnaPivote['horario'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <?php foreach ($sinInscripcion['pivote']['grupos'] as $grupoEtiqueta => $alumnosDelGrupo): ?>
+                    <tbody>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th colspan="<?= count($columnasPivote) + 4 ?>" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <?= htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') ?>
+                                <span class="font-normal normal-case text-slate-400">· <?= count($alumnosDelGrupo) ?> alumnos</span>
+                            </th>
+                        </tr>
+                        <?php foreach ($alumnosDelGrupo as $alumnoPivote): ?>
+                        <tr class="border-b border-slate-100">
+                            <td class="px-3 py-2 font-mono text-xs text-slate-500"><?= htmlspecialchars($alumnoPivote['numero_cuenta'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($alumnoPivote['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-xs text-slate-500"><?= htmlspecialchars($alumnoPivote['correo_institucional'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <?php foreach ($columnasPivote as $indiceColumna => $columnaPivote): $inscrito = $alumnoPivote['marcas'][$columnaPivote['clave']]; ?>
+                            <td class="<?= $indiceColumna === 0 || $columnaPivote['dia'] !== $columnasPivote[$indiceColumna - 1]['dia'] ? 'border-l border-slate-200 ' : '' ?>px-2 py-2 text-center <?= $inscrito ? 'text-emerald-600' : 'text-red-500' ?>"
+                                title="<?= htmlspecialchars($columnaPivote['dia_label'] . ' · ' . $columnaPivote['etiqueta'], ENT_QUOTES, 'UTF-8') ?>"><?= $inscrito ? '✔' : '✘' ?></td>
+                            <?php endforeach; ?>
+                            <td class="border-l border-slate-200 px-2 py-2 text-center text-xs <?= $alumnoPivote['faltantes'] === count($columnasPivote) ? 'font-medium text-red-600' : 'text-slate-500' ?>"><?= $alumnoPivote['faltantes'] ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+            <?php endif; ?>
         </div>
     </dialog>
 
