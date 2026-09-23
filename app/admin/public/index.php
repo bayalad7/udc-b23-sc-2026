@@ -1113,7 +1113,8 @@ if ($claveYaRegistrada && adminAutorizado()) {
                 <p class="w-full text-xs text-slate-500">
                     <span class="font-medium text-emerald-600">✔</span> inscrito ·
                     <span class="font-medium text-red-500">✘</span> sin inscripción.
-                    El Escenario de Talentos aparece como columna, pero no cuenta en los totales de arriba.
+                    Una columna por bloque, las mismas de la tabla de arriba: el Día Deportivo lleva ✔ con
+                    que el alumno esté en al menos uno de los 3 torneos, y el Escenario de Talentos no cuenta.
                 </p>
             </div>
             <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">

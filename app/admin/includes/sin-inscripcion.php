@@ -25,9 +25,8 @@ require_once __DIR__ . '/dias.php';
 // como "no está inscrito en nada" sobreestimaría el problema. Se reconoce por
 // ser la competición del Día Cultural (dia = 'cultural' AND tipo = 'concurso');
 // si algún día se crea otra competición cultural que SÍ deba contar, este es el
-// lugar donde hay que afinar la regla. Ojo: sí aparece como columna del pivote
-// (ver columnasDelPivote), porque ahí la pregunta es otra — quién participa en
-// qué — y no cuántos se quedaron sin lugar.
+// lugar donde hay que afinar la regla. Queda fuera en los dos lados del
+// reporte: ni suma al conteo ni aparece como columna del pivote.
 
 function sinInscripcionCompeticionExcluida(string $alias = ''): string
 {
@@ -59,12 +58,17 @@ function bloqueHorario(string $horaInicio, string $horaFin): string
 function bloquesDelEvento(PDO $pdo): array
 {
     $filas = $pdo->query(
-        "SELECT dia, hora_inicio, hora_fin, COUNT(*) AS actividades,
-                GROUP_CONCAT(nombre ORDER BY nombre SEPARATOR ' · ') AS nombres
+        "SELECT dia, hora_inicio, hora_fin,
+                COUNT(*) AS actividades,
+                SUM(es_competicion) AS competiciones,
+                GROUP_CONCAT(nombre ORDER BY nombre SEPARATOR ' · ') AS nombres,
+                GROUP_CONCAT(DISTINCT tipo_competicion) AS tipos_competicion
          FROM (
-             SELECT dia, hora_inicio, hora_fin, nombre FROM eventos
+             SELECT dia, hora_inicio, hora_fin, nombre, 0 AS es_competicion, NULL AS tipo_competicion
+             FROM eventos
              UNION ALL
-             SELECT dia, hora_inicio, hora_fin, nombre FROM competiciones
+             SELECT dia, hora_inicio, hora_fin, nombre, 1, tipo
+             FROM competiciones
              WHERE NOT " . sinInscripcionCompeticionExcluida() . "
          ) AS agenda
          GROUP BY dia, hora_inicio, hora_fin
@@ -72,108 +76,43 @@ function bloquesDelEvento(PDO $pdo): array
     )->fetchAll();
 
     $bloques = [];
+    $bloquesPorDia = [];
     foreach ($filas as $fila) {
+        $dia = (string) $fila['dia'];
+        $competiciones = (int) $fila['competiciones'];
+        $eventos = (int) $fila['actividades'] - $competiciones;
+
+        // Etiqueta corta para el encabezado del pivote, donde el día ya se lee
+        // arriba: los bloques de ponencias/talleres se numeran por día
+        // ("Bloque 1", "Bloque 2") y los que son puras competiciones se nombran
+        // por lo que son — con una sola, su nombre; con varias a la misma hora,
+        // "Algún torneo", porque la marca dice si el alumno está en AL MENOS
+        // una de ellas (los 3 torneos del Día Deportivo corren en paralelo y no
+        // son excluyentes entre sí).
+        if ($eventos > 0) {
+            $bloquesPorDia[$dia] = ($bloquesPorDia[$dia] ?? 0) + 1;
+            $etiqueta = 'Bloque ' . $bloquesPorDia[$dia];
+        } elseif ($competiciones === 1) {
+            $etiqueta = (string) $fila['nombres'];
+        } else {
+            $tipos = array_filter(explode(',', (string) $fila['tipos_competicion']));
+            $etiqueta = 'Algún ' . (count($tipos) === 1 ? reset($tipos) : 'evento');
+        }
+
         $bloques[] = [
-            'clave' => bloqueClave((string) $fila['dia'], (string) $fila['hora_inicio'], (string) $fila['hora_fin']),
-            'dia' => (string) $fila['dia'],
-            'dia_label' => diaEventoLabel((string) $fila['dia']),
+            'clave' => bloqueClave($dia, (string) $fila['hora_inicio'], (string) $fila['hora_fin']),
+            'dia' => $dia,
+            'dia_label' => diaEventoLabel($dia),
             'hora_inicio' => (string) $fila['hora_inicio'],
             'hora_fin' => (string) $fila['hora_fin'],
             'horario' => bloqueHorario((string) $fila['hora_inicio'], (string) $fila['hora_fin']),
             'actividades' => (int) $fila['actividades'],
             'nombres' => (string) $fila['nombres'],
+            'etiqueta' => $etiqueta,
         ];
     }
 
     return $bloques;
-}
-
-/**
- * Columnas del pivote (una por cosa en la que un alumno puede estar por su
- * cuenta), en orden cronológico y listas para agruparse por día.
- *
- * La regla, que es lo único que distingue este catálogo del de bloquesDelEvento:
- *
- *   - Una franja CON eventos es una sola columna ("Bloque 1", "Bloque 2"…),
- *     porque sus actividades son excluyentes entre sí: el alumno cabe en una.
- *     La competición que caiga en esa franja va dentro de esa misma columna —
- *     el Concurso del Conocimiento compite en horario con los talleres de las
- *     10:30, así que estar en él ES estar ocupado en el bloque 2.
- *   - Una franja SIN eventos es una columna POR COMPETICIÓN, con el nombre de
- *     cada una: los 3 torneos del Día Deportivo corren a la misma hora y un
- *     alumno puede entrar a más de uno (ver "Reglas de inscripción a más de un
- *     torneo" en torneos-deportivos.md), así que amontonarlos en una sola
- *     columna escondería en cuáles está.
- *
- * Aquí sí entra el Escenario de Talentos (su propia columna): el pivote dice
- * quién participa en qué, no cuántos se quedaron sin lugar.
- *
- * @return list<array<string, mixed>>
- */
-function columnasDelPivote(PDO $pdo): array
-{
-    $filas = $pdo->query(
-        "SELECT dia, hora_inicio, hora_fin, id_competicion, nombre FROM (
-             SELECT dia, hora_inicio, hora_fin, NULL AS id_competicion, nombre FROM eventos
-             UNION ALL
-             SELECT dia, hora_inicio, hora_fin, id AS id_competicion, nombre FROM competiciones
-         ) AS agenda
-         ORDER BY FIELD(dia, 'academico', 'cultural', 'deportivo'), hora_inicio, id_competicion"
-    )->fetchAll();
-
-    $franjas = [];
-    foreach ($filas as $fila) {
-        $clave = bloqueClave((string) $fila['dia'], (string) $fila['hora_inicio'], (string) $fila['hora_fin']);
-        if (!isset($franjas[$clave])) {
-            $franjas[$clave] = [
-                'dia' => (string) $fila['dia'],
-                'hora_inicio' => (string) $fila['hora_inicio'],
-                'hora_fin' => (string) $fila['hora_fin'],
-                'eventos' => 0,
-                'competiciones' => [],
-            ];
-        }
-        if ($fila['id_competicion'] === null) {
-            $franjas[$clave]['eventos']++;
-            continue;
-        }
-        $franjas[$clave]['competiciones'][] = [
-            'id' => (int) $fila['id_competicion'],
-            'nombre' => (string) $fila['nombre'],
-        ];
-    }
-
-    $columnas = [];
-    $bloquesPorDia = [];
-    foreach ($franjas as $claveFranja => $franja) {
-        $horario = bloqueHorario($franja['hora_inicio'], $franja['hora_fin']);
-        $comunes = [
-            'dia' => $franja['dia'],
-            'dia_label' => diaEventoLabel($franja['dia']),
-            'horario' => $horario,
-            'franja' => $claveFranja,
-        ];
-
-        if ($franja['eventos'] === 0) {
-            foreach ($franja['competiciones'] as $competicion) {
-                $columnas[] = $comunes + [
-                    'clave' => 'competicion-' . $competicion['id'],
-                    'etiqueta' => $competicion['nombre'],
-                    'id_competicion' => $competicion['id'],
-                ];
-            }
-            continue;
-        }
-
-        $bloquesPorDia[$franja['dia']] = ($bloquesPorDia[$franja['dia']] ?? 0) + 1;
-        $columnas[] = $comunes + [
-            'clave' => $claveFranja,
-            'etiqueta' => 'Bloque ' . $bloquesPorDia[$franja['dia']],
-            'id_competicion' => null,
-        ];
-    }
-
-    return $columnas;
 }
 
 /**
@@ -192,25 +131,11 @@ function columnasDelPivote(PDO $pdo): array
 function alumnosSinInscripcion(PDO $pdo): array
 {
     $bloques = bloquesDelEvento($pdo);
-    $columnas = columnasDelPivote($pdo);
 
     $alumnos = $pdo->query(
         'SELECT id, numero_cuenta, nombre_completo, grado, grupo, correo_institucional
          FROM alumnos ORDER BY grado, grupo, nombre_completo'
     )->fetchAll();
-
-    // A qué columna del pivote pertenece cada competición: a la suya, si la
-    // franja le dio una, o a la de su franja (el Concurso del Conocimiento
-    // dentro del bloque 2 del Día Académico).
-    $columnaDeFranja = [];
-    $columnaDeCompeticion = [];
-    foreach ($columnas as $columna) {
-        if ($columna['id_competicion'] !== null) {
-            $columnaDeCompeticion[$columna['id_competicion']] = $columna['clave'];
-            continue;
-        }
-        $columnaDeFranja[$columna['franja']] = $columna['clave'];
-    }
 
     // Participaciones de cada alumno: una fila por inscripción a evento y una
     // por lugar en un equipo. Las dos se leen igual porque la pregunta es la
@@ -220,40 +145,23 @@ function alumnosSinInscripcion(PDO $pdo): array
     // padre/madre llevan el id_alumno del hijo (ver schema.sql) y marcarían
     // como ocupado a un alumno que en realidad no está en el equipo.
     //
-    // De aquí salen DOS mapas, y la diferencia entre ellos es el Escenario de
-    // Talentos: $participa (el del conteo) lo ignora, $participaColumna (el
-    // del pivote) lo incluye — ver la nota del encabezado del archivo.
+    // El mismo mapa sirve para el conteo y para el pivote, y por eso las dos
+    // mitades del reporte no se pueden contradecir: una ✘ en la columna de un
+    // bloque es exactamente estar en su lista de "sin inscripción".
     $participa = [];
-    $participaColumna = [];
-
     $consultas = [
-        'SELECT i.id_alumno, e.dia, e.hora_inicio, e.hora_fin, NULL AS id_competicion, 0 AS excluida
+        'SELECT i.id_alumno, e.dia, e.hora_inicio, e.hora_fin
          FROM inscripciones i JOIN eventos e ON e.id = i.id_evento',
-        "SELECT it.id_alumno, c.dia, c.hora_inicio, c.hora_fin, c.id AS id_competicion,
-                " . sinInscripcionCompeticionExcluida('c') . " AS excluida
+        "SELECT it.id_alumno, c.dia, c.hora_inicio, c.hora_fin
          FROM integrantes it
          JOIN equipos eq ON eq.id = it.id_equipo
          JOIN competiciones c ON c.id = eq.id_competicion
-         WHERE it.tipo = 'alumno'",
+         WHERE it.tipo = 'alumno' AND NOT " . sinInscripcionCompeticionExcluida('c'),
     ];
     foreach ($consultas as $sql) {
         foreach ($pdo->query($sql)->fetchAll() as $fila) {
-            $idAlumno = (int) $fila['id_alumno'];
-            $claveFranja = bloqueClave((string) $fila['dia'], (string) $fila['hora_inicio'], (string) $fila['hora_fin']);
-
-            if ((int) $fila['excluida'] === 0) {
-                $participa[$claveFranja][$idAlumno] = true;
-            }
-
-            // Una competición sin columna propia cae en la de su franja: el
-            // Concurso del Conocimiento se marca en el bloque 2 del Día
-            // Académico, que es la hora que le ocupa al alumno.
-            $claveColumna = $fila['id_competicion'] !== null
-                ? ($columnaDeCompeticion[(int) $fila['id_competicion']] ?? $columnaDeFranja[$claveFranja] ?? null)
-                : ($columnaDeFranja[$claveFranja] ?? null);
-            if ($claveColumna !== null) {
-                $participaColumna[$claveColumna][$idAlumno] = true;
-            }
+            $clave = bloqueClave((string) $fila['dia'], (string) $fila['hora_inicio'], (string) $fila['hora_fin']);
+            $participa[$clave][(int) $fila['id_alumno']] = true;
         }
     }
 
@@ -294,23 +202,27 @@ function alumnosSinInscripcion(PDO $pdo): array
     return [
         'bloques' => $bloques,
         'dias' => array_values($dias),
-        'pivote' => pivoteSinInscripcion($alumnos, $columnas, $participaColumna),
+        'pivote' => pivoteSinInscripcion($alumnos, $bloques, $participa),
         'total_alumnos' => count($alumnos),
     ];
 }
 
 /**
- * Pivote: TODO el padrón agrupado por grado y grupo, con una marca por columna
+ * Pivote: TODO el padrón agrupado por grado y grupo, con una marca por bloque
  * diciendo si ese alumno está inscrito ahí o no. Salen todos los alumnos, no
  * solo los que faltan, para que la tabla se le pueda entregar completa al
  * maestro de cada grupo.
  *
+ * Las columnas son los mismos bloques del resumen, ni más ni menos: el Día
+ * Deportivo es UNA columna —✔ si el alumno entró a al menos uno de los 3
+ * torneos, ✘ si no entró a ninguno— y el Escenario de Talentos no aparece.
+ *
  * @param list<array<string, mixed>> $alumnos
  * @param list<array<string, mixed>> $columnas
- * @param array<string, array<int, bool>> $participaColumna
+ * @param array<string, array<int, bool>> $participa
  * @return array{columnas: list<array<string, mixed>>, dias: list<array<string, mixed>>, grupos: array<string, list<array<string, mixed>>>, totales: array<string, int>}
  */
-function pivoteSinInscripcion(array $alumnos, array $columnas, array $participaColumna): array
+function pivoteSinInscripcion(array $alumnos, array $columnas, array $participa): array
 {
     // Encabezado de dos pisos: el día abarca sus columnas y debajo va cada
     // bloque/torneo, para no repetir "Día Académico" en cada una.
@@ -337,7 +249,7 @@ function pivoteSinInscripcion(array $alumnos, array $columnas, array $participaC
         $marcas = [];
         $faltantes = 0;
         foreach ($columnas as $columna) {
-            $inscrito = isset($participaColumna[$columna['clave']][$idAlumno]);
+            $inscrito = isset($participa[$columna['clave']][$idAlumno]);
             $marcas[$columna['clave']] = $inscrito;
             if ($inscrito) {
                 $totales[$columna['clave']]++;

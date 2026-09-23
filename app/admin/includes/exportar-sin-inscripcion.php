@@ -355,7 +355,8 @@ function exportarPivoteSinInscripcion(array $reporte, string $formato): never
             . '<h1>Alumnos sin inscripción — ' . htmlspecialchars((string) $grupoEtiqueta, ENT_QUOTES, 'UTF-8') . '</h1>'
             . '<p class="resumen">' . count($alumnos) . ' alumnos · <span class="marca si">✔</span> inscrito'
             . ' · <span class="marca no">✘</span> sin inscripción. '
-            . 'El Escenario de Talentos aparece como columna pero no cuenta como "sin inscripción".</p>'
+            . 'El Día Deportivo cuenta como inscrito con que el alumno esté en al menos uno de los 3 torneos; '
+            . 'el Escenario de Talentos no cuenta.</p>'
             . '<table><thead><tr>'
             . '<th class="izquierda">No. cuenta</th><th class="izquierda">Alumno</th><th class="izquierda">Correo</th>';
         foreach ($columnas as $columna) {
@@ -379,7 +380,7 @@ function exportarPivoteSinInscripcion(array $reporte, string $formato): never
 
         $html .= '</tbody></table>'
             . '<p class="pie">Generado el ' . date('d/m/Y H:i') . ' desde el panel de administración. '
-            . 'Es una foto del momento: quien se inscriba después deja de aparecer con ✘.</p>'
+            . 'Es una foto del momento: quien se inscriba después deja de aparecer como pendiente.</p>'
             . '</div>';
     }
 
