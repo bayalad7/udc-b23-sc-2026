@@ -12,6 +12,7 @@ declare(strict_types=1);
 $ADMIN_NAV = [
     ['clave' => 'dashboard', 'icono' => 'dashboard', 'label' => 'Dashboard', 'href' => BASE_URL . '/admin/public/index.php'],
     ['clave' => 'alumnos', 'icono' => 'usuarios', 'label' => 'Alumnos', 'href' => BASE_URL . '/admin/public/alumnos.php'],
+    ['clave' => 'consulta', 'icono' => 'buscar', 'label' => 'Consulta', 'href' => BASE_URL . '/admin/public/consulta.php'],
     ['clave' => 'trabajadores', 'icono' => 'maletin', 'label' => 'Personal', 'href' => BASE_URL . '/admin/public/trabajadores.php'],
     ['clave' => 'camisas', 'icono' => 'camisa', 'label' => 'Camisas', 'href' => BASE_URL . '/admin/public/camisas.php'],
     ['clave' => 'eventos', 'icono' => 'lista', 'label' => 'Eventos', 'href' => BASE_URL . '/admin/public/eventos.php'],

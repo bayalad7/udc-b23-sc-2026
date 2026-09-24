@@ -175,10 +175,17 @@ if ($mensajeError) {
                     <?php endif; ?>
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <a href="<?= BASE_URL ?>/admin/public/alumno.php?id=<?= (int) $alumno['id'] ?>" title="Ver / editar alumno"
-                       class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
-                        <?= icono('editar', 'h-4 w-4') ?>
-                    </a>
+                    <span class="flex items-center justify-center gap-1">
+                        <a href="<?= BASE_URL ?>/admin/public/consulta.php?cuenta=<?= urlencode((string) $alumno['numero_cuenta']) ?>"
+                           title="Ver su ficha completa: credencial, inscripciones, equipos y asistencia"
+                           class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+                            <?= icono('ver', 'h-4 w-4') ?>
+                        </a>
+                        <a href="<?= BASE_URL ?>/admin/public/alumno.php?id=<?= (int) $alumno['id'] ?>" title="Ver / editar alumno"
+                           class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+                            <?= icono('editar', 'h-4 w-4') ?>
+                        </a>
+                    </span>
                 </td>
             </tr>
             <?php endforeach; ?>
