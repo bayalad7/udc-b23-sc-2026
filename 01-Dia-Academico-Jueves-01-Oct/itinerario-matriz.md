@@ -1,4 +1,4 @@
-# Itinerario — Día Académico (Jueves 1 de Octubre)
+# Itinerario — Día Académico (Lunes 5 de Octubre)
 
 Horario general: **08:00 – 13:00**. Espacios según [espacios-y-capacidades.md](../00-Informacion-General/espacios-y-capacidades.md).
 

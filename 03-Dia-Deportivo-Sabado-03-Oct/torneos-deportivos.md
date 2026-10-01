@@ -1,4 +1,4 @@
-# Torneos Deportivos — Día Deportivo (Sábado 3 de Octubre)
+# Torneos Deportivos — Día Deportivo (Miércoles 7 de Octubre)
 
 Tres torneos relámpago de eliminación directa, jugados en paralelo en el **Polideportivo de San Pedrito** (fuera del plantel) — una cancha asignada por deporte, según [espacios-y-capacidades.md](../00-Informacion-General/espacios-y-capacidades.md): Fútbol Rápido, Voleibol y Quemados. Arrancan a las 07:30, justo después del registro (ver [matriz de itinerario](itinerario-matriz.md)).
 
@@ -14,14 +14,14 @@ Eje del evento: **convivencia familiar**, no solo competencia — se invita expl
 
 No hay restricción en el sistema para que un alumno (o un padre/madre) forme parte de equipos de **más de uno de los 3 torneos** a la vez — a diferencia del Día Académico (ver [Reglas de inscripción por franja horaria](../01-Dia-Academico-Jueves-01-Oct/registro-asistencia.md#reglas-de-inscripción-por-franja-horaria)), aquí la inscripción no valida cruces de horario entre torneos.
 
-Como los 3 torneos corren en paralelo desde las 07:30 (ver [matriz de itinerario](itinerario-matriz.md)) y cada uno arma sus llaves de forma independiente el 2 de octubre, es posible que a una misma persona le toquen partidos de dos deportes distintos al mismo tiempo. En ese caso, **la persona decide en cuál participar** — el sistema no arbitra el conflicto ni reprograma partidos.
+Como los 3 torneos corren en paralelo desde las 07:30 (ver [matriz de itinerario](itinerario-matriz.md)) y cada uno arma sus llaves de forma independiente el 6 de octubre, es posible que a una misma persona le toquen partidos de dos deportes distintos al mismo tiempo. En ese caso, **la persona decide en cuál participar** — el sistema no arbitra el conflicto ni reprograma partidos.
 
 > Pendiente por definir: qué pasa con el equipo/partido que la persona no puede atender por el cruce (¿juega el resto del equipo sin ella, cuenta como falta individual, o el equipo pierde el partido por default si es una posición clave como el capitán?). No confundir con el pendiente ya existente de "bye" por número de equipos no potencia de 2 (ver [Pendientes por definir](#pendientes-por-definir) abajo).
 
 ## Inscripción de equipos (antes del evento)
 
 - Se realiza **previamente por la aplicación**, con **fecha límite: martes 30 de septiembre de 2026** (mismo criterio de "día previo al cierre" que usa el pre-registro del Día Académico).
-- El armado de llaves se publica el **viernes 2 de octubre de 2026** (un día antes del torneo), una vez cerradas las inscripciones.
+- El armado de llaves se publica el **martes 6 de octubre de 2026** (un día antes del torneo), una vez cerradas las inscripciones.
 
 ### Formulario de inscripción de equipo (propuesta)
 
@@ -60,7 +60,7 @@ El escaneo de **entrada** se concentra en el bloque 07:00–07:30 de la [matriz 
 - Tope de **16 equipos por torneo** (configurable desde `app/admin` sin tocar código — ver `competiciones.max_equipos`), para que las rondas quepan en la ventana fija de 4 horas (07:30–11:30). El número real de equipos por deporte se conoce hasta el cierre de inscripciones (30 de septiembre) y **puede ser menor a 16**: la llave se arma con los que haya, no con los que caben.
 - Si el número de equipos no es potencia de 2 (2, 4, 8, 16), los que sobran reciben un **"bye"** (pase directo) en la primera ronda. No hay que calcularlo a mano: el módulo de llaves de `app/admin` reparte los byes solo, entre mitades distintas del cuadro, al generar los enfrentamientos.
 - Las llaves se arman desde **`app/admin` → Llaves** (una por competición): el staff elige si los equipos entran por sorteo aleatorio o por orden de inscripción, y el sistema genera el cuadro completo. A cada partido se le captura hora, cancha, marcador y ganador; el ganador avanza solo a la ronda siguiente. Ver [app/PROMPTS-DESARROLLO.md](../app/PROMPTS-DESARROLLO.md) y la tabla `partidos` de `app/database/schema.sql`.
-- Las llaves se publican el **2 de octubre**, un día antes del evento, para que los equipos sepan su primer rival y horario aproximado. Desde `app/admin` se descargan como **PDF imprimible** (botón "Descargar la llave"): una hoja horizontal con el cuadro completo — en la esquina de cada partido dice a qué partido pasa el que gane, así que se puede seguir con el dedo el camino de un equipo hasta la final — y una segunda hoja con el calendario de todos los partidos (hora, cancha, rivales y ganador). Eso es lo que se pega en el Polideportivo y se comparte con los equipos. Una vista pública dentro de la app, para que cada quien la consulte en su celular, sigue pendiente.
+- Las llaves se publican el **6 de octubre**, un día antes del evento, para que los equipos sepan su primer rival y horario aproximado. Desde `app/admin` se descargan como **PDF imprimible** (botón "Descargar la llave"): una hoja horizontal con el cuadro completo — en la esquina de cada partido dice a qué partido pasa el que gane, así que se puede seguir con el dedo el camino de un equipo hasta la final — y una segunda hoja con el calendario de todos los partidos (hora, cancha, rivales y ganador). Eso es lo que se pega en el Polideportivo y se comparte con los equipos. Una vista pública dentro de la app, para que cada quien la consulte en su celular, sigue pendiente.
 
 ## Reglas por deporte
 

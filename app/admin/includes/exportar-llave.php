@@ -5,7 +5,7 @@ declare(strict_types=1);
 // completo (una columna por ronda, para seguir con el dedo a dónde va cada
 // equipo si gana) más una hoja de calendario con todos los partidos.
 //
-// Es la hoja que se publica el 2 de octubre, un día antes del torneo, para
+// Es la hoja que se publica el 6 de octubre, un día antes del torneo, para
 // que cada equipo sepa contra quién juega y qué le espera si avanza — ver
 // 03-Dia-Deportivo-Sabado-03-Oct/torneos-deportivos.md#formato-de-llaves.
 //

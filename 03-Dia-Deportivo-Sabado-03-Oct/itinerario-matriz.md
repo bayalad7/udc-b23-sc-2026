@@ -1,4 +1,4 @@
-# Itinerario — Día Deportivo (Sábado 3 de Octubre)
+# Itinerario — Día Deportivo (Miércoles 7 de Octubre)
 
 Sede: **Polideportivo de San Pedrito** (fuera del plantel) — una cancha asignada por deporte, según [espacios-y-capacidades.md](../00-Informacion-General/espacios-y-capacidades.md).
 

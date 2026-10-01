@@ -8,9 +8,9 @@ Planificación y sistema de apoyo para la Semana Cultural del Aniversario del **
 
 | Día | Fecha | Enfoque |
 |---|---|---|
-| 1️⃣ | Jueves 1 de Octubre | 🎓 Día Académico |
-| 2️⃣ | Viernes 2 de Octubre | 🎭 Día Cultural |
-| 3️⃣ | Sábado 3 de Octubre | ⚽ Día Deportivo |
+| 1️⃣ | Lunes 5 de Octubre | 🎓 Día Académico |
+| 2️⃣ | Martes 6 de Octubre | 🎭 Día Cultural |
+| 3️⃣ | Miércoles 7 de Octubre | ⚽ Día Deportivo |
 
 ## 📁 Estructura del repositorio
 

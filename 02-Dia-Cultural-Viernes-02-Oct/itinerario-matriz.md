@@ -1,4 +1,4 @@
-# Itinerario — Día Cultural (Viernes 2 de Octubre)
+# Itinerario — Día Cultural (Martes 6 de Octubre)
 
 Espacios según [espacios-y-capacidades.md](../00-Informacion-General/espacios-y-capacidades.md).
 

@@ -1,4 +1,4 @@
-# Escenario de Talentos "Expresa tu esencia" — Día Cultural (Viernes 2 de Octubre)
+# Escenario de Talentos "Expresa tu esencia" — Día Cultural (Martes 6 de Octubre)
 
 Show de talentos en la **Explanada**, bloque **16:00–17:20** (ver [matriz de itinerario](itinerario-matriz.md)). Se modela en base de datos como una fila de `competiciones` (`dia='cultural'`, `tipo='concurso'` — ver semilla en [app/database/seeds.sql](../app/database/seeds.sql)) con sus participaciones en `equipos`/`integrantes`, igual que el Concurso del Conocimiento y los torneos deportivos.
 

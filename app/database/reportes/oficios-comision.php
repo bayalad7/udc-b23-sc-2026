@@ -59,9 +59,9 @@ preg_match_all('/INSERT INTO eventos\b.*?\bVALUES(.*?);\s*$/ms', $sql, $bloques)
 $patronFila = "/^\(\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,/m";
 
 $dias = [
-    'academico' => ['etiqueta' => 'Académico', 'fecha' => 'Jueves 1 de Octubre de 2026'],
-    'cultural'  => ['etiqueta' => 'Cultural',  'fecha' => 'Viernes 2 de Octubre de 2026'],
-    'deportivo' => ['etiqueta' => 'Deportivo', 'fecha' => 'Sábado 3 de Octubre de 2026'],
+    'academico' => ['etiqueta' => 'Académico', 'fecha' => 'Lunes 5 de Octubre de 2026'],
+    'cultural'  => ['etiqueta' => 'Cultural',  'fecha' => 'Martes 6 de Octubre de 2026'],
+    'deportivo' => ['etiqueta' => 'Deportivo', 'fecha' => 'Miércoles 7 de Octubre de 2026'],
 ];
 
 // Las filas salen en el MISMO orden en que están sembradas en seeds.sql (no

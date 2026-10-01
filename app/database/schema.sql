@@ -403,7 +403,7 @@ CREATE TABLE IF NOT EXISTS integrantes (
 -- por enfrentamiento, armado desde app/admin/public/llave.php. Los 3 torneos
 -- del Día Deportivo son de eliminación directa (ver
 -- 03-Dia-Deportivo-Sabado-03-Oct/torneos-deportivos.md#formato-de-llaves) y
--- la llave se publica el 2 de octubre, cerradas ya las inscripciones.
+-- la llave se publica el 6 de octubre, cerradas ya las inscripciones.
 --
 -- Por qué una tabla y no una columna JSON en competiciones: cada partido
 -- tiene vida propia (hora, cancha, marcador, ganador) y se consulta/edita

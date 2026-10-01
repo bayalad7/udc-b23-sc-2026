@@ -6,7 +6,7 @@ Lista de prompts secuenciales para construir el sistema descrito en [../01-Dia-A
 
 ```
 Estoy construyendo el sistema de registro e inscripciones para el Día Académico
-(Jueves 1 de Octubre) de la Semana Cultural del Bachillerato 23, Universidad de Colima.
+(Lunes 5 de Octubre) de la Semana Cultural del Bachillerato 23, Universidad de Colima.
 
 Stack obligatorio: PHP puro (sin frameworks tipo Laravel/Symfony), JavaScript puro
 (sin frameworks tipo React/Vue), base de datos MariaDB. Sin frameworks de frontend
@@ -46,7 +46,7 @@ Cómo se asigna el alumno a una ponencia/taller (ver registro-asistencia.md),
 solo en el primer escaneo (el de entrada):
 - Hay dos vías para que un alumno tenga lugar en una ponencia/taller:
   (a) Registro previo: el encargado de organizar el evento académico ya le asignó
-      un lugar de antemano, durante el periodo de clases (antes del 1 de octubre).
+      un lugar de antemano, durante el periodo de clases (antes del 5 de octubre).
   (b) Por orden de llegada: si no tiene lugar previo, justo después de que el
       maestro lo escanea el día del evento, elige de inmediato entre lo que
       todavía tenga cupo disponible (ponencia 9:00-10:00 y talleres de Sesión 1
@@ -264,7 +264,7 @@ Día Cultural, Protección de la URL).
       hay paso siguiente de elegir taller ni equipo: ya están definidos desde
       la inscripción (Concurso del Conocimiento, Concurso de Talentos o
       torneo deportivo, según equipos.tipo) o, en el caso de los torneos, por
-      las llaves publicadas el 2 de octubre.
+      las llaves publicadas el 6 de octubre.
 
 La pantalla debe distinguir siempre con claridad si el escaneo se registró
 como "Entrada" o como "Salida (actualizada)". Debe mostrar también, de forma
@@ -392,7 +392,7 @@ sin documento de planificación propio — pendiente):
   hora más reciente. A diferencia de ponencias/talleres, aquí el escaneo NO
   desencadena una elección: el equipo y, en el caso de los torneos
   deportivos, su primer partido, ya quedaron definidos de antemano (llaves
-  publicadas el 2 de octubre para los torneos — fuera del alcance de estos
+  publicadas el 6 de octubre para los torneos — fuera del alcance de estos
   prompts).
 
 Si te falta información para tomar una decisión de negocio (no técnica),

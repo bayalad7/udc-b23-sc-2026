@@ -24,9 +24,9 @@ function diaEventoLabel(string $dia): string
 // cada actividad, no el calendario del evento. Las usa lo que se imprime y se
 // pega en una pared, donde "Día Académico" por sí solo no dice cuándo.
 const DIAS_EVENTO_FECHA = [
-    'academico' => 'Jueves 1 de Octubre',
-    'cultural' => 'Viernes 2 de Octubre',
-    'deportivo' => 'Sábado 3 de Octubre',
+    'academico' => 'Lunes 5 de Octubre',
+    'cultural' => 'Martes 6 de Octubre',
+    'deportivo' => 'Miércoles 7 de Octubre',
 ];
 
 /** Fecha del día del evento; cadena vacía si no la conoce, para no inventarla. */
