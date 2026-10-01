@@ -107,3 +107,7 @@ Require all denied
 <Files "exportar-sin-inscripcion.php">
     Require all granted
 </Files>
+
+<Files "exportar-letrero.php">
+    Require all granted
+</Files>

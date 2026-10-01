@@ -122,10 +122,17 @@ if ($mensajeError) {
                     <td class="px-4 py-3 text-center text-slate-500"><?= (int) $evento['total_entrada'] ?></td>
                     <td class="px-4 py-3 text-center text-slate-500"><?= (int) $evento['total_salida'] ?></td>
                     <td class="px-4 py-3 text-center">
-                        <a href="<?= BASE_URL ?>/admin/public/evento.php?id=<?= (int) $evento['id'] ?>" title="Ver / editar evento"
-                           class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
-                            <?= icono('editar', 'h-4 w-4') ?>
-                        </a>
+                        <span class="flex items-center justify-center gap-1">
+                            <a href="<?= BASE_URL ?>/admin/includes/exportar-letrero.php?evento=<?= (int) $evento['id'] ?>"
+                               title="Letrero imprimible para la puerta: el evento en letras grandes y la lista de inscritos"
+                               class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+                                <?= icono('descripcion', 'h-4 w-4') ?>
+                            </a>
+                            <a href="<?= BASE_URL ?>/admin/public/evento.php?id=<?= (int) $evento['id'] ?>" title="Ver / editar evento"
+                               class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+                                <?= icono('editar', 'h-4 w-4') ?>
+                            </a>
+                        </span>
                     </td>
                 </tr>
                 <?php endforeach; ?>

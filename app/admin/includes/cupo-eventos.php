@@ -48,7 +48,7 @@ function eventosConCupo(PDO $pdo, ?int $idEvento = null): array
 {
     $consulta = $pdo->prepare(
         'SELECT id, dia, tipo, nombre, facilitador, responsable, espacio,
-                hora_inicio, hora_fin, cupo_maximo, cupo_disponible
+                hora_inicio, hora_fin, cupo_maximo, cupo_disponible, requerimientos
          FROM eventos'
         . ($idEvento !== null ? ' WHERE id = :id' : '') .
         ' ORDER BY dia, hora_inicio, id'

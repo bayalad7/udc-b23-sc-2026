@@ -35,10 +35,11 @@ function competicionesConEquipos(PDO $pdo, ?int $idCompeticion = null): array
 {
     $filtro = $idCompeticion !== null ? ' WHERE c.id = :id' : '';
     $consulta = $pdo->prepare(
-        "SELECT c.id, c.nombre, c.dia, c.tipo, c.max_equipos, c.tam_equipo, COUNT(e.id) AS total_equipos
+        "SELECT c.id, c.nombre, c.dia, c.tipo, c.hora_inicio, c.hora_fin,
+                c.max_equipos, c.tam_equipo, COUNT(e.id) AS total_equipos
          FROM competiciones c
          LEFT JOIN equipos e ON e.id_competicion = c.id" . $filtro . "
-         GROUP BY c.id, c.nombre, c.dia, c.tipo, c.max_equipos, c.tam_equipo
+         GROUP BY c.id, c.nombre, c.dia, c.tipo, c.hora_inicio, c.hora_fin, c.max_equipos, c.tam_equipo
          ORDER BY c.dia, c.hora_inicio"
     );
     $consulta->execute($idCompeticion !== null ? ['id' => $idCompeticion] : []);

@@ -18,3 +18,19 @@ function diaEventoLabel(string $dia): string
 {
     return DIAS_EVENTO_LABEL[$dia] ?? $dia;
 }
+
+// Fecha de cada día, en el formato de la convención del proyecto (ver
+// CLAUDE.md). Son fijas y no viven en la base: el esquema guarda la hora de
+// cada actividad, no el calendario del evento. Las usa lo que se imprime y se
+// pega en una pared, donde "Día Académico" por sí solo no dice cuándo.
+const DIAS_EVENTO_FECHA = [
+    'academico' => 'Jueves 1 de Octubre',
+    'cultural' => 'Viernes 2 de Octubre',
+    'deportivo' => 'Sábado 3 de Octubre',
+];
+
+/** Fecha del día del evento; cadena vacía si no la conoce, para no inventarla. */
+function diaEventoFecha(string $dia): string
+{
+    return DIAS_EVENTO_FECHA[$dia] ?? '';
+}
