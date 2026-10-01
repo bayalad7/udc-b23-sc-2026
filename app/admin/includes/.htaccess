@@ -111,3 +111,7 @@ Require all denied
 <Files "exportar-letrero.php">
     Require all granted
 </Files>
+
+<Files "exportar-conflictos.php">
+    Require all granted
+</Files>

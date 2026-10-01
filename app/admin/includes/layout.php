@@ -18,6 +18,7 @@ $ADMIN_NAV = [
     ['clave' => 'eventos', 'icono' => 'lista', 'label' => 'Eventos', 'href' => BASE_URL . '/admin/public/eventos.php'],
     ['clave' => 'competiciones', 'icono' => 'trofeo', 'label' => 'Competiciones', 'href' => BASE_URL . '/admin/public/competiciones.php'],
     ['clave' => 'llaves', 'icono' => 'llaves', 'label' => 'Llaves', 'href' => BASE_URL . '/admin/public/llaves.php'],
+    ['clave' => 'conflictos', 'icono' => 'alerta', 'label' => 'Conflictos', 'href' => BASE_URL . '/admin/public/conflictos.php'],
     ['clave' => 'asistencias', 'icono' => 'qr', 'label' => 'Asistencias', 'href' => BASE_URL . '/admin/public/asistencias.php'],
 ];
 
