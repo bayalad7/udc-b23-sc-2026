@@ -547,6 +547,9 @@
   .max-h-96 {
     max-height: calc(var(--spacing) * 96);
   }
+  .max-h-\[32rem\] {
+    max-height: 32rem;
+  }
   .max-h-\[80vh\] {
     max-height: 80vh;
   }
@@ -920,6 +923,9 @@
   }
   .border-slate-300 {
     border-color: var(--color-slate-300);
+  }
+  .border-slate-400 {
+    border-color: var(--color-slate-400);
   }
   .border-slate-700 {
     border-color: var(--color-slate-700);
