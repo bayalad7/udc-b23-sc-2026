@@ -115,3 +115,7 @@ Require all denied
 <Files "exportar-conflictos.php">
     Require all granted
 </Files>
+
+<Files "eliminar-inscripcion.php">
+    Require all granted
+</Files>

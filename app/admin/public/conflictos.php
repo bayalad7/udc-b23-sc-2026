@@ -22,8 +22,33 @@ $pdo = require __DIR__ . '/../../config/db.php';
 $reporte = conflictosDeInscripcion($pdo);
 $porActividad = conflictosPorActividad($reporte);
 
-/** Pinta un compromiso (evento o equipo) con su enlace a la ficha. */
-function conflictoCompromiso(array $compromiso): void
+// Resultado de quitar a un alumno de un evento (ver
+// includes/eliminar-inscripcion.php).
+$detalleMensaje = trim((string) ($_GET['detalle'] ?? ''));
+$mensajeExito = ($_GET['msg'] ?? '') === 'inscripcion_eliminada'
+    ? 'Listo: se quitó la inscripción' . ($detalleMensaje !== '' ? ' de ' . $detalleMensaje : '') . ' y el lugar volvió al evento.'
+    : null;
+$mensajesError = [
+    'con_asistencia' => 'No se quitó: a ese alumno ya le escanearon la entrada a ese evento, y borrar la inscripción se llevaría su asistencia.',
+    'no_encontrada' => 'Esa inscripción ya no existe — alguien más pudo haberla quitado.',
+    'datos_invalidos' => 'Faltaron datos para quitar la inscripción.',
+    'error_servidor' => 'No se pudo quitar la inscripción. Vuelve a intentarlo.',
+];
+$mensajeError = $mensajesError[$_GET['error'] ?? ''] ?? null;
+if ($mensajeError !== null && $detalleMensaje !== '') {
+    $mensajeError .= ' (' . $detalleMensaje . ')';
+}
+
+/**
+ * Pinta un compromiso (evento o equipo) con su enlace a la ficha y, si es un
+ * evento y se pasa el alumno, el botón para quitarlo de ahí — que es como se
+ * deshace el choque: se le quita UNA de las dos inscripciones.
+ *
+ * De los equipos no hay botón a propósito: quitar a un integrante deja al
+ * equipo incompleto y eso lo decide el capitán, no el staff (ver
+ * includes/eliminar-inscripcion.php).
+ */
+function conflictoCompromiso(array $compromiso, ?array $alumno = null): void
 {
     $esEvento = $compromiso['clase'] === 'evento';
     $url = BASE_URL . ($esEvento ? '/admin/public/evento.php?id=' : '/admin/public/competicion.php?id=') . $compromiso['id'];
@@ -35,6 +60,18 @@ function conflictoCompromiso(array $compromiso): void
             · <?= htmlspecialchars($compromiso['horario'], ENT_QUOTES, 'UTF-8') ?>
             · <?= htmlspecialchars($compromiso['detalle'], ENT_QUOTES, 'UTF-8') ?>
         </span>
+        <?php if ($esEvento && $alumno !== null): ?>
+        <form action="<?= BASE_URL ?>/admin/includes/eliminar-inscripcion.php" method="post" class="mt-1.5"
+              onsubmit="return confirm('¿Quitar a <?= htmlspecialchars(addslashes((string) $alumno['nombre_completo']), ENT_QUOTES, 'UTF-8') ?> de «<?= htmlspecialchars(addslashes((string) $compromiso['nombre']), ENT_QUOTES, 'UTF-8') ?>»? El lugar vuelve al evento y el alumno queda libre a esa hora.');">
+            <input type="hidden" name="id_alumno" value="<?= (int) $alumno['id'] ?>">
+            <input type="hidden" name="id_evento" value="<?= (int) $compromiso['id'] ?>">
+            <button type="submit" title="Quitar al alumno de este evento"
+                    class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50">
+                <?= icono('eliminar', 'h-3 w-3') ?>
+                Quitar de aquí
+            </button>
+        </form>
+        <?php endif; ?>
     </span>
     <?php
 }
@@ -64,6 +101,19 @@ layoutAdminAbrir('Conflictos', 'conflictos');
     </div>
     <?php endif; ?>
 </div>
+
+<?php if ($mensajeExito !== null): ?>
+<div class="mb-4 flex items-center gap-2 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+    <?= icono('exito', 'h-4 w-4 shrink-0') ?>
+    <?= htmlspecialchars($mensajeExito, ENT_QUOTES, 'UTF-8') ?>
+</div>
+<?php endif; ?>
+<?php if ($mensajeError !== null): ?>
+<div class="mb-4 flex items-center gap-2 rounded-lg border-l-4 border-red-500 bg-red-50 p-3 text-sm font-medium text-red-800">
+    <?= icono('alerta', 'h-4 w-4 shrink-0') ?>
+    <?= htmlspecialchars($mensajeError, ENT_QUOTES, 'UTF-8') ?>
+</div>
+<?php endif; ?>
 
 <?php if ($reporte['alumnos'] === []): ?>
 <div class="rounded-xl border-l-4 border-emerald-500 bg-white p-5 shadow-sm">
@@ -120,7 +170,8 @@ layoutAdminAbrir('Conflictos', 'conflictos');
     </h2>
     <p class="mb-3 text-xs text-slate-500">
         De más a menos alumnos afectados. Sirve para decidir: mover una de las dos actividades arregla de
-        golpe a todos los de ese renglón.
+        golpe a todos los de ese renglón. Para quitar a un alumno de uno de los dos eventos, su botón está
+        en la tabla de abajo.
     </p>
     <div class="overflow-x-auto rounded-lg border border-slate-200">
         <table class="w-full text-left text-sm">
@@ -191,9 +242,14 @@ layoutAdminAbrir('Conflictos', 'conflictos');
                         <?= htmlspecialchars($conflicto['dia_label'], ENT_QUOTES, 'UTF-8') ?>
                         <span class="block"><?= htmlspecialchars($conflicto['horario'], ENT_QUOTES, 'UTF-8') ?></span>
                     </td>
-                    <td class="px-3 py-2"><?php conflictoCompromiso($conflicto['a']); ?></td>
-                    <td class="px-3 py-2"><?php conflictoCompromiso($conflicto['b']); ?></td>
-                    <td class="px-3 py-2 text-xs text-slate-500"><?= htmlspecialchars($conflicto['etiqueta'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td class="px-3 py-2"><?php conflictoCompromiso($conflicto['a'], $alumno); ?></td>
+                    <td class="px-3 py-2"><?php conflictoCompromiso($conflicto['b'], $alumno); ?></td>
+                    <td class="px-3 py-2 text-xs text-slate-500">
+                        <?= htmlspecialchars($conflicto['etiqueta'], ENT_QUOTES, 'UTF-8') ?>
+                        <?php if ($conflicto['a']['clase'] !== 'evento' && $conflicto['b']['clase'] !== 'evento'): ?>
+                        <span class="mt-1 block text-slate-400">Los equipos no se desarman desde aquí.</span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
                 <?php endforeach; ?>
