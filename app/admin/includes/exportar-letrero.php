@@ -34,6 +34,19 @@ require_once __DIR__ . '/../../inscripciones/includes/requerimientos.php';
 // columnas no son un lujo: una ponencia de 180 inscritos a una columna son
 // cuatro hojas que alguien tiene que pegar y nadie va a leer completas.
 
+// Cuántos renglones entran por hoja. El primer bloque comparte hoja con el
+// cartel, así que le toca menos; los siguientes tienen la hoja entera. Los
+// números están MEDIDOS generando el PDF y viendo en qué hoja empieza la lista
+// (hoja carta vertical, con la fuente y los márgenes de abajo): con 48 la lista
+// arranca en la hoja 1 y con 52 se va a la 2. Si el cartel trae el recuadro de
+// "Qué debes traer" crece y caben menos, de ahí el segundo tope. Quedarse corto
+// solo deja un hueco al final de la hoja; pasarse manda el bloque completo a la
+// siguiente y vuelve a dejar media hoja en blanco, que es justo lo que se
+// corrigió. Si se cambia la tipografía o los márgenes, hay que volver a medir.
+const LETRERO_FILAS_PRIMERA_HOJA = 48;
+const LETRERO_FILAS_PRIMERA_HOJA_CON_RECUADRO = 40;
+const LETRERO_FILAS_POR_HOJA = 64;
+
 $idEvento = isset($_GET['evento']) ? (int) $_GET['evento'] : null;
 $idCompeticion = isset($_GET['competicion']) ? (int) $_GET['competicion'] : null;
 
@@ -47,32 +60,71 @@ if (($idEvento !== null && $idEvento <= 0) || ($idCompeticion !== null && $idCom
 }
 
 /**
- * Parte la lista en dos columnas del mismo alto: la primera mitad a la
- * izquierda y la segunda a la derecha, para que se lea de arriba a abajo en
- * cada columna como una lista de papel y no en zigzag.
+ * Parte la lista en bloques, y cada bloque en dos columnas del mismo alto: la
+ * primera mitad a la izquierda y la segunda a la derecha, para que se lea de
+ * arriba a abajo en cada columna como una lista de papel y no en zigzag.
  *
- * @param list<string> $celdas
+ * POR QUÉ EN BLOQUES: Dompdf no parte una tabla de dos celdas entre hojas, así
+ * que una lista larga en una sola tabla no cabía debajo del cartel y se iba
+ * entera a la hoja 2, dejando media hoja 1 en blanco. Troceándola, el primer
+ * bloque es el que sí cabe junto al cartel y los siguientes llenan las hojas
+ * que haga falta. De ahí los dos topes: el primer bloque es más corto porque
+ * comparte hoja con el cartel.
+ *
+ * Cada bloque repite los encabezados de columna, y si un bloque arranca a la
+ * mitad de un grupo (los integrantes de un equipo) se repite el renglón del
+ * grupo con un "(continúa)", para que la hoja se entienda sola.
+ *
+ * @param list<array{html: string, grupo?: string, es_grupo?: bool}> $celdas
  */
-function letreroDosColumnas(array $celdas, string $encabezado): string
+function letreroListaPaginada(array $celdas, string $encabezado, int $topePrimero, int $topeResto): string
 {
     if ($celdas === []) {
         return '';
     }
 
-    $mitad = (int) ceil(count($celdas) / 2);
-    $columnas = [array_slice($celdas, 0, $mitad), array_slice($celdas, $mitad)];
-
-    $html = '<table class="columnas"><tr>';
-    foreach ($columnas as $columna) {
-        $html .= '<td class="columna">';
-        if ($columna !== []) {
-            $html .= '<table class="lista"><thead><tr>' . $encabezado . '</tr></thead><tbody>'
-                . implode('', $columna) . '</tbody></table>';
-        }
-        $html .= '</td>';
+    $bloques = [];
+    $pendientes = $celdas;
+    $tope = $topePrimero;
+    while ($pendientes !== []) {
+        $bloques[] = array_slice($pendientes, 0, $tope);
+        $pendientes = array_slice($pendientes, $tope);
+        $tope = $topeResto;
     }
 
-    return $html . '</tr></table>';
+    $html = '';
+    foreach ($bloques as $indice => $bloque) {
+        if ($indice > 0) {
+            $html .= '<div class="salto"></div>';
+
+            // ¿El bloque empieza a media lista de un grupo? Se repite su
+            // renglón para no dejar integrantes huérfanos de su equipo.
+            $primera = $bloque[0];
+            if (($primera['es_grupo'] ?? false) === false && ($primera['grupo'] ?? '') !== '') {
+                array_unshift($bloque, [
+                    'html' => '<tr class="equipo"><td colspan="3">'
+                        . htmlspecialchars($primera['grupo'] . ' (continúa)', ENT_QUOTES, 'UTF-8') . '</td></tr>',
+                    'es_grupo' => true,
+                ]);
+            }
+        }
+
+        $mitad = (int) ceil(count($bloque) / 2);
+        $columnas = [array_slice($bloque, 0, $mitad), array_slice($bloque, $mitad)];
+
+        $html .= '<table class="columnas"><tr>';
+        foreach ($columnas as $columna) {
+            $html .= '<td class="columna">';
+            if ($columna !== []) {
+                $html .= '<table class="lista"><thead><tr>' . $encabezado . '</tr></thead><tbody>'
+                    . implode('', array_column($columna, 'html')) . '</tbody></table>';
+            }
+            $html .= '</td>';
+        }
+        $html .= '</tr></table>';
+    }
+
+    return $html;
 }
 
 /** Nombre de archivo sin acentos ni espacios — viaja en una cabecera HTTP. */
@@ -122,6 +174,7 @@ $estilos = '<style>
     table.lista th.centro, table.lista td.centro { text-align: center; }
     tr.equipo td { background: #e2e8f0; font-weight: bold; font-size: 13px; }
     p.pie { margin-top: 14px; font-size: 11px; color: #64748b; text-align: center; }
+    div.salto { page-break-before: always; }
     p.vacio { margin: 0; border: 1px solid #cbd5e1; padding: 10px; font-size: 14px; color: #475569; }
 </style>';
 
@@ -168,19 +221,22 @@ if ($idEvento !== null) {
     } else {
         $celdas = [];
         foreach ($inscritos as $indice => $inscrito) {
-            $celdas[] = '<tr>'
+            $celdas[] = ['html' => '<tr>'
                 . '<td class="num">' . ($indice + 1) . '</td>'
                 . '<td>' . $escapar($inscrito['nombre_completo']) . '</td>'
                 . '<td class="grupo">' . $escapar($inscrito['grado_grupo']) . '</td>'
                 . '<td class="centro">' . $escapar($inscrito['numero_cuenta']) . '</td>'
-                . '</tr>';
+                . '</tr>'];
         }
-        $html .= letreroDosColumnas(
+        $html .= letreroListaPaginada(
             $celdas,
-            '<th></th><th>Alumno</th><th class="centro">Grupo</th><th class="centro">No. cuenta</th>'
+            '<th></th><th>Alumno</th><th class="centro">Grupo</th><th class="centro">No. cuenta</th>',
+            $requerimientos !== [] ? LETRERO_FILAS_PRIMERA_HOJA_CON_RECUADRO : LETRERO_FILAS_PRIMERA_HOJA,
+            LETRERO_FILAS_POR_HOJA
         );
     }
 
+    $tituloLetrero = (string) $evento['nombre'];
     $nombreArchivo = letreroNombreArchivo('letrero', (string) $evento['nombre'], $idEvento);
 } else {
 
@@ -222,25 +278,38 @@ if ($idEvento !== null) {
             if ($equipo['color_camisa'] !== null) {
                 $encabezadoEquipo .= ' · ' . $equipo['color_camisa'];
             }
-            $celdas[] = '<tr class="equipo"><td colspan="3">' . $escapar($encabezadoEquipo) . '</td></tr>';
+            $celdas[] = [
+                'html' => '<tr class="equipo"><td colspan="3">' . $escapar($encabezadoEquipo) . '</td></tr>',
+                'grupo' => (string) $equipo['nombre'],
+                'es_grupo' => true,
+            ];
 
             foreach ($equipo['integrantes'] as $indice => $integrante) {
                 // Por número de cuenta y no por nombre: hay alumnos
                 // homónimos en el padrón.
                 $esCapitan = $integrante['numero_cuenta'] !== null
                     && (string) $integrante['numero_cuenta'] === (string) $equipo['capitan_cuenta'];
-                $celdas[] = '<tr>'
-                    . '<td class="num">' . ($indice + 1) . '</td>'
-                    . '<td>' . $escapar($integrante['nombre']) . ($esCapitan ? ' <strong>(capitán)</strong>' : '') . '</td>'
-                    . '<td class="grupo">' . $escapar(
-                        equiposGradoGrupo($integrante['grado'], $integrante['grupo']) ?? ucfirst((string) $integrante['tipo'])
-                    ) . '</td>'
-                    . '</tr>';
+                $celdas[] = [
+                    'html' => '<tr>'
+                        . '<td class="num">' . ($indice + 1) . '</td>'
+                        . '<td>' . $escapar($integrante['nombre']) . ($esCapitan ? ' <strong>(capitán)</strong>' : '') . '</td>'
+                        . '<td class="grupo">' . $escapar(
+                            equiposGradoGrupo($integrante['grado'], $integrante['grupo']) ?? ucfirst((string) $integrante['tipo'])
+                        ) . '</td>'
+                        . '</tr>',
+                    'grupo' => (string) $equipo['nombre'],
+                ];
             }
         }
-        $html .= letreroDosColumnas($celdas, '<th></th><th>Integrante</th><th class="centro">Grupo</th>');
+        $html .= letreroListaPaginada(
+            $celdas,
+            '<th></th><th>Integrante</th><th class="centro">Grupo</th>',
+            LETRERO_FILAS_PRIMERA_HOJA,
+            LETRERO_FILAS_POR_HOJA
+        );
     }
 
+    $tituloLetrero = (string) $competicion['nombre'];
     $nombreArchivo = letreroNombreArchivo('letrero', (string) $competicion['nombre'], $idCompeticion);
 }
 
@@ -251,5 +320,24 @@ $dompdf = new Dompdf($opciones);
 $dompdf->loadHtml($html, 'UTF-8');
 $dompdf->setPaper('letter', 'portrait');
 $dompdf->render();
+
+// Encabezado de continuación: cuando la lista no cabe en una hoja, cada una
+// lleva en el margen de arriba de qué evento es y qué hoja de cuántas. Va
+// sellado sobre el PDF ya armado (page_text) y no como HTML, porque los
+// marcadores {PAGE_NUM}/{PAGE_COUNT} los resuelve Dompdf cuando ya sabe
+// cuántas hojas salieron — contar bloques a mano mentiría si alguno se
+// desborda. Con una sola hoja no se sella nada: no hay nada que numerar.
+$lienzo = $dompdf->getCanvas();
+if ($lienzo->get_page_count() > 1) {
+    $lienzo->page_text(
+        34,
+        22,
+        $tituloLetrero . ' — hoja {PAGE_NUM} de {PAGE_COUNT}',
+        $dompdf->getFontMetrics()->getFont('sans-serif', 'bold'),
+        9,
+        [0.3, 0.35, 0.42]
+    );
+}
+
 $dompdf->stream($nombreArchivo . '.pdf', ['Attachment' => true]);
 exit;
