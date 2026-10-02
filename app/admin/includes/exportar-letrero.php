@@ -37,14 +37,33 @@ require_once __DIR__ . '/../../inscripciones/includes/requerimientos.php';
 // Cuántos renglones entran por hoja. El primer bloque comparte hoja con el
 // cartel, así que le toca menos; los siguientes tienen la hoja entera. Los
 // números están MEDIDOS generando el PDF y viendo en qué hoja empieza la lista
-// (hoja carta vertical, con la fuente y los márgenes de abajo): con 48 la lista
-// arranca en la hoja 1 y con 52 se va a la 2. Si el cartel trae el recuadro de
-// "Qué debes traer" crece y caben menos, de ahí el segundo tope. Quedarse corto
+// (hoja carta vertical, con la fuente, los márgenes y la banda de logos de
+// abajo): con 44 la lista arranca en la hoja 1 y con 48 se va a la 2. Si el
+// cartel trae el recuadro de "Qué debes traer" crece y caben menos (36), de ahí
+// el segundo tope. Todo lo que le agregue alto al cartel —los logos lo hicieron
+// y costó 4 renglones— obliga a volver a medir. Quedarse corto
 // solo deja un hueco al final de la hoja; pasarse manda el bloque completo a la
 // siguiente y vuelve a dejar media hoja en blanco, que es justo lo que se
 // corrigió. Si se cambia la tipografía o los márgenes, hay que volver a medir.
-const LETRERO_FILAS_PRIMERA_HOJA = 48;
-const LETRERO_FILAS_PRIMERA_HOJA_CON_RECUADRO = 40;
+// Los dos logos institucionales del cartel: la Universidad a la izquierda y el
+// 45 aniversario a la derecha, que es como se firman los impresos del evento.
+//
+// OJO, son las copias de assets/img/logo/impresos/ y no los originales: Dompdf
+// incrusta el PNG tal cual le llega, y con el A45 original (1254x1254, 900 KB)
+// cada letrero pesaba 1 MB y tardaba 18 segundos en generarse. Las copias están
+// al triple del tamaño al que se imprimen (300 DPI), así que se ven igual de
+// nítidas en papel y el letrero vuelve a salir en menos de un segundo. Si se
+// cambia el alto con el que se dibujan abajo, hay que regenerarlas.
+//
+// Van por ruta de archivo y no como data: URI en base64, que crece un tercio
+// más. Para que Dompdf pueda abrirlas hay que apuntarle el chroot a app/assets
+// (ver más abajo): fuera de ahí las bloquea, y con isRemoteEnabled en false no
+// hay forma de traerlas por URL.
+const LETRERO_LOGO_UDEC = 'logo/impresos/UdeC_2L izq Negro.png';
+const LETRERO_LOGO_ANIVERSARIO = 'logo/impresos/A45.png';
+
+const LETRERO_FILAS_PRIMERA_HOJA = 44;
+const LETRERO_FILAS_PRIMERA_HOJA_CON_RECUADRO = 36;
 const LETRERO_FILAS_POR_HOJA = 64;
 
 $idEvento = isset($_GET['evento']) ? (int) $_GET['evento'] : null;
@@ -147,6 +166,12 @@ $estilos = '<style>
 
     /* --- Cartel: lo que se lee de lejos --------------------------------- */
     div.cartel { border: 3px solid #0f172a; border-radius: 10px; padding: 14px 18px; text-align: center; }
+    table.logos { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+    table.logos td { padding: 0; vertical-align: middle; }
+    td.logo-udec { text-align: left; }
+    td.logo-udec img { height: 34px; }
+    td.logo-aniversario { text-align: right; }
+    td.logo-aniversario img { height: 52px; }
     p.dia { margin: 0 0 6px; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; color: #475569; }
     h1.nombre { margin: 0; font-size: 40px; line-height: 1.1; }
     p.tipo { margin: 8px 0 0; font-size: 17px; text-transform: uppercase; letter-spacing: 1px; color: #475569; }
@@ -180,6 +205,27 @@ $estilos = '<style>
 
 $escapar = static fn(?string $texto): string => htmlspecialchars((string) $texto, ENT_QUOTES, 'UTF-8');
 
+/**
+ * Banda de logos del cartel. Si falta alguno de los dos archivos se omite sin
+ * decir nada: el letrero es para pegarlo hoy en una puerta, y vale mucho más
+ * imprimirlo sin logo que no poder imprimirlo.
+ */
+function letreroLogos(): string
+{
+    $directorio = __DIR__ . '/../../assets/img/';
+    $udec = $directorio . LETRERO_LOGO_UDEC;
+    $aniversario = $directorio . LETRERO_LOGO_ANIVERSARIO;
+
+    if (!is_file($udec) || !is_file($aniversario)) {
+        return '';
+    }
+
+    return '<table class="logos"><tr>'
+        . '<td class="logo-udec"><img src="' . htmlspecialchars($udec, ENT_QUOTES, 'UTF-8') . '" alt="Universidad de Colima"></td>'
+        . '<td class="logo-aniversario"><img src="' . htmlspecialchars($aniversario, ENT_QUOTES, 'UTF-8') . '" alt="45 Aniversario"></td>'
+        . '</tr></table>';
+}
+
 // --- Letrero de un evento (ponencia o taller) ------------------------------
 
 if ($idEvento !== null) {
@@ -191,7 +237,7 @@ if ($idEvento !== null) {
     $evento = $eventos[0];
     $inscritos = inscritosDeEventos($pdo, $idEvento)[$idEvento] ?? [];
 
-    $html = $estilos . '<div class="cartel">'
+    $html = $estilos . '<div class="cartel">' . letreroLogos()
         . '<p class="dia">' . $escapar($evento['dia_label'] . ' · ' . diaEventoFecha((string) $evento['dia'])) . '</p>'
         . '<h1 class="nombre">' . $escapar($evento['nombre']) . '</h1>'
         . '<p class="tipo">' . $escapar(ucfirst((string) $evento['tipo'])) . '</p>'
@@ -251,7 +297,7 @@ if ($idEvento !== null) {
     $equipos = equiposDeCompeticiones($pdo, $idCompeticion)[$idCompeticion] ?? [];
     $totalEquipos = (int) $competicion['total_equipos'];
 
-    $html = $estilos . '<div class="cartel">'
+    $html = $estilos . '<div class="cartel">' . letreroLogos()
         . '<p class="dia">' . $escapar(diaEventoLabel((string) $competicion['dia']) . ' · ' . diaEventoFecha((string) $competicion['dia'])) . '</p>'
         . '<h1 class="nombre">' . $escapar($competicion['nombre']) . '</h1>'
         . '<p class="tipo">' . $escapar(ucfirst((string) $competicion['tipo'])) . '</p>'
@@ -315,6 +361,9 @@ if ($idEvento !== null) {
 
 $opciones = new Options();
 $opciones->set('isRemoteEnabled', false);
+// Sin este chroot Dompdf no abre los logos: por seguridad solo lee archivos
+// debajo del directorio permitido, y por omisión ese no incluye app/assets.
+$opciones->set('chroot', realpath(__DIR__ . '/../../assets'));
 
 $dompdf = new Dompdf($opciones);
 $dompdf->loadHtml($html, 'UTF-8');
