@@ -44,13 +44,19 @@ $horaVisible = date('H:i');
 /** @var PDO $pdo */
 $pdo = require __DIR__ . '/../../config/db.php';
 
-// --- Día Académico / Día Cultural: QR = numero_cuenta de alumno -----------
+// --- Asistencia general de los 3 días: QR = numero_cuenta de alumno -------
 // Asistencia GENERAL del día (¿ya entró/salió del plantel?), en
 // asistencias_generales. No confundir con la asistencia a un evento
 // específico (ponencia/taller/concurso), que vive en inscripciones y se
 // resuelve aparte (ver app/inscripciones, aún no construido).
 
-if ($evento === 'academico' || $evento === 'cultural') {
+// El Día Deportivo también entra aquí cuando lo escaneado es la credencial
+// del alumno (numero_cuenta, 8 caracteres sin guion): su asistencia general
+// se lleva igual que la de los otros dos días. Un codigo_participante
+// ('C3-1A2B3C4D') siempre trae guion, así que no se confunden.
+$esCredencialAlumno = preg_match('/^[A-Z0-9]{8}$/', strtoupper($codigo)) === 1;
+
+if ($evento === 'academico' || $evento === 'cultural' || ($evento === 'deportivo' && $esCredencialAlumno)) {
     $numeroCuenta = strtoupper($codigo);
 
     if (!preg_match('/^[A-Z0-9]{8}$/', $numeroCuenta)) {
@@ -100,6 +106,37 @@ if ($evento === 'academico' || $evento === 'cultural') {
             'dia' => $evento,
         ]);
         $tipoResultado = 'salida';
+    }
+
+    // Día Deportivo: el mismo escaneo de la credencial marca también la
+    // entrada/salida del alumno en cada equipo de torneo en el que está
+    // (integrantes, solo su fila tipo=alumno). Cada fila sigue su propia
+    // regla: la que no tiene entrada la recibe, la que ya la tiene actualiza
+    // la salida. Primero la salida, para que la fila que acaba de recibir su
+    // entrada en este mismo escaneo no se marque además como salida.
+    if ($evento === 'deportivo') {
+        $parametros = [
+            'ahora' => $ahora,
+            'punto' => $puntoControl,
+            'operador' => $operador,
+            'alumno' => $alumno['id'],
+        ];
+        $pdo->prepare(
+            "UPDATE integrantes i
+             JOIN equipos e ON e.id = i.id_equipo
+             JOIN competiciones c ON c.id = e.id_competicion
+                SET i.hora_salida = :ahora, i.punto_control_salida = :punto, i.escaneado_por_salida = :operador
+             WHERE i.id_alumno = :alumno AND i.tipo = 'alumno' AND c.dia = 'deportivo'
+               AND i.hora_entrada IS NOT NULL"
+        )->execute($parametros);
+        $pdo->prepare(
+            "UPDATE integrantes i
+             JOIN equipos e ON e.id = i.id_equipo
+             JOIN competiciones c ON c.id = e.id_competicion
+                SET i.hora_entrada = :ahora, i.punto_control_entrada = :punto, i.escaneado_por_entrada = :operador
+             WHERE i.id_alumno = :alumno AND i.tipo = 'alumno' AND c.dia = 'deportivo'
+               AND i.hora_entrada IS NULL"
+        )->execute($parametros);
     }
 
     $respuesta = [
@@ -154,10 +191,12 @@ if ($evento === 'deportivo') {
     }
 
     $consulta = $pdo->prepare(
-        'SELECT i.id_equipo, i.id_alumno, i.tipo, i.nombre, i.hora_entrada,
-                e.nombre AS nombre_equipo, e.tipo AS deporte
-         FROM integrantes i JOIN equipos e ON e.id = i.id_equipo
-         WHERE i.codigo_participante = :codigo'
+        "SELECT i.id_equipo, i.id_alumno, i.tipo, i.nombre, i.hora_entrada,
+                e.nombre AS nombre_equipo, c.nombre AS deporte
+         FROM integrantes i
+         JOIN equipos e ON e.id = i.id_equipo
+         JOIN competiciones c ON c.id = e.id_competicion
+         WHERE i.codigo_participante = :codigo AND c.dia = 'deportivo'"
     );
     $consulta->execute(['codigo' => $codigoParticipante]);
     $integrante = $consulta->fetch();
@@ -166,12 +205,7 @@ if ($evento === 'deportivo') {
         responder(404, ['ok' => false, 'error' => 'no_encontrado']);
     }
 
-    $deportes = [
-        'futbol_rapido' => 'Fútbol Rápido',
-        'voleibol' => 'Voleibol',
-        'quemados' => 'Quemados',
-    ];
-    $detalleEquipo = $integrante['nombre_equipo'] . ' · ' . ($deportes[$integrante['deporte']] ?? $integrante['deporte']);
+    $detalleEquipo = $integrante['nombre_equipo'] . ' · ' . $integrante['deporte'];
 
     if ($integrante['hora_entrada'] === null) {
         $actualizar = $pdo->prepare(
