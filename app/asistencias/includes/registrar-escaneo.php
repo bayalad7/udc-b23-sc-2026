@@ -114,29 +114,51 @@ if ($evento === 'academico' || $evento === 'cultural' || ($evento === 'deportivo
     // regla: la que no tiene entrada la recibe, la que ya la tiene actualiza
     // la salida. Primero la salida, para que la fila que acaba de recibir su
     // entrada en este mismo escaneo no se marque además como salida.
+    //
+    // Un alumno sin equipo de torneo es válido (vino a ver, no a jugar): solo
+    // se queda con su asistencia general. Y si esta parte llegara a fallar,
+    // la asistencia general ya quedó guardada arriba, así que se registra en
+    // el log y el escaneo se responde como exitoso en vez de marcar error.
+    $tieneEquipoDeportivo = false;
     if ($evento === 'deportivo') {
+        $consultaEquipos = $pdo->prepare(
+            "SELECT COUNT(*)
+             FROM integrantes i
+             JOIN equipos e ON e.id = i.id_equipo
+             JOIN competiciones c ON c.id = e.id_competicion
+             WHERE i.id_alumno = :alumno AND i.tipo = 'alumno' AND c.dia = 'deportivo'"
+        );
+        $consultaEquipos->execute(['alumno' => $alumno['id']]);
+        $tieneEquipoDeportivo = (int) $consultaEquipos->fetchColumn() > 0;
+    }
+
+    if ($tieneEquipoDeportivo) {
         $parametros = [
             'ahora' => $ahora,
             'punto' => $puntoControl,
             'operador' => $operador,
             'alumno' => $alumno['id'],
         ];
-        $pdo->prepare(
-            "UPDATE integrantes i
-             JOIN equipos e ON e.id = i.id_equipo
-             JOIN competiciones c ON c.id = e.id_competicion
-                SET i.hora_salida = :ahora, i.punto_control_salida = :punto, i.escaneado_por_salida = :operador
-             WHERE i.id_alumno = :alumno AND i.tipo = 'alumno' AND c.dia = 'deportivo'
-               AND i.hora_entrada IS NOT NULL"
-        )->execute($parametros);
-        $pdo->prepare(
-            "UPDATE integrantes i
-             JOIN equipos e ON e.id = i.id_equipo
-             JOIN competiciones c ON c.id = e.id_competicion
-                SET i.hora_entrada = :ahora, i.punto_control_entrada = :punto, i.escaneado_por_entrada = :operador
-             WHERE i.id_alumno = :alumno AND i.tipo = 'alumno' AND c.dia = 'deportivo'
-               AND i.hora_entrada IS NULL"
-        )->execute($parametros);
+        try {
+            $pdo->prepare(
+                "UPDATE integrantes i
+                 JOIN equipos e ON e.id = i.id_equipo
+                 JOIN competiciones c ON c.id = e.id_competicion
+                    SET i.hora_salida = :ahora, i.punto_control_salida = :punto, i.escaneado_por_salida = :operador
+                 WHERE i.id_alumno = :alumno AND i.tipo = 'alumno' AND c.dia = 'deportivo'
+                   AND i.hora_entrada IS NOT NULL"
+            )->execute($parametros);
+            $pdo->prepare(
+                "UPDATE integrantes i
+                 JOIN equipos e ON e.id = i.id_equipo
+                 JOIN competiciones c ON c.id = e.id_competicion
+                    SET i.hora_entrada = :ahora, i.punto_control_entrada = :punto, i.escaneado_por_entrada = :operador
+                 WHERE i.id_alumno = :alumno AND i.tipo = 'alumno' AND c.dia = 'deportivo'
+                   AND i.hora_entrada IS NULL"
+            )->execute($parametros);
+        } catch (PDOException $e) {
+            error_log('Error registrando asistencia en integrantes (alumno ' . $numeroCuenta . '): ' . $e->getMessage());
+        }
     }
 
     $respuesta = [
