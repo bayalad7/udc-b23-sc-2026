@@ -118,6 +118,14 @@ if ($claveYaRegistrada && adminAutorizado()) {
 
     $sinInscripcion = alumnosSinInscripcion($pdo);
 
+    // --- 7b. Asistencia por alumno -------------------------------------------
+    // Todas las tomas de asistencia (plantel y actividades de los 3 días), un
+    // renglón por alumno — mismos bloques que el reporte de arriba, más el
+    // Escenario de Talentos; ver includes/asistencia-alumnos.php.
+    require_once __DIR__ . '/../includes/asistencia-alumnos.php';
+
+    $asistenciaAlumnos = asistenciaAlumnos($pdo);
+
     // --- 8. Bandera de inscripciones abiertas/cerradas -----------------------
     require_once __DIR__ . '/../../inscripciones/includes/estado.php';
     $inscripcionesAbiertas = inscripcionesLiberadas($pdo);
@@ -449,6 +457,70 @@ if ($claveYaRegistrada && adminAutorizado()) {
             </div>
             <div class="h-64"><canvas id="grafica-ausentismo"></canvas></div>
             <p class="mt-2 text-xs text-slate-400">La diferencia son alumnos que entraron al plantel pero no se presentaron a su ponencia/taller asignado.</p>
+        </section>
+
+        <?php // --- Asistencia por alumno ------------------------------------
+              // El cierre de todo lo anterior: quién se presentó a qué, alumno
+              // por alumno. La tarjeta trae el resumen por columna y el modal,
+              // el detalle por grado y grupo. ?>
+        <section class="rounded-xl bg-white p-5 shadow-sm lg:col-span-2">
+            <div class="mb-4 flex items-center justify-between gap-2">
+                <h2 class="flex items-center gap-2 text-base font-semibold">
+                    <?= icono('reloj', 'h-4 w-4 text-slate-400') ?>
+                    Asistencia por alumno
+                </h2>
+                <button type="button" data-abrir-modal="detalle-asistencia-alumnos" title="Ver detalle en tabla"
+                        class="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                    <?= icono('tabla', 'h-3.5 w-3.5') ?>
+                    Ver tabla
+                </button>
+            </div>
+            <div class="overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="px-3 py-2">Toma de asistencia</th>
+                            <th class="px-3 py-2">Horario</th>
+                            <th class="px-3 py-2 text-center">Debían presentarse</th>
+                            <th class="px-3 py-2 text-center">Se presentaron</th>
+                            <th class="px-3 py-2 text-center">%</th>
+                        </tr>
+                    </thead>
+                    <?php foreach ($asistenciaAlumnos['dias'] as $diaAsistencia): ?>
+                    <tbody>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th colspan="5" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <span class="flex items-center gap-1.5">
+                                    <?= icono($diaAsistencia['dia'], 'h-3.5 w-3.5 text-slate-400') ?>
+                                    <?= htmlspecialchars($diaAsistencia['dia_label'], ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            </th>
+                        </tr>
+                        <?php foreach ($asistenciaAlumnos['columnas'] as $columnaAsistencia):
+                            if ($columnaAsistencia['dia'] !== $diaAsistencia['dia']) {
+                                continue;
+                            }
+                            $totalColumna = $asistenciaAlumnos['totales'][$columnaAsistencia['clave']];
+                            $porcentaje = $totalColumna['esperados'] > 0
+                                ? (int) round($totalColumna['asistieron'] / $totalColumna['esperados'] * 100)
+                                : 0;
+                        ?>
+                        <tr class="border-b border-slate-100">
+                            <td class="px-3 py-2 font-medium"><?= htmlspecialchars($columnaAsistencia['etiqueta'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-xs text-slate-400 whitespace-nowrap"><?= htmlspecialchars($columnaAsistencia['horario'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= number_format($totalColumna['esperados']) ?></td>
+                            <td class="px-3 py-2 text-center text-slate-500"><?= number_format($totalColumna['asistieron']) ?></td>
+                            <td class="px-3 py-2 text-center font-medium <?= $porcentaje >= 80 ? 'text-emerald-600' : ($porcentaje >= 50 ? 'text-amber-600' : 'text-red-600') ?>"><?= $porcentaje ?>%</td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+            <p class="mt-2 text-xs text-slate-400">
+                "Plantel" es la asistencia general del día y se le pide a todo el padrón (<?= $asistenciaAlumnos['total_alumnos'] ?> alumnos);
+                cada bloque cuenta solo a los inscritos a alguna de sus actividades, incluido el Escenario de Talentos.
+            </p>
         </section>
 
     </div>
@@ -1503,6 +1575,120 @@ if ($claveYaRegistrada && adminAutorizado()) {
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
+                </table>
+            </div>
+        </div>
+    </dialog>
+
+    <?php // Detalle de asistencia por alumno: mismo esqueleto que el pivote de
+          // "Alumnos sin inscripción" (encabezado de dos pisos, un <tbody> por
+          // grado y grupo), pero cada celda trae las horas en vez de ✔/✘. ?>
+    <?php $columnasAsistencia = $asistenciaAlumnos['columnas']; ?>
+    <style>
+        /* Clases cortas para las celdas del detalle (ver el renglón más abajo):
+           mismos colores y espaciados de Tailwind que el resto del panel,
+           escritos a mano para no repetir 8 clases en cada celda. */
+        #detalle-asistencia-alumnos tbody tr { border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+        #detalle-asistencia-alumnos .aa-cuenta { padding: .5rem .75rem; font-family: ui-monospace, monospace; font-size: .75rem; color: #64748b; }
+        #detalle-asistencia-alumnos .aa-nombre { padding: .5rem .75rem; font-weight: 500; white-space: nowrap; }
+        #detalle-asistencia-alumnos .aa-celda { padding: .5rem; text-align: center; font-size: .75rem; color: #64748b; white-space: nowrap; }
+        #detalle-asistencia-alumnos .aa-dia { border-left: 1px solid #e2e8f0; }
+        #detalle-asistencia-alumnos .aa-actividad { display: block; min-width: 9rem; max-width: 14rem; margin: 0 auto; color: #94a3b8; white-space: normal; }
+        #detalle-asistencia-alumnos .aa-si { display: block; font-weight: 500; color: #059669; }
+        #detalle-asistencia-alumnos .aa-no { display: block; font-weight: 500; color: #ef4444; }
+        #detalle-asistencia-alumnos .aa-sin { color: #94a3b8; }
+        #detalle-asistencia-alumnos .aa-ninguna { font-weight: 500; color: #dc2626; }
+    </style>
+    <dialog id="detalle-asistencia-alumnos" style="max-width: 64rem" class="m-auto w-[90%] rounded-xl border-0 p-0 shadow-xl backdrop:bg-slate-900/50">
+        <div class="p-5">
+            <div class="mb-3 flex items-center justify-between">
+                <h3 class="text-base font-semibold">Asistencia por alumno</h3>
+                <button type="button" data-cerrar-modal="detalle-asistencia-alumnos" title="Cerrar" class="cursor-pointer rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <?= icono('cerrar', 'h-4 w-4') ?>
+                </button>
+            </div>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p class="text-xs text-slate-500">
+                    Un renglón por alumno con su entrada y salida al plantel y a cada actividad.
+                    <span class="font-medium text-emerald-600">Verde</span>: se presentó ·
+                    <span class="font-medium text-red-500">Sin entrada</span>: se le esperaba y no se le escaneó ·
+                    guion: no estaba inscrito a nada de ese bloque.
+                </p>
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-asistencia-alumnos.php?formato=xlsx"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> Excel
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/includes/exportar-asistencia-alumnos.php?formato=pdf"
+                       class="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                        <?= icono('descargar', 'h-3.5 w-3.5') ?> PDF
+                    </a>
+                </div>
+            </div>
+            <div class="max-h-96 overflow-auto rounded-lg border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th rowspan="2" class="px-3 py-2 align-bottom">No. cuenta</th>
+                            <th rowspan="2" class="px-3 py-2 align-bottom">Alumno</th>
+                            <?php foreach ($asistenciaAlumnos['dias'] as $diaAsistencia): ?>
+                            <th colspan="<?= $diaAsistencia['columnas'] ?>" class="border-l border-slate-200 px-2 py-1.5 text-center">
+                                <span class="flex items-center justify-center gap-1.5">
+                                    <?= icono($diaAsistencia['dia'], 'h-3.5 w-3.5 text-slate-400') ?>
+                                    <?= htmlspecialchars($diaAsistencia['dia_label'], ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            </th>
+                            <?php endforeach; ?>
+                            <th rowspan="2" class="border-l border-slate-200 px-2 py-2 text-center align-bottom">Asistió</th>
+                        </tr>
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <?php foreach ($columnasAsistencia as $indiceColumna => $columnaAsistencia): ?>
+                            <th class="<?= $indiceColumna === 0 || $columnaAsistencia['dia'] !== $columnasAsistencia[$indiceColumna - 1]['dia'] ? 'border-l border-slate-200 ' : '' ?>px-2 py-1.5 text-center font-medium">
+                                <span class="block normal-case"><?= htmlspecialchars($columnaAsistencia['etiqueta'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="block font-normal normal-case text-slate-400"><?= htmlspecialchars($columnaAsistencia['horario'], ENT_QUOTES, 'UTF-8') ?></span>
+                            </th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <?php foreach ($asistenciaAlumnos['grupos'] as $grupoEtiqueta => $alumnosDelGrupo): ?>
+                    <tbody>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th colspan="<?= count($columnasAsistencia) + 3 ?>" class="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <?= htmlspecialchars($grupoEtiqueta, ENT_QUOTES, 'UTF-8') ?>
+                                <span class="font-normal normal-case text-slate-400">· <?= count($alumnosDelGrupo) ?> alumnos</span>
+                            </th>
+                        </tr>
+                        <?php
+                        // Cada renglón se arma en una sola línea y con las
+                        // clases cortas del <style> de arriba: son 8 celdas por
+                        // alumno y, con la sangría y las clases de Tailwind
+                        // repetidas, el modal pasaba de 1 MB con 350 alumnos.
+                        foreach ($alumnosDelGrupo as $alumnoAsistencia) {
+                            $renglon = '<tr><td class="aa-cuenta">' . htmlspecialchars($alumnoAsistencia['numero_cuenta'], ENT_QUOTES, 'UTF-8') . '</td>'
+                                . '<td class="aa-nombre">' . htmlspecialchars($alumnoAsistencia['nombre_completo'], ENT_QUOTES, 'UTF-8') . '</td>';
+                            foreach ($columnasAsistencia as $indiceColumna => $columnaAsistencia) {
+                                $celda = $alumnoAsistencia['celdas'][$columnaAsistencia['clave']];
+                                $abreDia = $indiceColumna === 0 || $columnaAsistencia['dia'] !== $columnasAsistencia[$indiceColumna - 1]['dia'];
+                                $renglon .= '<td class="aa-celda' . ($abreDia ? ' aa-dia' : '') . '">';
+                                if ($celda['estado'] === 'sin') {
+                                    $renglon .= '<span class="aa-sin">—</span>';
+                                }
+                                foreach ($celda['estado'] === 'sin' ? [] : $celda['registros'] as $registro) {
+                                    if ($registro['nombre'] !== '') {
+                                        $renglon .= '<span class="aa-actividad">' . htmlspecialchars($registro['nombre'], ENT_QUOTES, 'UTF-8') . '</span>';
+                                    }
+                                    $renglon .= '<span class="' . ($registro['entrada'] !== null ? 'aa-si' : 'aa-no') . '">'
+                                        . htmlspecialchars(asistenciaTexto($registro), ENT_QUOTES, 'UTF-8') . '</span>';
+                                }
+                                $renglon .= '</td>';
+                            }
+                            $renglon .= '<td class="aa-celda aa-dia' . ($alumnoAsistencia['asistidas'] === 0 ? ' aa-ninguna' : '') . '">'
+                                . $alumnoAsistencia['asistidas'] . ' de ' . $alumnoAsistencia['esperadas'] . '</td></tr>';
+                            echo $renglon, "\n";
+                        }
+                        ?>
+                    </tbody>
+                    <?php endforeach; ?>
                 </table>
             </div>
         </div>

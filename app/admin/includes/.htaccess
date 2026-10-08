@@ -119,3 +119,7 @@ Require all denied
 <Files "eliminar-inscripcion.php">
     Require all granted
 </Files>
+
+<Files "exportar-asistencia-alumnos.php">
+    Require all granted
+</Files>

@@ -53,10 +53,17 @@ function bloqueHorario(string $horaInicio, string $horaFin): string
  * Catálogo de bloques (franjas horarias con actividad) de los 3 días, en orden
  * cronológico, con cuántas actividades tiene cada uno y cuáles son.
  *
+ * `$incluirExcluidas` mete también al Escenario de Talentos: lo pide el
+ * reporte de asistencia por alumno (includes/asistencia-alumnos.php), donde
+ * la pregunta ya no es "¿le falta inscribirse?" sino "¿se presentó?", y ahí
+ * quien se apuntó al show sí tiene una entrada que reportar.
+ *
  * @return list<array<string, mixed>>
  */
-function bloquesDelEvento(PDO $pdo): array
+function bloquesDelEvento(PDO $pdo, bool $incluirExcluidas = false): array
 {
+    $filtroCompeticiones = $incluirExcluidas ? '' : 'WHERE NOT ' . sinInscripcionCompeticionExcluida();
+
     $filas = $pdo->query(
         "SELECT dia, hora_inicio, hora_fin,
                 COUNT(*) AS actividades,
@@ -69,7 +76,7 @@ function bloquesDelEvento(PDO $pdo): array
              UNION ALL
              SELECT dia, hora_inicio, hora_fin, nombre, 1, tipo
              FROM competiciones
-             WHERE NOT " . sinInscripcionCompeticionExcluida() . "
+             {$filtroCompeticiones}
          ) AS agenda
          GROUP BY dia, hora_inicio, hora_fin
          ORDER BY FIELD(dia, 'academico', 'cultural', 'deportivo'), hora_inicio"
