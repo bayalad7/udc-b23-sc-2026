@@ -126,14 +126,13 @@ if ($alumno !== null) {
     }
 }
 
-/** Fecha y hora larga del proyecto, o un guion si la columna viene vacía. */
+/**
+ * Fecha y hora larga del proyecto, a la hora del plantel (ver
+ * config/zona-horaria.php), o un guion si la columna viene vacía.
+ */
 function consultaMomento(?string $momento): string
 {
-    if ($momento === null || $momento === '') {
-        return '—';
-    }
-
-    return date('d/m/Y H:i', strtotime($momento));
+    return horaLocal($momento, 'd/m/Y H:i') ?? '—';
 }
 
 layoutAdminAbrir('Consulta', 'consulta');

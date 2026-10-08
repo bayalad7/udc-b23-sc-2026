@@ -206,7 +206,7 @@ if ($mensajeError) {
                 <td class="px-4 py-3 text-center">
                     <span class="inline-flex items-center gap-1 rounded-full bg-slate-900 px-2 py-0.5 text-xs font-medium text-white"><?= htmlspecialchars($trabajador['camisa_talla'], ENT_QUOTES, 'UTF-8') ?></span>
                 </td>
-                <td class="px-4 py-3 text-center text-xs text-slate-400"><?= htmlspecialchars((string) $trabajador['fecha_registro'], ENT_QUOTES, 'UTF-8') ?></td>
+                <td class="px-4 py-3 text-center text-xs text-slate-400"><?= htmlspecialchars((string) horaLocal($trabajador['fecha_registro']), ENT_QUOTES, 'UTF-8') ?></td>
                 <td class="px-4 py-3 text-center">
                     <a href="<?= BASE_URL ?>/admin/public/trabajador.php?id=<?= (int) $trabajador['id'] ?>" title="Ver / editar registro"
                        class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">

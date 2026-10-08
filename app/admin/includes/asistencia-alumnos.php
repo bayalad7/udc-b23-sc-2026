@@ -31,10 +31,13 @@ require_once __DIR__ . '/sin-inscripcion.php';
 // llevan el id_alumno del hijo (ver schema.sql) y pondrían como presente al
 // alumno con la entrada de su mamá.
 
-/** "2026-10-05 08:02:13" → "08:02"; NULL se queda en NULL. */
+/**
+ * Hora guardada (zona del servidor) → "08:02" a la hora del plantel; NULL se
+ * queda en NULL. Ver config/zona-horaria.php.
+ */
 function asistenciaHora(?string $fechaHora): ?string
 {
-    return $fechaHora === null ? null : substr($fechaHora, 11, 5);
+    return horaLocal($fechaHora, 'H:i');
 }
 
 /**

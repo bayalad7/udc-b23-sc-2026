@@ -38,7 +38,8 @@ if ($codigo === '') {
 $evento = (string) $_SESSION['evento'];
 $operador = (string) $_SESSION['operador'];
 $puntoControl = (string) $_SESSION['punto_control'];
-$ahora = date('Y-m-d H:i:s');
+// Se guarda en la zona del servidor y se muestra en la del plantel: ver config/zona-horaria.php.
+$ahora = ahoraServidor();
 $horaVisible = date('H:i');
 
 /** @var PDO $pdo */

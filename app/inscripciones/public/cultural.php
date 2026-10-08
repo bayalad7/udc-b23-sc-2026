@@ -279,7 +279,7 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
                             <td class="px-3 py-2"><?= htmlspecialchars($inscrito['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="px-3 py-2"><?= htmlspecialchars($inscrito['grado'], ENT_QUOTES, 'UTF-8') ?>°</td>
                             <td class="px-3 py-2"><?= htmlspecialchars($inscrito['grupo'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td class="px-3 py-2 whitespace-nowrap"><?= date('d/m/Y H:i', strtotime((string) $inscrito['fecha_registro'])) ?></td>
+                            <td class="px-3 py-2 whitespace-nowrap"><?= horaLocal((string) $inscrito['fecha_registro'], 'd/m/Y H:i') ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -474,7 +474,7 @@ function renderTarjetaTaller(array $taller, bool $yaInscrito, bool $bloqueado, a
                         <span class="text-[11px] text-slate-500">
                             Capitán: <?= htmlspecialchars($acto['capitan'], ENT_QUOTES, 'UTF-8') ?>
                             · <?= (int) $acto['total_integrantes'] ?> integrante<?= ((int) $acto['total_integrantes']) === 1 ? '' : 's' ?>
-                            · <?= date('d/m/Y H:i', strtotime((string) $acto['fecha_registro'])) ?>
+                            · <?= horaLocal((string) $acto['fecha_registro'], 'd/m/Y H:i') ?>
                         </span>
                     </div>
                     <div class="grid grid-cols-2 gap-x-3 gap-y-1 p-3 text-xs sm:grid-cols-3">

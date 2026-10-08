@@ -48,6 +48,24 @@ function badgeEstadoAsistencia(?string $entrada, ?string $salida): string
     return '<span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">' . icono('exito', 'h-3 w-3') . ' Completo</span>';
 }
 
+/**
+ * Pasa hora_entrada/hora_salida de cada fila a la hora del plantel (ver
+ * config/zona-horaria.php), antes de pintarlas y de calcular la duración.
+ *
+ * @param list<array<string, mixed>> $filas
+ * @return list<array<string, mixed>>
+ */
+function filasHoraLocal(array $filas): array
+{
+    foreach ($filas as &$fila) {
+        $fila['hora_entrada'] = horaLocal($fila['hora_entrada']);
+        $fila['hora_salida'] = horaLocal($fila['hora_salida']);
+    }
+    unset($fila);
+
+    return $filas;
+}
+
 /** Tiempo transcurrido entre hora_entrada y hora_salida, o null si falta alguna de las dos. */
 function duracionAsistencia(?string $entrada, ?string $salida): ?string
 {
@@ -150,7 +168,7 @@ $consultaGeneral = $pdo->prepare(
      ORDER BY (ag.hora_entrada IS NULL) ASC, ag.hora_entrada DESC, a.nombre_completo ASC"
 );
 $consultaGeneral->execute($parametrosGeneral);
-$asistenciaGeneral = $consultaGeneral->fetchAll();
+$asistenciaGeneral = filasHoraLocal($consultaGeneral->fetchAll());
 
 // --- 2. Asistencia por evento (ponencias/talleres, solo académico/cultural) -
 $asistenciaEventos = [];
@@ -190,7 +208,7 @@ if ($dia !== 'deportivo') {
          ORDER BY e.nombre, a.nombre_completo"
     );
     $consultaEventos->execute($parametrosEventos);
-    $asistenciaEventos = $consultaEventos->fetchAll();
+    $asistenciaEventos = filasHoraLocal($consultaEventos->fetchAll());
 }
 
 // --- 3. Asistencia por equipo (concursos/torneos) ---------------------------
@@ -235,7 +253,7 @@ $consultaEquipos = $pdo->prepare(
      ORDER BY c.nombre, eq.nombre, it.nombre"
 );
 $consultaEquipos->execute($parametrosEquipos);
-$asistenciaEquipos = $consultaEquipos->fetchAll();
+$asistenciaEquipos = filasHoraLocal($consultaEquipos->fetchAll());
 
 $estadosLabel = [
     '' => 'Todos',

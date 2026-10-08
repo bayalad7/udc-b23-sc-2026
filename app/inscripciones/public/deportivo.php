@@ -249,7 +249,7 @@ $mensajeExito = ($_GET['msg'] ?? '') === 'equipo_creado' ? '¡Equipo registrado!
                         <span class="text-[11px] text-slate-500">
                             Capitán: <?= htmlspecialchars($equipo['capitan'], ENT_QUOTES, 'UTF-8') ?>
                             · <?= (int) $equipo['total_integrantes'] ?>/<?= $tamEquipoTorneo ?>
-                            · <?= date('d/m/Y H:i', strtotime((string) $equipo['fecha_registro'])) ?>
+                            · <?= horaLocal((string) $equipo['fecha_registro'], 'd/m/Y H:i') ?>
                         </span>
                     </div>
                     <div class="grid grid-cols-2 gap-x-3 gap-y-1 p-3 text-xs sm:grid-cols-3">

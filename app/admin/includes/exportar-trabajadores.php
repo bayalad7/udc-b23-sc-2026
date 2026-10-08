@@ -74,7 +74,7 @@ foreach ($trabajadores as $trabajador) {
         $trabajador['nombre_completo'],
         $trabajador['camisa_corte'],
         $trabajador['camisa_talla'],
-        $trabajador['fecha_registro'],
+        horaLocal($trabajador['fecha_registro']),
     ], null, 'A' . $fila);
     $fila++;
 }

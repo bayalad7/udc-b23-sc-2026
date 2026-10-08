@@ -48,6 +48,12 @@ if (!$esNuevo) {
     );
     $consultaInscritos->execute(['id' => $id]);
     $inscritos = $consultaInscritos->fetchAll();
+    // A la hora del plantel (ver config/zona-horaria.php).
+    foreach ($inscritos as &$inscritoFila) {
+        $inscritoFila['hora_entrada'] = horaLocal($inscritoFila['hora_entrada']);
+        $inscritoFila['hora_salida'] = horaLocal($inscritoFila['hora_salida']);
+    }
+    unset($inscritoFila);
 }
 
 require __DIR__ . '/../includes/layout.php';

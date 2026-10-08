@@ -94,6 +94,9 @@ function equiposDeCompeticiones(PDO $pdo, ?int $idCompeticion = null): array
 
     $integrantesPorEquipo = [];
     foreach ($consultaIntegrantes->fetchAll() as $integrante) {
+        // A la hora del plantel (ver config/zona-horaria.php).
+        $integrante['hora_entrada'] = horaLocal($integrante['hora_entrada']);
+        $integrante['hora_salida'] = horaLocal($integrante['hora_salida']);
         $integrantesPorEquipo[(int) $integrante['id_equipo']][] = $integrante;
     }
 

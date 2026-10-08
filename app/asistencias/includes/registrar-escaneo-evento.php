@@ -42,7 +42,8 @@ if (!preg_match('/^[A-Z0-9]{8}$/', $numeroCuenta)) {
 $idEvento = (int) $_SESSION['id_evento'];
 $operador = (string) $_SESSION['operador_evento'];
 $puntoControl = (string) $_SESSION['punto_control_evento'];
-$ahora = date('Y-m-d H:i:s');
+// Se guarda en la zona del servidor y se muestra en la del plantel: ver config/zona-horaria.php.
+$ahora = ahoraServidor();
 $horaVisible = date('H:i');
 
 /** @var PDO $pdo */

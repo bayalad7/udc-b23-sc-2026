@@ -60,7 +60,7 @@ foreach ($alumnos as $alumnoFila) {
         $alumnoFila['camisa_corte'],
         $alumnoFila['camisa_talla'],
         $alumnoFila['credencial_generada'] ? 'Sí' : 'No',
-        $alumnoFila['fecha_registro'],
+        horaLocal($alumnoFila['fecha_registro']),
     ], null, 'A' . $fila);
     $fila++;
 }

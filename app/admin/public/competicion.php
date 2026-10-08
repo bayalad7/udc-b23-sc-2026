@@ -52,6 +52,12 @@ if (!$esNuevo) {
     foreach ($equiposFilas as $equipoFila) {
         $consultaIntegrantes->execute(['id' => $equipoFila['id']]);
         $equipoFila['integrantes'] = $consultaIntegrantes->fetchAll();
+        // A la hora del plantel (ver config/zona-horaria.php).
+        foreach ($equipoFila['integrantes'] as &$integranteFila) {
+            $integranteFila['hora_entrada'] = horaLocal($integranteFila['hora_entrada']);
+            $integranteFila['hora_salida'] = horaLocal($integranteFila['hora_salida']);
+        }
+        unset($integranteFila);
         $equipos[] = $equipoFila;
     }
 }

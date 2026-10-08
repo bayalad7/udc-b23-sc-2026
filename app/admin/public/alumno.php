@@ -137,7 +137,7 @@ if ($mensajeError) {
                 </button>
             </form>
 
-            <p class="mt-3 text-xs text-slate-400">Registrado el <?= htmlspecialchars((string) $alumno['fecha_registro'], ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="mt-3 text-xs text-slate-400">Registrado el <?= htmlspecialchars((string) horaLocal($alumno['fecha_registro']), ENT_QUOTES, 'UTF-8') ?></p>
 
             <form action="<?= BASE_URL ?>/admin/includes/eliminar-alumno.php" method="post" class="mt-6 border-t border-slate-100 pt-4"
                   onsubmit="return confirm('¿Eliminar a este alumno de forma permanente? Esta acción no se puede deshacer.');">

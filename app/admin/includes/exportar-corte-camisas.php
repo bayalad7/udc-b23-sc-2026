@@ -79,7 +79,7 @@ $html .= '<table class="firmas"><tr>'
     . '<td>Firma de quien recibe<br>' . htmlspecialchars($corte['recibido_por'], ENT_QUOTES, 'UTF-8') . '</td>'
     . '</tr></table>';
 
-$html .= '<p class="pie">Folio #' . (int) $corte['id'] . ' · Generado el ' . htmlspecialchars((string) $corte['fecha_registro'], ENT_QUOTES, 'UTF-8') . '</p>';
+$html .= '<p class="pie">Folio #' . (int) $corte['id'] . ' · Generado el ' . htmlspecialchars((string) horaLocal($corte['fecha_registro']), ENT_QUOTES, 'UTF-8') . '</p>';
 
 $opciones = new Options();
 $opciones->set('isRemoteEnabled', false);

@@ -144,7 +144,7 @@ if ($mensajeError) {
     </form>
 
     <?php if (!$esNuevo): ?>
-    <p class="mt-4 text-xs text-slate-400">Registrado el <?= htmlspecialchars((string) $trabajador['fecha_registro'], ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="mt-4 text-xs text-slate-400">Registrado el <?= htmlspecialchars((string) horaLocal($trabajador['fecha_registro']), ENT_QUOTES, 'UTF-8') ?></p>
 
     <?php
     // A diferencia de alumnos/eventos/competiciones, `trabajadores` no tiene

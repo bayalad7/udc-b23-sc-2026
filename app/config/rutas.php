@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+// La zona horaria va aquí porque este archivo lo cargan todas las páginas de
+// la app; ver config/zona-horaria.php.
+require_once __DIR__ . '/zona-horaria.php';
+
 // BASE_URL: prefijo de ruta bajo el cual vive esta app dentro del dominio.
 // Se calcula solo comparando la carpeta real de app/ (padre de este
 // config/) contra el Document Root del servidor -- así el código no

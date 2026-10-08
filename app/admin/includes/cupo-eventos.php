@@ -96,6 +96,12 @@ function inscritosDeEventos(PDO $pdo, ?int $idEvento = null): array
 
     $inscritosPorEvento = [];
     foreach ($consulta->fetchAll() as $inscrito) {
+        // A la hora del plantel aquí, una sola vez, para que la pantalla y las
+        // descargas que leen de esta función digan lo mismo (ver
+        // config/zona-horaria.php).
+        foreach (['fecha_registro', 'hora_entrada', 'hora_salida'] as $columnaHora) {
+            $inscrito[$columnaHora] = horaLocal($inscrito[$columnaHora]);
+        }
         $inscrito['grado_grupo'] = $inscrito['grado'] . '°' . $inscrito['grupo'];
         $inscrito['origen_label'] = $inscrito['origen'] === 'previo' ? 'Previo' : 'Orden de llegada';
         $inscrito['estado'] = cupoEventoEstadoInscripcion($inscrito['hora_entrada'], $inscrito['hora_salida']);
